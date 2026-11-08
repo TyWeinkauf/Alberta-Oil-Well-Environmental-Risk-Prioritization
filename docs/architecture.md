@@ -41,12 +41,18 @@ The app retains selection outside filters with an explicit message. Production r
 
 Live features are clipped to the projected study polygon plus 500 m after geometry validation; exact tangent intersections retain valid original geometry so inclusive boundary matches are not lost. The UI enables the live action only when the catalogue is ready and labels data according to demo/live mode. Current official entries remain disabled: publisher/source verification is blocked on network access. See [source verification](source_verification.md).
 
+## Production foundation (Phase 5 in progress)
+
+`src/production/contracts.py` validates canonical month/product/activity/unit/decimal/reporting-level records and resolves only exact documented identifiers. `csv_source.py` applies configured CSV columns/value/period mappings; these are not assumptions about current Petrinex fields. `store.py` imports immutable batches with link audits and quarantines, then atomically switches an active pointer. Changed inputs/window/identifier evidence create a new revision; unchanged repeats reuse one. Failed imports retain previous active data, and real refresh failures persist a redacted attempt stage/error class.
+
+`view.py` serves active, run-scoped, well-level verified links only. `ui.py` separates product/activity/unit chart series and keeps facility/unmatched/ambiguous/unknown rows in the audit. Synthetic production is explicitly labelled and prohibited on real-source runs; real refresh requires a real-source run. Migration 004 separates snapshot role/revision metadata and production batch/audit tables. See [production](production.md). Official access, licence, grain and identifier verification remain blocked on network settings.
+
 ## Planned components
 
 The design's future flow is **Streamlit → orchestrator → source adapters → raw cache → contracts/quarantine → staging/PostGIS → spatial SQL → map/results/exports**. Download/transform work must run only on explicit actions, outside Streamlit rerun side effects.
 
 - **Remaining Phase 4:** verify official AER/provincial/federal URLs, fields, CRS, terms and scope, then complete and validate an actual small-region ingestion. Simulated protocol tests do not establish official compatibility.
-- **Phase 5:** production contracts/adapters and documented well-level joins. Facility totals must never be allocated to wells without source evidence.
+- **Remaining Phase 5:** inspect actual Petrinex product/licence/schema and reporting level, verify identifier compatibility with actual well data, then execute a bounded real refresh. Facility totals remain excluded from well charts.
 - **Phase 6:** performance, cancellation/recovery, last-successful-run publication, clean-clone app demonstration and separate course handoffs.
 
-Production storage remains empty; proximity rows are populated by the analysis command. `seeded` describes ingestion, and the separate report's `analyzed` status describes the spatial calculation without claiming full application publication. Live source integration will use the real-data stack recorded in [the supplied reference](dataset_reference.md). App-level acceptance remains tracked in `DESIGN.md`.
+Production storage is populated only through its explicit verified-source or labelled synthetic import; proximity rows are populated by the analysis command. `seeded` describes ingestion, and the separate report's `analyzed` status describes the spatial calculation without claiming full application publication. Live source integration will use the real-data stack recorded in [the supplied reference](dataset_reference.md). App-level acceptance remains tracked in `DESIGN.md`.

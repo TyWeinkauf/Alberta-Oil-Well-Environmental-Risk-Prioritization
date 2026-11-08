@@ -81,3 +81,13 @@ New tests acquire generated Shapefile, GPKG and OpenFileGDB ZIPs through local H
 These are synthetic protocol tests, **not official source data**. Fresh requests to the four official discovery hosts were rejected by the proxy with CONNECT 403. Their domains are saved in the environment draft but not applied; actual publisher terms/endpoints/layers/fields/CRS and the Drayton Valley regional run remain unverified. Phase 4 remains in progress. See [source verification](source_verification.md).
 
 The separately published OpenStreetMap tile rule was retested with a fresh request and returned HTTP 200. That does not establish access to analytical data hosts.
+
+## Phase 5 partial verification — 8 November 2026
+
+The complete Python suite passed **103 tests (72 unit, 31 integration), no skips/warnings**. The eight production integration checks were rerun after final month-window/API refinements. Both the existing offline map browser smoke and the new production browser smoke passed against a freshly restarted application after the schema upgrade.
+
+`python scripts/demo_production.py` was executed and repeated successfully: 9 synthetic input records, 6 accepted, 2 quarantined and 1 outside the window. Three observations have exact unique synthetic well links; facility, unmatched and unknown-level records remain audit-only. The active batch and monthly rows are not duplicated on a repeat. Forced insertion failure preserves the prior active batch; ambiguous exact identifiers cannot populate a chart. Synthetic import on a real-source run and cross-run well reads are rejected. A simulated remote transport failure persists an error class/stage without the underlying connection message.
+
+The real Chromium production check clicked the explicit synthetic import, rendered DEMO-WELL-001's monthly chart, switched from oil production to its separate adjustment series, switched to DEMO-WELL-002's unavailable state, and downloaded an audit retaining the 900-unit facility observation outside either well chart. Exact table decimals and source provenance remain separate from floating-point plot coordinates. The CSV inspection helper was also executed against the project-authored fixture and reported its headers/sample.
+
+Actual Petrinex discovery was denied by the proxy (CONNECT 403). Its host was added to the existing pending draft domain list; actual public access, grain, licence, fields, units and well-identifier semantics remain unverified. **No real production has been ingested and Phase 5 is not complete.** Save/apply pending network settings before official verification and a real refresh can proceed. See [production](production.md).

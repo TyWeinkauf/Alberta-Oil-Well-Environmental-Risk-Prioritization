@@ -10,8 +10,8 @@ All project tables are in `screening`. Geometry storage is EPSG:3400; output map
 | wells | One accepted well in a snapshot; well_pk PK; unique snapshot_id/source_well_id | Original/normalized licensee, nullable UWI/operator/LSD/status, required Point geometry |
 | environmental_features | One accepted feature in a snapshot; feature_pk PK; unique snapshot_id/source_feature_id | source_key, feature_type, nullable name, line/polygon geometry |
 | quarantine_records | One rejected input row per run/source; quarantine_pk PK | zero-based entity/row reference, deterministic reason_code/detail, raw_payload_reference |
-| production_monthly | Reserved for Phase 5; unique snapshot_id/source_record_id | period (first day of month), product, activity, volume, unit, attribution_level; no demo production |
-| production_well_links | Reserved well/production pair PK | join_method, evidence, confidence_status; future queries must use only verified links |
+| production_monthly | One accepted monthly observation; unique snapshot_id/source_record_id | period (first day of month), product, activity, volume, unit, attribution_level; synthetic or verified real batch, with exact decimal volume |
+| production_well_links | Well/production pair PK | join_method, evidence, confidence_status; chart queries use verified links and active-batch audit only |
 | well_proximity | One run/well/category PK | nearest feature, distance_m within 500 m, coverage_status, generated cumulative within_50/100/250/500 flags |
 | pipeline_attempts | One attempted real-source workflow; attempt_id UUID PK | start/finish, running/succeeded/failed, stage, optional published run_id, error class and redacted summary |
 | category_coverage | One run/category PK | complete/incomplete/unavailable status and explanation; explicit coverage, not inferred from match presence |
@@ -37,3 +37,9 @@ Other row-level reasons include unsupported geometry type, malformed geometry, i
 ## Live acquisition (not yet verified against official sources)
 
 Source bundles preserve request/final URLs, raw-byte checksums, original retrieval times, conditional HTTP metadata, inspected CRS/layer/fields and canonical selected-record references. PostGIS source retrieval timestamps come from those responses, not merely the latest pipeline execution time. Snapshot checksum identifies the archived source bundle; bundle raw-response entries retain the original download/page checksums. Record grain is the bounded acquired subset. The live manifest records content identities, input/accepted/rejected accounting, quality reasons and coverage. Real-field mappings and actual source compatibility remain unverified; see `source_verification.md`.
+
+## Production batch/audit metadata
+
+Migration 004 adds `source_snapshots.source_role` and `revision_key`, retaining spatial revisions while allowing immutable production snapshots. Production has no CRS and is labelled not applicable (tabular). `production_batches` records run/snapshot, synthetic/live source mode, month window, content/evidence identity, configuration and validation accounting. `production_active` is a run-scoped pointer; historical batches never double-count into a current chart. `production_link_audit` records verified/unmatched/ambiguous/facility/unknown status, reason and candidate count per observation. `production_quarantine` records rejected CSV record references and reasons by batch.
+
+The synthetic production fixture has 9 input records: 6 accepted, 2 quarantined and 1 outside the window. Three records have verified synthetic well links; facility, unmatched and unknown-level observations are retained separately. Canonical fields and the 38-digit/12-decimal technical numeric contract are documented in `production.md`. Actual Petrinex fields/grain remain unverified. Spatial input validation counts exclude production-role snapshots so the grains do not mix.

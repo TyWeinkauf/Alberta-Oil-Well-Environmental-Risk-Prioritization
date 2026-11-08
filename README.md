@@ -4,13 +4,13 @@ Educational training project for **AIDA 1145 (Data Engineering)** and **AIDA 236
 
 The existing course workspace is preserved in [aida-final-project-tyler-weinkauf/](aida-final-project-tyler-weinkauf/README.md). See [DESIGN.md](DESIGN.md#13-phased-codex-implementation-plan) for scope and live progress tracking.
 
-The completed application will use **real AER wells, Alberta surface water, Alberta parks/protected areas and federal critical habitat**, with OpenStreetMap as the basemap. Alberta wetlands are an optional additional factor; the 2014 ESA layer is an optional historical comparison. The [user-supplied dataset reference](docs/dataset_reference.md) records these sources and their CRS/licensing cautions. Synthetic fixtures verify the implementation before live ingestion; they are not the final project dataset. Petrinex production remains a separate planned milestone in the design.
+The completed application will use **real AER wells, Alberta surface water, Alberta parks/protected areas and federal critical habitat**, with OpenStreetMap as the basemap. Alberta wetlands are an optional additional factor; the 2014 ESA layer is an optional historical comparison. The [user-supplied dataset reference](docs/dataset_reference.md) records these sources and their CRS/licensing cautions. Synthetic fixtures verify the implementation before live ingestion; they are not the final project dataset. The production framework is implemented separately; actual Petrinex verification/ingestion remains an open milestone.
 
 ## What works now
 
 Phases 0–3 provide validated configuration, transactional PostGIS migrations, an offline synthetic seed, quarantine reasons, raw-snapshot checksums, spatial analysis and a Streamlit map with persistent well selection, filters, matching exports, data quality and session history. The demo contains **2 accepted wells, 2 accepted environmental features and 6 quarantined records**. Repeating it uses the same run and does not duplicate rows.
 
-The Phase 4 acquisition framework is implemented and tested with simulated sources, but official endpoint/schema/licence verification and an actual regional run are **blocked by cloud network access**. Production ingestion is not implemented yet. Demo ingestion remains **seeded** and its spatial report is **analyzed**; a fully acquired and validated live run will use **succeeded**. The UI labels demo versus real-source mode explicitly.
+The Phase 4 acquisition framework is implemented and tested with simulated sources, but official endpoint/schema/licence verification and an actual regional run are **blocked by cloud network access**. The production import/link/audit/chart framework is also implemented using synthetic evidence; actual Petrinex access and schema verification are blocked. Demo ingestion remains **seeded** and its spatial report is **analyzed**; a fully acquired and validated live run will use **succeeded**. The UI labels demo versus real-source mode explicitly.
 
 ## Managed cloud quick start
 
@@ -56,7 +56,7 @@ notepad .env
 .\.venv\Scripts\python.exe -m streamlit run app.py
 ```
 
-Setup applies pending migrations (`001_initial.sql`, `002_spatial_coverage.sql`, `003_live_attempts.sql`); subsequent setup reports `none (already current)`. The seed prints a stable run ID and counts of 2 wells, 2 environmental features, 6 quarantine records and 0 production rows. Proximity rows start at 0; analysis stores 10 (one per well/category) and unchanged reseeding preserves them. Read `outputs/runs/<run_id>/manifest.json`, `validation.json` and `analysis.json`. No source download or basemap request is needed.
+Setup applies pending migrations (`001_initial.sql`, `002_spatial_coverage.sql`, `003_live_attempts.sql`, `004_production_batches.sql`); subsequent setup reports `none (already current)`. The spatial seed prints a stable run ID and counts of 2 wells, 2 environmental features and 6 quarantine records. Its production count applies only to that spatial snapshot; production batches are imported and reported separately. Proximity rows start at 0; analysis stores 10 (one per well/category) and unchanged reseeding preserves them. Read `outputs/runs/<run_id>/manifest.json`, `validation.json` and `analysis.json`. No source download or basemap request is needed.
 
 The default analysis selects water: the wells are 50 m and 150 m from the synthetic stream. Its threshold sensitivity report changes matches from 2 at 500 m to 1 at 50 m. For another selection:
 
@@ -67,7 +67,7 @@ python scripts/analyze_demo.py --categories water protected_area
 
 The protected-area demo layer is incomplete because one polygon was quarantined. Selecting it makes the exact overall band unknown; that is different from no nearby feature. See [spatial methodology](docs/spatial_methodology.md) for coverage, cumulative flags and category selection rules. The clean boundary test fixture validates complete-category minima and exact distance boundaries.
 
-In the app, **Use demo dataset** performs setup, ingestion and analysis on an explicit click. Click a map marker or use **Inspect a well** for details; change company/status/category/threshold filters and download the matching CSV, GeoJSON, map HTML or manifest. The Data quality and Run history tabs show provenance, rejected inputs and workflow stages/outcomes. The live pipeline action is gated by verified/enabled catalogue entries and explicit coverage notes; it is currently disabled because official entries are unverified. Production remains disabled until its later milestone.
+In the app, **Use demo dataset** performs setup, ingestion and analysis on an explicit click. Click a map marker or use **Inspect a well** for details; change company/status/category/threshold filters and download the matching CSV, GeoJSON, map HTML or manifest. The Data quality and Run history tabs show provenance, rejected inputs and workflow stages/outcomes. The live pipeline action is gated by verified/enabled catalogue entries and explicit coverage notes; it is currently disabled because official entries are unverified. Official production refresh remains disabled while its catalogue is unverified; the Production expander offers a separately labelled synthetic demo for a demo dataset.
 
 Offline geometry and map exports require no CDN: small Leaflet/jQuery assets are vendored with licenses. **Show OpenStreetMap basemap (online)** is optional and requires `tile.openstreetmap.org`. The tile domain is now allowed by the published cloud policy and a fresh tile request returned HTTP 200. Analytical source-discovery hosts still require the separate Phase 4 network change. Offline rendering and interaction remain available. See [UI workflow](docs/ui_workflow.md).
 
@@ -114,3 +114,16 @@ The HTTP cache, ArcGIS ID-batch adapter, ZIP Shapefile/GPKG/FileGDB reader, 500 
 The cloud proxy denies `www.aer.ca`, `www.arcgis.com`, `open.canada.ca` and `open.alberta.ca`. Their domain additions are saved in the environment draft, preserving existing permissions. Review/save that network change in environment settings to unblock discovery; publish the reusable configuration when ready. Further official service/download hosts may be needed after discovering the actual resources.
 
 [Source verification status and commands](docs/source_verification.md) explain the remaining endpoint, licence, CRS and field-mapping checks. The configurable pilot is `config/study_area.live.yml` (Drayton Valley). `python scripts/run_live.py` intentionally fails preflight until all core source entries are verified/configured; it does not substitute synthetic records for missing real data.
+
+## Phase 5 in progress: production observations
+
+The Production expander offers **Load synthetic production demo** for demo datasets. Select DEMO-WELL-001 to view the explicitly synthetic monthly oil-production chart; adjustment activity is a separate series. DEMO-WELL-002 remains unavailable. Data quality includes the production attribution audit, with facility, unmatched/ambiguous and unknown records excluded from well charts.
+
+```bash
+python scripts/setup_db.py
+python scripts/demo_production.py
+```
+
+The example has 9 inputs: 6 accepted (3 verified well observations, 1 facility record, 1 unmatched record, 1 unknown reporting level), 2 quarantined and 1 outside the requested window. No facility volume is allocated to a well. An actual **Refresh production** requires a real-source analysis run and verified public-source configuration; neither current official source setup is ready.
+
+[Production workflow and limitations](docs/production.md) explains exact identifiers, decimal/adjustment contracts, compatible series, immutable batch history and audit exports. The `www.petrinex.ca` discovery host was also denied by the proxy and added to the pending environment draft. Save/apply the pending network changes before official source verification can continue. **103 Python tests**, the map browser smoke and the production chart/audit browser smoke pass with synthetic data; no actual Petrinex ingestion is claimed.

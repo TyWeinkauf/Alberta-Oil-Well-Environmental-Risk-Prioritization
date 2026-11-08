@@ -38,13 +38,23 @@ class Source(StrictModel):
     metadata_url: HttpUrl | None = None
     license_url: HttpUrl | None = None
     coverage_note: str | None = None
+    reporting_level: Literal['well','facility','mixed','unknown'] = 'unknown'
+    attribution_values: dict[str,Literal['well','facility','unknown']] = Field(default_factory=dict)
+    well_identifier_field: Literal['source_well_id','uwi_if_available'] | None = None
+    identifier_namespace: str | None = None
+    join_evidence: str | None = None
+    adjustment_activities: list[str] = Field(default_factory=list)
+    adjustment_note: str | None = None
+    csv_delimiter: str = Field(default=',',min_length=1,max_length=1)
+    csv_encoding: str = 'utf-8-sig'
+    period_format: str = '%Y-%m'
 
     @model_validator(mode='after')
     def require_verified_metadata(self):
         if self.kind == 'tiles' and self.role != 'basemap':
             raise ValueError('Tile sources are basemaps, not analytical distance sources')
         if self.enabled and not (
-            self.verified and self.url and self.license_note and self.native_crs
+            self.verified and self.url and self.license_note and (self.role=='production' or self.native_crs)
             and (self.role == 'basemap' or self.field_mapping)
             and (self.kind != 'arcgis' or self.layer_id is not None)
         ):

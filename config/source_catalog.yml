@@ -104,6 +104,15 @@ sources:
     kind: file
     role: production
     priority: optional
+    publisher: Petrinex
+    reference_document: docs/production.md
+    reference_license: Public access, reporting grain, identifier semantics and product licence remain unverified.
+    reporting_level: unknown
+    well_identifier_field: null
+    identifier_namespace: null
+    join_evidence: null
+    adjustment_activities: []
+    adjustment_note: null
     enabled: false
     url: null
     verified: false

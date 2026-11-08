@@ -55,7 +55,7 @@ def load_dashboard(engine: Engine, run_id: str) -> dict:
             FROM screening.environmental_features f JOIN screening.source_snapshots s ON s.snapshot_id=f.snapshot_id
             WHERE s.run_id=:run ORDER BY f.feature_type,f.source_feature_id
         '''),{'run':run}).mappings().all()
-        snapshots = conn.execute(text('''SELECT source_key,url,retrieved_at,checksum,license_note,native_crs,record_count
+        snapshots = conn.execute(text('''SELECT source_key,url,retrieved_at,checksum,license_note,native_crs,record_count,source_role,revision_key
             FROM screening.source_snapshots WHERE run_id=:run ORDER BY source_key'''),{'run':run}).mappings().all()
         quarantine = conn.execute(text('''SELECT source_key,record_reference,reason_code,reason_detail,raw_payload_reference
             FROM screening.quarantine_records WHERE run_id=:run ORDER BY source_key,record_reference'''),{'run':run}).mappings().all()

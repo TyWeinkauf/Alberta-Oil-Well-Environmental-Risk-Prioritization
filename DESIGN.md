@@ -12,7 +12,7 @@ Update this document whenever work on a scoped step starts or finishes. Set the 
 
 Section 13 tracks implementation work; section 12 tracks acceptance checks; section 16 tracks unresolved decisions. Check acceptance and decision items only when their evidence is available, and record that evidence with the related step in section 13. The pipeline states in section 5 describe application runtime behavior, not project progress. Course milestone tracking remains in [project-progress.md](aida-final-project-tyler-weinkauf/project-progress.md).
 
-**Current status — 2026-11-08:** Phases 0–3 are implemented. Phase 4 remains in progress: bounded HTTP/GIS/ArcGIS adapters, cache/provenance, projected 500 m feature margin, atomic load/analysis, readiness gates and persistent attempt history are implemented. 80 Python tests pass against synthetic local protocol/GIS fixtures, and the offline browser smoke passes. Official metadata/licence/schema verification and a real regional run are blocked because www.aer.ca, www.arcgis.com, open.canada.ca and open.alberta.ca are not in the applied network policy. Their domain additions are saved in the draft, not applied. No official analytical dataset has been acquired.
+**Current status — 2026-11-08:** Phases 0–3 are implemented. Phase 4 remains blocked on official-source discovery access. Phase 5 contracts, bounded CSV import, exact-ID audit, immutable active-batch refresh, synthetic/live separation and verified-only chart are implemented/tested. All 103 Python tests pass; map/export and production browser checks pass. Official Petrinex access, reporting grain, identifiers, licence and actual production refresh remain unverified because its discovery host is also denied; no official production or analytical dataset has been acquired.
 
 ## 1. Scope, success criteria and guardrails
 
@@ -168,7 +168,7 @@ Phase 1–3 evidence: fixture metadata/validation, known distances, stable marke
 | 2 | Spatial proximity engine and tests | Known distance fixtures pass | Complete | 2026-11-08 | Known-distance and selection tests passed; synthetic water demo distances 50/150 m; 500-to-50 m threshold changes matches 2 to 1. See docs/spatial_methodology.md. |
 | 3 | Streamlit map, filters, click-to-detail and export | Interactive demo with stable selection | Complete | 2026-11-08 | Offline interactive demo and stable selection verified by Chromium; 67 Python tests passed. Online OSM tiles need the pending domain setting; see docs/ui_workflow.md. |
 | 4 | Real AER and provincial/federal adapters, caching and provenance | Small region live ingestion with manifest | In progress | 2026-11-08 | Acquisition framework and simulated-source tests pass; actual official source verification/real pilot run blocked on the saved network-domain additions. See docs/source_verification.md. |
-| 5 | Production ingestion and verified joins | Well chart or explicit unavailable message | Not started | — | Production source format and well attribution remain unverified. |
+| 5 | Production ingestion and verified joins | Well chart or explicit unavailable message | In progress | 2026-11-08 | Import/link/audit/chart mechanics verified on synthetic records; official Petrinex schema/licence/access and real refresh remain blocked. See docs/production.md. |
 | 6 | Performance, run recovery, documentation and course evidence | Fresh-clone demo and separate deliverable folders | Not started | — | Requires the implemented pipeline, application and separate course evidence. |
 
 ### Implementation steps
@@ -199,9 +199,11 @@ Update individual steps as work progresses; split a step into smaller rows when 
 | 4.2b | Verify and configure each official source-specific endpoint/mapping | In progress | 2026-11-08 | Blocked by current source-discovery domain policy; catalogue remains disabled/unverified rather than inventing fields or URLs. |
 | 4.3a | Implement cache, provenance, atomic load/analyze and attempt history | Complete | 2026-11-08 | 80 tests pass overall; simulated-source repeats preserve one run, partial acquisition/DB failures preserve previous data, transfer/record caps and checksum validation tested. |
 | 4.3b | Execute and validate an official-data small-region run | In progress | 2026-11-08 | Unrun pending access and verified catalogue; no real AER/provincial/federal result has been produced. |
-| 5.1 | Verify Petrinex access, reporting level, identifiers and licensing | Not started | — | Do not infer well-level attribution from facility volumes. |
-| 5.2 | Implement monthly production ingestion and defensible joins | Not started | — | Retain unmatched/ambiguous records for audit. |
-| 5.3 | Validate production chart or explicit unavailable/facility-level display | Not started | — | Only verified well links may populate well-level charts. |
+| 5.1 | Verify Petrinex access, reporting level, identifiers and licensing | In progress | 2026-11-08 | Petrinex discovery returned proxy CONNECT 403. Candidate domain www.petrinex.ca added to the pending draft; access, licence, reporting level, fields and identifier semantics remain unverified. |
+| 5.2 | Implement monthly production ingestion and defensible joins | In progress | 2026-11-08 | Generic canonical CSV/ZIP import, validation, exact-ID linking and immutable refresh/audit are implemented with synthetic tests. Official Petrinex mapping and bounded real-data import remain blocked. |
+| 5.3 | Validate production chart or explicit unavailable/facility-level display | Complete | 2026-11-08 | Verified-only monthly chart, separate product/activity/unit series, explicit synthetic label and unavailable other-well message passed Python and real browser checks; facility volume remains audit-only. |
+| 5.2a | Implement production contracts/import, exact-ID audit and refresh history | Complete | 2026-11-08 | Synthetic fixture: 9 inputs, 6 accepted, 2 quarantined, 1 outside window; verified/facility/unmatched/unknown and ambiguous cases tested. Repeats reuse a batch; forced failures retain prior active data. |
+| 5.2b | Verify actual Petrinex mapping and execute a bounded real refresh | In progress | 2026-11-08 | Blocked on the unapplied source-discovery permissions and official metadata/licence/identifier verification. Internal synthetic headers are not Petrinex field names. |
 | 6.1 | Validate performance, locking, idempotency and failed-run recovery | Not started | — | Preserve last successful results and demonstrate repeatable reruns. |
 | 6.2 | Complete methodology, provenance, limitations and course evidence | Not started | — | Keep AIDA 1145 and AIDA 2362 deliverables identifiable. |
 | 6.3 | Verify fresh-clone demo, handoff and separate course packages | Not started | — | Follow acceptance checks in section 12; record remaining limitations. |
@@ -216,16 +218,13 @@ Update individual steps as work progresses; split a step into smaller rows when 
 | 2026-11-08 | 0, 1 | Completed configuration/architecture, migrations, synthetic fixtures, spatial contracts, quarantine, manifests and setup docs. Clean pinned venv: 32 tests passed without skips/warnings; setup and repeated demo verified from outside the checkout. Phase 2 can use synthetic inputs; no new credential or source decision is needed for its distance engine. |
 | 2026-11-08 | 2.1–2.2 | Started spatial calculations, explicit coverage handling, cumulative flags and baseline/sensitivity tests. |
 | 2026-11-08 | Source scope clarification | Recorded the user-supplied dataset reference and real-data target stack, including optional wetlands/2014 ESA and basemap-only OpenStreetMap. Acquisition metadata/permissions remain unverified; no live ingestion is claimed. |
-
 | 2026-11-08 | 2 | Completed spatial engine and explicit coverage handling. 61 tests passed without skips/warnings; demo analysis records 10 well/category rows and a 2-to-1 water threshold sensitivity result. Real-source intent/catalogue clarified from the supplied reference. |
-
 | 2026-11-08 | 3.1–3.3 | Started Streamlit workflow, map, stable-ID details, filters and filtered exports. |
-
 | 2026-11-08 | 3 | Completed offline Streamlit workflow/map, stable record-reference selection, filters, quality/history and matching exports. 67 Python tests passed; real Chromium smoke passed including standalone HTML. Fixed component plain-text ID handling and isolated HTML export from the displayed figure. Saved app startup and tile-domain draft requirement; online tiles remain unverified pending settings. |
-
 | 2026-11-08 | 4.1–4.3 | Started official-source verification and bounded acquisition/cache/provenance implementation. |
-
 | 2026-11-08 | 4 (partial) | Implemented bounded acquisition framework, inspection/CLI, caches, bundles, live feature margin, transactionally published spatial data, readiness gates and attempt audit. 80 Python tests and offline browser smoke pass on synthetic inputs. Official discovery remains blocked by CONNECT 403; saved four required domains in the draft, preserving prior settings. Phase 4 is not complete. Published OSM tile permission separately verified with HTTP 200. |
+| 2026-11-08 | 5.1–5.3 | Started independent production contracts/import/linking/UI work. Phase 4 access is still unapplied; Phase 5 official reporting semantics/licensing must also be verified before real production can be shown. |
+| 2026-11-08 | 5 (partial) | Implemented production contracts, CSV/ZIP import, exact unique namespace matching, ambiguity/facility/unmatched audit, immutable batches, transactional refresh and UI chart. 103 Python tests plus map and production browser smoke pass. Synthetic demo is labelled; real Petrinex access/semantics and real refresh remain blocked, so Phase 5 is not complete. |
 
 Prioritize a small, demonstrable end-to-end vertical slice before importing all Alberta wells. Build source adapters as replaceable modules so a format or service change does not require rewriting the UI or spatial analysis.
 

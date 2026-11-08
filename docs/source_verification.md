@@ -4,7 +4,7 @@
 
 ## Current external blocker — 8 November 2026
 
-Fresh source-discovery requests were rejected by the managed proxy with CONNECT **403 Forbidden**. The running policy permits package-manager hosts and the published OpenStreetMap tile host, but not the four discovery sites below. Their additions were saved in the environment configuration draft, preserving the existing tile host and package presets. Saving a draft does not apply or publish it.
+Fresh source-discovery requests were rejected by the managed proxy with CONNECT **403 Forbidden**. The running policy permits package-manager hosts and the published OpenStreetMap tile host, but not the discovery sites below. Their additions were saved in the environment configuration draft, preserving the existing tile host and package presets. Saving a draft does not apply or publish it.
 
 | Host | Purpose / observed request | Current evidence |
 |---|---|---|
@@ -12,6 +12,7 @@ Fresh source-discovery requests were rejected by the managed proxy with CONNECT 
 | `www.arcgis.com` | Search public ArcGIS metadata for the named Alberta layers and verify publisher/service/layer IDs | Proxy denied the standard portal search request. No analytical service/layer endpoint has been selected. |
 | `open.canada.ca` | Locate the critical-habitat catalogue record/resources and licence metadata | Proxy denied the catalogue search request. Dataset UUID and resources remain unverified. |
 | `open.alberta.ca` | Verify provincial catalogue/licence metadata | Proxy denied the catalogue request. Product-specific use statements remain unverified. |
+| `www.petrinex.ca` | Discover public production resources and reporting/licence metadata | Phase 5 discovery also denied with CONNECT 403; domain saved in the pending draft. Actual production access/schema remain unverified. |
 
 Review and save these domains in environment settings to unblock discovery; publish the reusable environment when ready. Once access is applied, retry with a fresh connection, discover official service/download hosts and add only any further required destinations. Do not route requests through a different allowed service to bypass destination policy, disable TLS checks or invent dataset URLs/field mappings. No credentials have been requested for these intended public sources.
 
@@ -61,3 +62,5 @@ Source bundles record original HTTP request/final URL, checksums, retrieval time
 ## Evidence so far
 
 The current suite has **80 passing tests**. New tests use synthetic local HTTP services and generated GIS files: actual Shapefile/GPKG/FileGDB ZIP reads, CRS/subset checks, retry/304/corrupt-cache/byte-limit behavior, ArcGIS ID-page completeness, buffered clipping and transactional PostGIS loads. A simulated incomplete source and a trigger-induced load failure both preserve prior analyzed results. These tests validate adapter mechanics, not official schema compatibility or a real regional run.
+
+Phase 5 independent work now supplies synthetic production contracts/import, exact-ID audit, active-batch history and chart/availability behavior. It does not resolve the official-access blocker; see [production status](production.md).

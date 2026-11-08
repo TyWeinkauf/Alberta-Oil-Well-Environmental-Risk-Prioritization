@@ -7,6 +7,7 @@ const path=require('node:path');
 const os=require('node:os');
 
 (async()=>{
+ let debugPage;
  const browser=await chromium.launch({executablePath:process.env.CHROMIUM_PATH||'/usr/bin/chromium',headless:true,args:['--no-sandbox']});
  try{
   const context=await browser.newContext({viewport:{width:1440,height:1150},acceptDownloads:true});
@@ -17,7 +18,7 @@ const os=require('node:os');
    const url=new URL(route.request().url());
    return ['127.0.0.1','localhost'].includes(url.hostname)||!['http:','https:'].includes(url.protocol)?route.continue():route.abort();
   });
-  const page=await context.newPage();
+  const page=await context.newPage();debugPage=page;
   await page.goto(process.env.APP_URL||'http://127.0.0.1:8501');
   const frame=page.frameLocator('iframe').first();
   async function until(check,label){
@@ -89,5 +90,5 @@ const os=require('node:os');
   assert.deepEqual(errors,[]);
   console.log('Browser smoke passed: offline startup/action, marker selection, persistence, filters/counts, CSV/GeoJSON/manifest parity, standalone HTML map, quality and history.');
   console.log('Temporary download evidence:',directory);
- }finally{await browser.close();}
+ }catch(error){if(debugPage){console.error('UI diagnostics:',(await debugPage.locator('body').innerText()).slice(-4000));await debugPage.screenshot({path:path.join(os.tmpdir(),'alberta-ui-failure.png'),fullPage:true});}throw error;}finally{await browser.close();}
 })().catch(error=>{console.error(error);process.exit(1);});

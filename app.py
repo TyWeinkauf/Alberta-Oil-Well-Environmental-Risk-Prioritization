@@ -7,7 +7,8 @@ import streamlit as st
 from sqlalchemy import create_engine
 from streamlit_folium import st_folium
 
-from src.config import database_url, load_source_catalog
+from src.config import ROOT, database_url, load_source_catalog
+import yaml
 from src.contracts.spatial import CATEGORIES
 from src.exports.selection import FIELDS, csv_bytes, geojson_bytes, table_records
 from src.orchestrator import run_demo
@@ -15,6 +16,9 @@ from src.ui.data import list_analyzed_runs, load_dashboard, pipeline_attempts
 from src.ui.map import build_map
 from src.ui.model import filtered_wells, map_selection
 from src.sources.pipeline import live_requirements, run_live
+from src.production.store import load_demo_production, production_requirements, refresh_production
+from src.production.view import production_view
+from src.production.ui import show_production_audit, show_well_production
 
 st.set_page_config(page_title='Alberta well screening',page_icon='🌿',layout='wide')
 MISSING = 'Not available from this source'
@@ -82,7 +86,6 @@ def main():
                 st.session_state.busy = False
             st.session_state.actions.append({'time_utc':datetime.now(timezone.utc).isoformat(),
                                             'action':action,'outcome':outcome,'stages':' → '.join(stages)})
-    st.sidebar.button('Refresh production',disabled=True,help='Production ingestion and verified well joins are a later milestone.')
     try:
         runs = list_analyzed_runs(engine)
     except Exception:
@@ -110,6 +113,31 @@ def main():
         st.info('Synthetic demonstration data. These are test fixtures, not real AER wells or government environmental layers.')
     else:
         st.info('Real-source dataset. Inspect provenance, coverage and quarantine records before interpreting proximity results.')
+    production_source=next((s for s in catalog.sources if s.key=='petrinex_production'),None) if catalog else None
+    production_blockers=production_requirements(production_source)
+    with st.sidebar.expander('Production'):
+        window=yaml.safe_load((ROOT/'config/production_window.yml').read_text())
+        production_start=st.text_input('Production start month',window['start'])
+        production_end=st.text_input('Production end month',window['end'])
+        demo_production=st.button('Load synthetic production demo',disabled=st.session_state.busy or dashboard['study_area']['mode']!='demo')
+        real_production=st.button('Refresh production',disabled=st.session_state.busy or bool(production_blockers) or dashboard['study_area']['mode']!='live')
+        if production_blockers:st.caption('Official production remains unverified; refresh is disabled. The demo uses project-authored observations only.')
+    if demo_production or real_production:
+        st.session_state.busy=True
+        with st.status('Updating production',expanded=True) as production_status:
+            try:
+                result=(load_demo_production(engine,run_id,start=production_start,end=production_end) if demo_production else
+                        refresh_production(engine,run_id,start=production_start,end=production_end,source=production_source))
+                dashboard=load_dashboard(engine,run_id)
+                production_status.update(label='Production ready',state='complete')
+                st.session_state.actions.append({'time_utc':datetime.now(timezone.utc).isoformat(),'action':'Production update',
+                    'outcome':'Complete','stages':f'Active batch {result["batch_id"]}; {result["source_mode"]}'})
+            except Exception as exc:
+                production_status.update(label='Production update failed',state='error')
+                st.error(f'Production could not update ({type(exc).__name__}); the previous active batch remains available. Check source metadata, identifier evidence and network settings.')
+                st.session_state.actions.append({'time_utc':datetime.now(timezone.utc).isoformat(),'action':'Production update',
+                    'outcome':'Failed','stages':type(exc).__name__})
+            finally:st.session_state.busy=False
     st.sidebar.header('Filters')
     companies = sorted({r['licensee_name'] or MISSING for r in dashboard['wells']})
     statuses = sorted({r['status'] or MISSING for r in dashboard['wells']})
@@ -128,7 +156,7 @@ def main():
     metrics[0].metric('Visible wells',len(records))
     metrics[1].metric('Within threshold',sum(r['matches_threshold'] is True for r in records))
     metrics[2].metric('Unknown threshold result',sum(r['matches_threshold'] is None for r in records))
-    metrics[3].metric('Quarantined inputs',len(dashboard['quarantine']))
+    metrics[3].metric('Spatial quarantines',len(dashboard['quarantine']))
     st.caption(f'Run {run_id} · loaded {dashboard["started_at"]} · ingestion {dashboard["ingestion_status"]} · spatial results analyzed')
     map_tab,quality_tab,history_tab = st.tabs(['Map & results','Data quality','Run history'])
     with map_tab:
@@ -169,7 +197,7 @@ def main():
                 st.text(f'Latitude: {well["latitude"]:.7f}\nLongitude: {well["longitude"]:.7f}\nBand: {well["band"]}')
                 st.text(f'Source: {well["source_key"]}\nSnapshot retrieved: {well["retrieved_at"]}\nSource CRS: {well["native_crs"]}')
             st.dataframe(pd.DataFrame([r for r in dashboard['proximity'] if r['well_pk']==well['well_pk']]),hide_index=True)
-            st.info('Well-level production not available/verified. No facility volumes have been allocated to this well.')
+            show_well_production(production_view(engine,run_id,well['well_pk']))
         st.subheader('Filtered results')
         table = pd.DataFrame(table_records(records),columns=FIELDS)
         st.dataframe(table,hide_index=True)
@@ -195,11 +223,12 @@ def main():
         st.caption('Quarantined environmental features can make a category incomplete. Incomplete and unavailable results stay unknown.')
         st.subheader('Quarantined records')
         st.dataframe(pd.DataFrame(dashboard['quarantine']),hide_index=True)
-        validation = {'run_id':run_id,'input_records':sum(r['record_count'] for r in dashboard['sources']),
+        validation = {'run_id':run_id,'input_records':sum(r['record_count'] for r in dashboard['sources'] if r['source_role']=='analysis'),
                       'accepted_wells':len(dashboard['wells']),'accepted_features':len(dashboard['features']),
                       'rejected_records':len(dashboard['quarantine']),'quarantined':dashboard['quarantine'],
                       'coverage':dashboard['coverage']}
         st.download_button('Download validation records',json.dumps(validation,indent=2).encode(),'validation.json','application/json',on_click='ignore')
+        show_production_audit(production_view(engine,run_id))
     with history_tab:
         st.subheader('Analyzed datasets')
         st.dataframe(pd.DataFrame([{'run_id':r['run_id'],'started_at':r['started_at'],'study_area':r['study_area']['name']} for r in runs]),hide_index=True)
