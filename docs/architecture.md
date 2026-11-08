@@ -25,11 +25,18 @@ The quarantine record stores a reason and a raw-file/row reference. Raw files ar
 
 Five rows per well retain matched, known-negative, unavailable and incomplete outcomes. `src/spatial/classification.py` recomputes overall bands from selected categories, keeps unknown coverage distinct from known negatives and compares baseline/changed selections. Analysis JSON is separate from the ingestion manifest. Reseeding preserves analysis unless newly detected coverage gaps invalidate it. See [spatial methodology](spatial_methodology.md).
 
+## Implemented presentation (Phase 3)
+
+`app.py` presents workflow, map/results, data quality and session history. `src/orchestrator.py` runs the demo only on an explicit action. Widget reruns use `src/ui/data.py` to load a read-only REPEATABLE READ snapshot, so table/map/source details agree even during another session's recalculation. Only datasets with complete result-row accounting are selectable.
+
+`src/ui/model.py` applies the shared spatial classification plus company/status/known-match filters. This single filtered list drives markers, metrics, table and `src/exports/selection.py` CSV/GeoJSON. Marker popup text carries a stable record reference through the component event bridge; selection never uses coordinates as a key. `src/ui/map.py` escapes source text, embeds licensed local library assets and builds an independent map for standalone export, because streamlit-folium mutates its displayed figure.
+
+The app retains selection outside filters with an explicit message. Production remains unavailable rather than fabricated. Live pipeline/production controls are disabled until adapters exist. Offline geometry is the default; optional OpenStreetMap tiles need network access. See [UI workflow](ui_workflow.md).
+
 ## Planned components
 
 The design's future flow is **Streamlit → orchestrator → source adapters → raw cache → contracts/quarantine → staging/PostGIS → spatial SQL → map/results/exports**. Download/transform work must run only on explicit actions, outside Streamlit rerun side effects.
 
-- **Phase 3:** Folium/streamlit-folium map, stable-ID click selection, filters, accessible result table and matching exports. OpenStreetMap is a basemap, not a distance source.
 - **Phase 4:** verified AER/ArcGIS/federal source adapters, checksummed snapshots, coverage, retries and bounded live ingestion. URLs and source field mappings must be verified, not inferred from this fixture.
 - **Phase 5:** production contracts/adapters and documented well-level joins. Facility totals must never be allocated to wells without source evidence.
 - **Phase 6:** performance, cancellation/recovery, last-successful-run publication, clean-clone app demonstration and separate course handoffs.

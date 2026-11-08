@@ -8,9 +8,9 @@ The completed application will use **real AER wells, Alberta surface water, Albe
 
 ## What works now
 
-Phases 0–2 provide validated configuration, transactional PostGIS migrations, an offline synthetic seed, quarantine reasons, raw-snapshot checksums, nearest-feature distance calculations, category/threshold classification and JSON reports. The demo contains **2 accepted wells, 2 accepted environmental features and 6 quarantined records**. Repeating it uses the same run and does not duplicate rows.
+Phases 0–3 provide validated configuration, transactional PostGIS migrations, an offline synthetic seed, quarantine reasons, raw-snapshot checksums, spatial analysis and a Streamlit map with persistent well selection, filters, matching exports, data quality and session history. The demo contains **2 accepted wells, 2 accepted environmental features and 6 quarantined records**. Repeating it uses the same run and does not duplicate rows.
 
-There is no project web UI, live downloader or production ingestion yet. The ingestion run remains **seeded**; the separate spatial report has status **analyzed**. Streamlit is installed for the next phase.
+Live downloading and production ingestion are not implemented yet. The ingestion run remains **seeded**; the separate spatial report has status **analyzed**. The UI labels synthetic data and unavailable fields explicitly.
 
 ## Managed cloud quick start
 
@@ -24,6 +24,7 @@ python scripts/demo_seed.py
 python scripts/demo_seed.py  # Same run ID and row counts
 python scripts/analyze_demo.py  # Default: synthetic water screening, 500 m threshold
 pytest -q tests/unit
+streamlit run app.py --server.address 127.0.0.1 --server.port 8501 --server.headless true --browser.gatherUsageStats false
 ```
 
 The cloud database uses a local Unix socket and exposes no TCP port. Do not replace the injected `DATABASE_URL` with the example Windows URL. Helper files live outside Git in `/workspace/alberta-environment`; the project code and fixtures are in this repository.
@@ -52,6 +53,7 @@ notepad .env
 .\.venv\Scripts\python.exe scripts\demo_seed.py
 .\.venv\Scripts\python.exe scripts\analyze_demo.py
 .\.venv\Scripts\python.exe -m pytest -q tests\unit
+.\.venv\Scripts\python.exe -m streamlit run app.py
 ```
 
 Setup applies pending migrations (`001_initial.sql`, `002_spatial_coverage.sql`); subsequent setup reports `none (already current)`. The seed prints a stable run ID and counts of 2 wells, 2 environmental features, 6 quarantine records and 0 production rows. Proximity rows start at 0; analysis stores 10 (one per well/category) and unchanged reseeding preserves them. Read `outputs/runs/<run_id>/manifest.json`, `validation.json` and `analysis.json`. No source download or basemap request is needed.
@@ -64,6 +66,10 @@ python scripts/analyze_demo.py --categories water protected_area
 ```
 
 The protected-area demo layer is incomplete because one polygon was quarantined. Selecting it makes the exact overall band unknown; that is different from no nearby feature. See [spatial methodology](docs/spatial_methodology.md) for coverage, cumulative flags and category selection rules. The clean boundary test fixture validates complete-category minima and exact distance boundaries.
+
+In the app, **Use demo dataset** performs setup, ingestion and analysis on an explicit click. Click a map marker or use **Inspect a well** for details; change company/status/category/threshold filters and download the matching CSV, GeoJSON, map HTML or manifest. The Data quality and Run history tabs show provenance, rejected inputs and workflow stages/outcomes. Full live pipeline and production actions remain disabled until their later milestones.
+
+Offline geometry and map exports require no CDN: small Leaflet/jQuery assets are vendored with licenses. **Show OpenStreetMap basemap (online)** is optional and requires `tile.openstreetmap.org`. That domain is currently blocked by the managed cloud proxy; its narrow allowlist addition is saved in the environment draft and must be reviewed/applied in settings before online tiles can work here. Offline rendering and interaction remain available. See [UI workflow](docs/ui_workflow.md).
 
 For a regular Linux/macOS checkout, use `python3.12 -m venv .venv`, `source .venv/bin/activate`, `python -m pip install -r requirements.txt`, and the same Python script commands after configuring local PostgreSQL/PostGIS and `.env`.
 
@@ -86,13 +92,16 @@ pytest -q --junitxml=outputs/test-results.xml
 
 Each integration test refuses an existing `screening` schema, creates its own and drops that schema afterward. Run these tests sequentially. Without `TEST_DATABASE_URL`, integration tests are reported as **skipped**, not passed. See [reproducibility](docs/reproducibility.md) for evidence and clean-run checks.
 
+With the app running, the managed environment can also run `node tests/browser/ui_smoke.cjs`. This uses Playwright/Chromium, blocks remote HTTP requests, and exercises actual marker clicks, filter persistence, download parity and standalone HTML. Node/Playwright are optional browser-test tools, not app runtime requirements. Another development machine must install those test tools and set `CHROMIUM_PATH` if needed.
+
 ## Files and next work
 
 - [Architecture](docs/architecture.md): components, transaction boundaries and planned phases.
 - [Data dictionary](docs/data_dictionary.md): tables, fields and fixture accounting.
 - [Limitations](docs/limitations.md): synthetic data, source verification and attribution boundaries.
 - [Spatial methodology](docs/spatial_methodology.md): nearest-feature calculations, coverage states and sensitivity evidence.
+- [UI workflow](docs/ui_workflow.md): map interaction, offline/online modes, exports and browser checks.
 - `config/`: demo study extent and disabled, unverified live-source placeholders.
 - `sql/migrations/`, `src/`, `scripts/`, `tests/`: implementation and repeatable checks.
 
-Raw data, caches, reports, virtual environments and credentials are ignored. Small project-authored fixtures in `tests/fixtures/` are intentionally versioned. Add a new migration instead of editing one already applied. Phase 3 will add the Streamlit map. Live source URLs, fields, licensing and the first real study region still require verification in Phase 4.
+Raw data, caches, reports, virtual environments and credentials are ignored. Small project-authored fixtures in `tests/fixtures/` are intentionally versioned. Add a new migration instead of editing one already applied. Next is Phase 4: verify live source URLs, fields, licensing and the first real study region, then implement real-source adapters. The dataset reference remains the intended final-data scope.

@@ -61,3 +61,13 @@ The complete current suite passed **61 tests (44 unit, 17 PostGIS integration), 
 The main demo's protected-area coverage is incomplete because its invalid polygon was quarantined. Adding that category makes the exact overall band unknown. A known water positive is still reported, while an unsupported negative is not fabricated. The clean boundary fixture separately tests complete-category minimum distances. See [methodology](spatial_methodology.md).
 
 The [provided real-data reference](dataset_reference.md) has been recorded in the catalogue. It does not supply endpoint URLs/layer IDs, and no live-data acquisition or web UI is claimed by these checks.
+
+## Phase 3 verification — 8 November 2026
+
+The full Python suite passed **67 tests (48 unit, 19 integration), no skips or warnings**. After final UI export/empty-result changes, the two dashboard integration checks were rerun successfully. Tests initialize an empty test database through the actual Streamlit Use demo dataset action, then check counts, detail selection, threshold/company filters, selection outside the current filters, empty results and no extra ingestion on widget reruns.
+
+A real headless Chromium run of `node tests/browser/ui_smoke.cjs` passed with all remote HTTP requests blocked. It verified explicit workflow completion, clicks on both well markers, persistent selection, threshold/match/company filters, matching counts and CSV/GeoJSON/manifest downloads, data quality/history views, and a standalone downloaded HTML map displaying exactly the one filtered marker. The browser test caught and verified fixes for the component's plain-text popup bridge and duplicate HTML markers caused by reusing a figure mutated by streamlit-folium. Downloads do not rerun the app.
+
+The offline map uses licensed vendored Leaflet/jQuery assets with recorded SHA-256 checksums. A direct fresh request to an OpenStreetMap tile was denied by the managed proxy (CONNECT 403); the required `tile.openstreetmap.org` allowance and actual app startup instructions were saved to the environment draft. Saving did not apply or publish them. Online tiles are not claimed as verified.
+
+Start the app with `streamlit run app.py` after activating the environment and starting PostgreSQL/PostGIS. The UI checks are synthetic development evidence; real data from the supplied sources remains the intended final project input. See [UI workflow](ui_workflow.md).

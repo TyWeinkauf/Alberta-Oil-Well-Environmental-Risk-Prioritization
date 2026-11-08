@@ -12,7 +12,7 @@ Update this document whenever work on a scoped step starts or finishes. Set the 
 
 Section 13 tracks implementation work; section 12 tracks acceptance checks; section 16 tracks unresolved decisions. Check acceptance and decision items only when their evidence is available, and record that evidence with the related step in section 13. The pipeline states in section 5 describe application runtime behavior, not project progress. Course milestone tracking remains in [project-progress.md](aida-final-project-tyler-weinkauf/project-progress.md).
 
-**Current status — 2026-11-08:** Phases 0–2 are complete. The reusable PostGIS engine calculates run-scoped nearest-feature distances and category/threshold results with explicit coverage states. All 61 tests passed (44 unit, 17 integration; no skips/warnings). The intended final data is real AER/provincial/federal data from the supplied reference; synthetic fixtures validate implementation only. Phases 3–6 have not started; web UI and live ingestion remain unfinished.
+**Current status — 2026-11-08:** Phases 0–3 are complete for the offline interactive demonstration. The Streamlit map, stable-ID well selection, filters, matching exports, quality/provenance and session history are implemented. All 67 Python tests passed; a real Chromium offline browser smoke test passed, including marker clicks, filter persistence and downloaded standalone HTML. Optional OpenStreetMap tiles are blocked by the current cloud policy; the tile-domain addition and app startup instructions are saved in the environment draft but not applied/published. Real AER/government source ingestion remains Phase 4; production remains Phase 5.
 
 ## 1. Scope, success criteria and guardrails
 
@@ -152,12 +152,12 @@ For live source runs, clearly document network requirement, source rate limits, 
 - [x] A run produces raw snapshot metadata, contract validation metrics, quarantine records, PostGIS tables and an exportable manifest.
 - [ ] A second run with unchanged snapshots does not duplicate wells, production or proximity rows.
 - [x] Distances are verified against known synthetic examples at 0, 50, 100, 250, 500 and just-over-500 metres; ensure inclusive boundaries and correct category filtering.
-- [ ] Clicking a map well opens the correct persistent detail panel and shows company, LSD if present, distances, and production chart only when verified.
-- [ ] Changing producer filter, threshold and category changes counts and map markers consistently; exporting matches the filtered table.
+- [x] Clicking a map well opens the correct persistent detail panel and shows company, LSD if present, distances, and production chart only when verified.
+- [x] Changing producer filter, threshold and category changes counts and map markers consistently; exporting matches the filtered table.
 - [ ] Failed downloads, missing CRS, ambiguous production joins and invalid geometries show informative status and do not corrupt last successful results.
 - [ ] The README and each course package separately identify methods, evidence, limitations and submission deliverables.
 
-Phase 1–2 evidence: fixture ingestion satisfies the snapshot/validation/quarantine/manifest item; spatial unit/integration tests satisfy the known-distance/category-filtering item. Unchanged seed and analysis reruns preserve counts/results. The broader production rerun criterion remains open until production exists; full-app, live-source and course-package acceptance also remains open.
+Phase 1–3 evidence: fixture metadata/validation, known distances, stable marker/details and filtered export parity are verified. The available company filter is explicitly licensee-based; no producer attribution or production chart is fabricated. A real Chromium test proves offline map interaction and standalone HTML. Clean test-database UI initialization is verified; a released fresh-clone handoff remains open for Phase 6. The broader production rerun criterion, live-source failures and final course packages also remain open.
 
 ## 13. Phased Codex implementation plan
 
@@ -166,7 +166,7 @@ Phase 1–2 evidence: fixture ingestion satisfies the snapshot/validation/quaran
 | 0 | Audit existing repo and preserve course structure; create config and architecture files | File tree, no deleted course artifacts | Complete | 2026-11-08 | Configuration and architecture files added; original course structure retained; see steps 0.1–0.3. |
 | 1 | Local DB setup, migrations, synthetic fixtures and contracts | pytest green; demo rows in PostGIS | Complete | 2026-11-08 | 32 tests passed (25 unit, 7 PostGIS integration); setup and seed commands verified in a clean venv; demo counts 2 wells/2 features/6 quarantined, unchanged on rerun. See docs/reproducibility.md. |
 | 2 | Spatial proximity engine and tests | Known distance fixtures pass | Complete | 2026-11-08 | Known-distance and selection tests passed; synthetic water demo distances 50/150 m; 500-to-50 m threshold changes matches 2 to 1. See docs/spatial_methodology.md. |
-| 3 | Streamlit map, filters, click-to-detail and export | Interactive demo with stable selection | Not started | — | No project Streamlit application yet; environment diagnostic UI is not the project UI. |
+| 3 | Streamlit map, filters, click-to-detail and export | Interactive demo with stable selection | Complete | 2026-11-08 | Offline interactive demo and stable selection verified by Chromium; 67 Python tests passed. Online OSM tiles need the pending domain setting; see docs/ui_workflow.md. |
 | 4 | Real AER and provincial/federal adapters, caching and provenance | Small region live ingestion with manifest | Not started | — | Live source endpoints, schemas and permissions remain unverified. |
 | 5 | Production ingestion and verified joins | Well chart or explicit unavailable message | Not started | — | Production source format and well attribution remain unverified. |
 | 6 | Performance, run recovery, documentation and course evidence | Fresh-clone demo and separate deliverable folders | Not started | — | Requires the implemented pipeline, application and separate course evidence. |
@@ -189,9 +189,9 @@ Update individual steps as work progresses; split a step into smaller rows when 
 | 2.1 | Implement spatial proximity calculation and classification | Complete | 2026-11-08 | src/spatial/engine.py, src/spatial/classification.py and migration 002 implement actual-geometry distances, stable nearest ties, explicit coverage states and cumulative flags. scripts/analyze_demo.py writes analysis/sensitivity JSON. |
 | 2.2 | Test known distances, inclusive boundaries and category changes | Complete | 2026-11-08 | 61 tests passed overall; exact 0/50/100/250/500/500.01 m fixtures, polygon interiors, line geometry, category/threshold sensitivity, run isolation, reruns, coverage downgrade and transactional rollback verified. |
 | 2.3 | Record supplied reference and clarify intended real-data sources | Complete | 2026-11-08 | docs/dataset_reference.md transcribes the supplied document; config/source_catalog.yml includes core real sources, optional wetlands/ESA, basemap-only OSM and CRS/licensing reference notes. Endpoints/permissions remain unverified until acquisition. |
-| 3.1 | Build Streamlit workflow controls, status and map | Not started | — | Project UI, pipeline controls and map required. |
-| 3.2 | Implement filters, stable click selection and well details | Not started | — | Validate selection persistence and counts against analysis data. |
-| 3.3 | Implement exports matching the filtered results | Not started | — | Verify CSV/GeoJSON and supporting evidence exports. |
+| 3.1 | Build Streamlit workflow controls, status and map | Complete | 2026-11-08 | app.py and src/orchestrator.py provide explicit demo action/stages, read-only dashboard reruns, map, quality and session history. Empty test DB initialized through AppTest; offline browser startup/action passed. |
+| 3.2 | Implement filters, stable click selection and well details | Complete | 2026-11-08 | Actual Chromium marker clicks select the correct stable-ID detail panel; threshold/company filters preserve selection, show outside-filter status and update markers/counts. 67 Python checks passed; production is explicitly unavailable. |
+| 3.3 | Implement exports matching the filtered results | Complete | 2026-11-08 | CSV/GeoJSON/manifest downloads agree with filtered IDs, distances and counts; downloaded standalone HTML renders one marker for one filtered well offline. Vendored asset hashes and popup escaping checked. |
 | 4.1 | Verify live sources, schemas, CRS, permissions and study area | Not started | — | Resolve relevant source decisions in section 16 before ingestion. |
 | 4.2 | Implement AER and provincial/federal source adapters | Not started | — | Handle source formats, pagination and documented retry/failure behavior. |
 | 4.3 | Add snapshot caching, checksums, provenance and small-region live validation | Not started | — | Successful bounded live run and exportable manifest required. |
@@ -210,11 +210,14 @@ Update individual steps as work progresses; split a step into smaller rows when 
 | 2026-11-08 | D.1 | Converted the Word design to Markdown, preserved its scope and tables, and added phase/substep tracking and ongoing update instructions. |
 | 2026-11-08 | 0.2–1.5 | Started application configuration, architecture, database migrations, synthetic demo, contracts, setup documentation and repository tests. |
 | 2026-11-08 | 0, 1 | Completed configuration/architecture, migrations, synthetic fixtures, spatial contracts, quarantine, manifests and setup docs. Clean pinned venv: 32 tests passed without skips/warnings; setup and repeated demo verified from outside the checkout. Phase 2 can use synthetic inputs; no new credential or source decision is needed for its distance engine. |
-
 | 2026-11-08 | 2.1–2.2 | Started spatial calculations, explicit coverage handling, cumulative flags and baseline/sensitivity tests. |
 | 2026-11-08 | Source scope clarification | Recorded the user-supplied dataset reference and real-data target stack, including optional wetlands/2014 ESA and basemap-only OpenStreetMap. Acquisition metadata/permissions remain unverified; no live ingestion is claimed. |
 
 | 2026-11-08 | 2 | Completed spatial engine and explicit coverage handling. 61 tests passed without skips/warnings; demo analysis records 10 well/category rows and a 2-to-1 water threshold sensitivity result. Real-source intent/catalogue clarified from the supplied reference. |
+
+| 2026-11-08 | 3.1–3.3 | Started Streamlit workflow, map, stable-ID details, filters and filtered exports. |
+
+| 2026-11-08 | 3 | Completed offline Streamlit workflow/map, stable record-reference selection, filters, quality/history and matching exports. 67 Python tests passed; real Chromium smoke passed including standalone HTML. Fixed component plain-text ID handling and isolated HTML export from the displayed figure. Saved app startup and tile-domain draft requirement; online tiles remain unverified pending settings. |
 
 Prioritize a small, demonstrable end-to-end vertical slice before importing all Alberta wells. Build source adapters as replaceable modules so a format or service change does not require rewriting the UI or spatial analysis.
 
