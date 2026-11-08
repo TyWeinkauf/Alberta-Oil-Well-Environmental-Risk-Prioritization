@@ -70,38 +70,43 @@ def analyze_run(engine: Engine, run_id: str, coverage: dict[str, Coverage] | Non
     outcome, so wells without a nearby feature are not silently removed. The
     parent-row lock serializes analyses of the same run.
     """
+    with engine.begin() as conn:
+        return calculate_proximity(conn,run_id,coverage)
+
+
+def calculate_proximity(conn, run_id: str, coverage: dict[str,Coverage] | None=None) -> list[dict]:
+    """Use the caller's transaction so live load + analysis can commit atomically."""
     run = UUID(str(run_id))
     if coverage is not None and any(category not in CATEGORIES for category in coverage):
         raise ValueError('Unknown environmental category in coverage')
     overrides = {key: Coverage.model_validate(value) for key, value in (coverage or {}).items()}
-    with engine.begin() as conn:
-        record = conn.execute(text('SELECT status,study_area FROM screening.pipeline_runs WHERE run_id=:run FOR UPDATE'),
-                              {'run':run}).mappings().one_or_none()
-        if record is None or record['status'] not in ('seeded','succeeded'):
-            raise ValueError('Spatial analysis requires an existing seeded run')
-        if record['study_area'].get('analysis_crs') != 'EPSG:3400' or record['study_area'].get('thresholds_m') != [50,100,250,500]:
-            raise ValueError('Spatial analysis requires EPSG:3400 and the standard 50/100/250/500 metre thresholds')
-        count = conn.execute(text('''SELECT count(*) FROM screening.wells w
-            JOIN screening.source_snapshots s ON s.snapshot_id=w.snapshot_id WHERE s.run_id=:run'''),
-                             {'run':run}).scalar_one()
-        if not count:
-            raise ValueError('Run has no accepted wells to analyze')
-        conn.execute(text('DELETE FROM screening.well_proximity WHERE run_id=:run'), {'run':run})
-        for category in sorted(CATEGORIES):
-            entry = overrides.get(category)
-            if entry:
-                conn.execute(text('''INSERT INTO screening.category_coverage VALUES (:run,:category,:status,:note)
-                    ON CONFLICT (run_id,category) DO UPDATE SET status=excluded.status,note=excluded.note'''),
-                             {'run':run,'category':category,**entry.model_dump()})
-            else:
-                conn.execute(text('''INSERT INTO screening.category_coverage VALUES
-                    (:run,:category,'unavailable','Coverage has not been verified for this run.')
-                    ON CONFLICT (run_id,category) DO NOTHING'''), {'run':run,'category':category})
-        conn.execute(text(NEAREST_SQL), {'run':run})
-        rows = conn.execute(text(RESULTS_SQL), {'run':run}).mappings().all()
-        if len(rows) != count * len(CATEGORIES):
-            raise ValueError('Spatial result row accounting failed')
-        return [dict(row) for row in rows]
+    record = conn.execute(text('SELECT status,study_area FROM screening.pipeline_runs WHERE run_id=:run FOR UPDATE'),
+                          {'run':run}).mappings().one_or_none()
+    if record is None or record['status'] not in ('seeded','succeeded'):
+        raise ValueError('Spatial analysis requires an existing seeded run')
+    if record['study_area'].get('analysis_crs') != 'EPSG:3400' or record['study_area'].get('thresholds_m') != [50,100,250,500]:
+        raise ValueError('Spatial analysis requires EPSG:3400 and the standard 50/100/250/500 metre thresholds')
+    count = conn.execute(text('''SELECT count(*) FROM screening.wells w
+        JOIN screening.source_snapshots s ON s.snapshot_id=w.snapshot_id WHERE s.run_id=:run'''),
+                         {'run':run}).scalar_one()
+    if not count:
+        raise ValueError('Run has no accepted wells to analyze')
+    conn.execute(text('DELETE FROM screening.well_proximity WHERE run_id=:run'), {'run':run})
+    for category in sorted(CATEGORIES):
+        entry = overrides.get(category)
+        if entry:
+            conn.execute(text('''INSERT INTO screening.category_coverage VALUES (:run,:category,:status,:note)
+                ON CONFLICT (run_id,category) DO UPDATE SET status=excluded.status,note=excluded.note'''),
+                         {'run':run,'category':category,**entry.model_dump()})
+        else:
+            conn.execute(text('''INSERT INTO screening.category_coverage VALUES
+                (:run,:category,'unavailable','Coverage has not been verified for this run.')
+                ON CONFLICT (run_id,category) DO NOTHING'''), {'run':run,'category':category})
+    conn.execute(text(NEAREST_SQL), {'run':run})
+    rows = conn.execute(text(RESULTS_SQL), {'run':run}).mappings().all()
+    if len(rows) != count * len(CATEGORIES):
+        raise ValueError('Spatial result row accounting failed')
+    return [dict(row) for row in rows]
 
 
 def read_results(engine: Engine, run_id: str) -> list[dict]:

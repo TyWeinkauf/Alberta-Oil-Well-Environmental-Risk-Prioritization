@@ -30,3 +30,10 @@ The completed project will use real data. The following records the user's suppl
 | OpenStreetMap | Display basemap only | Web display EPSG:3857; attribution/ODbL and tile usage policy; not used for authoritative distances. |
 
 No endpoint URLs or ArcGIS layer IDs were supplied in the reference. Actual retrieval/version, metadata, permissions, native CRS and field mappings remain to be verified in Phase 4. Petrinex production remains a separate design milestone and is not described by this supplied reference.
+## Phase 4 acquisition preparation — 8 November 2026
+
+The configurable pilot is Drayton Valley (`../../config/study_area.live.yml`, WGS84 `[-115.08, 53.20, -114.94, 53.30]`). It is an educational pilot choice, not confirmed source coverage or an operational review area. Environmental inputs will use a projected 500 m margin.
+
+The acquisition/cache/provenance and atomic PostGIS workflow is tested against synthetic local HTTP services and generated Shapefile/GPKG/FileGDB inputs. Those tests are not official source acquisitions. No real AER, provincial environmental or federal habitat input is currently inventoried as acquired or verified.
+
+Requests to AER, ArcGIS portal, Open Canada and Alberta Open Data were denied by cloud policy (CONNECT 403). Domain additions are saved in the environment draft but not applied; actual download/service URLs, layer IDs, schemas, licences and native CRS remain pending. See `../../docs/source_verification.md` for the exact blocker and verification sequence. The previously published OpenStreetMap tile host now returns HTTP 200; that is display access only.

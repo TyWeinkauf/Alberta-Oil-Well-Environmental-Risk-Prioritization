@@ -1,4 +1,5 @@
-# Unverified entries are deliberately disabled. No live adapter runs in Phase 1.
+# Official entries remain disabled until publisher metadata/terms can be checked.
+# Generic adapters exist; actual URLs, CRS and mappings must not be invented.
 sources:
   - key: aer_wells
     kind: file
@@ -15,6 +16,7 @@ sources:
     field_mapping: {}
   - key: alberta_water
     kind: arcgis
+    category: water
     publisher: Government of Alberta
     reference_crs: EPSG:3400
     reference_license: Open Government Licence - Alberta (as described in the supplied reference).
@@ -28,6 +30,7 @@ sources:
     field_mapping: {}
   - key: alberta_protected_areas
     kind: arcgis
+    category: protected_area
     publisher: Government of Alberta / Alberta Parks
     reference_crs: EPSG:3400
     reference_license: Public service; exact resource-use and redistribution terms require verification.
@@ -41,6 +44,7 @@ sources:
     field_mapping: {}
   - key: federal_critical_habitat
     kind: file
+    category: critical_habitat
     publisher: Environment and Climate Change Canada / Canadian Wildlife Service
     reference_crs: EPSG:3978
     reference_license: Open Government Licence - Canada (as described in the supplied reference).
@@ -54,6 +58,7 @@ sources:
     field_mapping: {}
   - key: alberta_wetlands
     kind: arcgis
+    category: wetland
     priority: optional
     publisher: Government of Alberta
     reference_crs: EPSG:3400
@@ -68,6 +73,7 @@ sources:
     field_mapping: {}
   - key: alberta_esa_2014
     kind: arcgis
+    category: esa
     priority: optional
     publisher: Government of Alberta
     reference_crs: EPSG:3400

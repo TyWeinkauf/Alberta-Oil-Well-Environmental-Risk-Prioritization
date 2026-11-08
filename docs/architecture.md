@@ -33,11 +33,19 @@ Five rows per well retain matched, known-negative, unavailable and incomplete ou
 
 The app retains selection outside filters with an explicit message. Production remains unavailable rather than fabricated. Live pipeline/production controls are disabled until adapters exist. Offline geometry is the default; optional OpenStreetMap tiles need network access. See [UI workflow](ui_workflow.md).
 
+## Acquisition framework (Phase 4 in progress)
+
+`src/sources/http.py` caches exact response bytes with SHA-256, conditional refresh, retry and response/total transfer caps. `src/sources/files.py` inspects ZIP Shapefile/GPKG/FileGDB layers and their actual CRS before bounded reads. `src/sources/arcgis.py` inspects metadata, queries count/IDs for the buffered extent, pages by object ID and rejects incomplete results. Inspection and execution are separate CLI commands.
+
+`src/sources/pipeline.py` requires verified core sources/coverage, acquires and validates all inputs, archives canonical records alongside exact response lineage, and uses one transaction for source/well/feature/quarantine insertion plus shared `calculate_proximity`. It writes the run manifest before marking/committing the dataset succeeded. Failed acquisitions/loads retain the previous published data; attempts persist stage/error class through migration 003. A filesystem artifact left by a failed database commit is not proof of a published run.
+
+Live features are clipped to the projected study polygon plus 500 m after geometry validation; exact tangent intersections retain valid original geometry so inclusive boundary matches are not lost. The UI enables the live action only when the catalogue is ready and labels data according to demo/live mode. Current official entries remain disabled: publisher/source verification is blocked on network access. See [source verification](source_verification.md).
+
 ## Planned components
 
 The design's future flow is **Streamlit → orchestrator → source adapters → raw cache → contracts/quarantine → staging/PostGIS → spatial SQL → map/results/exports**. Download/transform work must run only on explicit actions, outside Streamlit rerun side effects.
 
-- **Phase 4:** verified AER/ArcGIS/federal source adapters, checksummed snapshots, coverage, retries and bounded live ingestion. URLs and source field mappings must be verified, not inferred from this fixture.
+- **Remaining Phase 4:** verify official AER/provincial/federal URLs, fields, CRS, terms and scope, then complete and validate an actual small-region ingestion. Simulated protocol tests do not establish official compatibility.
 - **Phase 5:** production contracts/adapters and documented well-level joins. Facility totals must never be allocated to wells without source evidence.
 - **Phase 6:** performance, cancellation/recovery, last-successful-run publication, clean-clone app demonstration and separate course handoffs.
 

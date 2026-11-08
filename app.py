@@ -7,13 +7,14 @@ import streamlit as st
 from sqlalchemy import create_engine
 from streamlit_folium import st_folium
 
-from src.config import database_url
+from src.config import database_url, load_source_catalog
 from src.contracts.spatial import CATEGORIES
 from src.exports.selection import FIELDS, csv_bytes, geojson_bytes, table_records
 from src.orchestrator import run_demo
-from src.ui.data import list_analyzed_runs, load_dashboard
+from src.ui.data import list_analyzed_runs, load_dashboard, pipeline_attempts
 from src.ui.map import build_map
 from src.ui.model import filtered_wells, map_selection
+from src.sources.pipeline import live_requirements, run_live
 
 st.set_page_config(page_title='Alberta well screening',page_icon='🌿',layout='wide')
 MISSING = 'Not available from this source'
@@ -36,7 +37,7 @@ def choose_well():
 def main():
     st.title('Alberta well screening')
     st.caption('Educational proximity screening — not an environmental risk assessment or an operational recommendation.')
-    st.info('Synthetic demonstration data. The completed project will use AER and government environmental sources; live downloads are not connected yet.')
+    st.caption('Use the demo for an offline check, or run verified real sources once the source catalogue is ready.')
     try:
         engine = connection_pool(database_url())
     except Exception:
@@ -46,30 +47,41 @@ def main():
     st.session_state.setdefault('selected_well',None)
     st.session_state.setdefault('actions',[])
     st.sidebar.header('Workflow')
-    if st.sidebar.button('Use demo dataset',type='primary',disabled=st.session_state.busy):
+    demo_requested=st.sidebar.button('Use demo dataset',type='primary',disabled=st.session_state.busy)
+    try:
+        catalog=load_source_catalog()
+        requirements=live_requirements(catalog)
+    except Exception:
+        catalog=None;requirements=['Source catalogue configuration is invalid; inspect config/source_catalog.yml.']
+    live_requested=st.sidebar.button('Run full pipeline',disabled=st.session_state.busy or bool(requirements),
+        help='Run all verified analytical sources for the configured pilot; source snapshots are cached.')
+    if requirements:
+        with st.sidebar.expander('Live source readiness'):
+            for requirement in requirements:st.write(requirement)
+    if demo_requested or live_requested:
         st.session_state.busy = True
         stages = []
-        with st.status('Preparing synthetic demonstration',expanded=True) as status:
+        action='Use demo dataset' if demo_requested else 'Run full pipeline'
+        with st.status('Preparing dataset',expanded=True) as status:
             def progress(message):
                 stages.append(message)
                 st.write(message)
             try:
-                run_id = run_demo(engine,progress)
+                run_id = run_demo(engine,progress) if demo_requested else run_live(engine,catalog=catalog,progress=progress)['run_id']
                 st.session_state.run_choice = run_id
                 st.session_state.selected_well = None
                 st.session_state.last_map_event = None
-                status.update(label='Demo ready',state='complete')
+                status.update(label='Demo ready' if demo_requested else 'Live dataset ready',state='complete')
                 outcome = 'Complete'
             except Exception as exc:
                 # Do not render raw database exceptions or connection credentials.
-                status.update(label='Demo action failed',state='error')
-                st.error(f'Demo could not complete ({type(exc).__name__}). Check PostgreSQL/PostGIS, DATABASE_URL and README.md. Previously analyzed results remain selectable if valid.')
+                status.update(label='Workflow action failed',state='error')
+                st.error(f'Workflow could not complete ({type(exc).__name__}). Check PostgreSQL/PostGIS, source metadata/network access and README.md. Previously analyzed results remain selectable if valid.')
                 outcome = 'Failed'
             finally:
                 st.session_state.busy = False
             st.session_state.actions.append({'time_utc':datetime.now(timezone.utc).isoformat(),
-                                            'action':'Use demo dataset','outcome':outcome,'stages':' → '.join(stages)})
-    st.sidebar.button('Run full pipeline',disabled=True,help='Live source adapters and verified endpoints are not connected yet.')
+                                            'action':action,'outcome':outcome,'stages':' → '.join(stages)})
     st.sidebar.button('Refresh production',disabled=True,help='Production ingestion and verified well joins are a later milestone.')
     try:
         runs = list_analyzed_runs(engine)
@@ -94,6 +106,10 @@ def main():
     except Exception:
         st.error('This dataset cannot currently be read. Re-run analysis or choose another analyzed dataset.')
         st.stop()
+    if dashboard['study_area'].get('mode')=='demo':
+        st.info('Synthetic demonstration data. These are test fixtures, not real AER wells or government environmental layers.')
+    else:
+        st.info('Real-source dataset. Inspect provenance, coverage and quarantine records before interpreting proximity results.')
     st.sidebar.header('Filters')
     companies = sorted({r['licensee_name'] or MISSING for r in dashboard['wells']})
     statuses = sorted({r['status'] or MISSING for r in dashboard['wells']})
@@ -169,7 +185,8 @@ def main():
         downloads[2].download_button('Download map HTML',export_map.get_root().render().encode(),'well_map.html','text/html',on_click='ignore')
         manifest = {'selection':selection,'count':len(records),'sources':dashboard['sources'],
                     'coverage':dashboard['coverage'],'study_area':dashboard['study_area'],
-                    'disclaimer':'Educational proximity screening; synthetic data; not an operational risk assessment.'}
+                    'disclaimer':'Educational proximity screening; not an operational risk assessment.',
+                    'mode':dashboard['study_area']['mode']}
         st.download_button('Download selection manifest',json.dumps(manifest,indent=2).encode(),'selection_manifest.json','application/json',on_click='ignore')
     with quality_tab:
         st.subheader('Source provenance and coverage')
@@ -188,7 +205,9 @@ def main():
         st.dataframe(pd.DataFrame([{'run_id':r['run_id'],'started_at':r['started_at'],'study_area':r['study_area']['name']} for r in runs]),hide_index=True)
         st.subheader('Workflow actions in this session')
         st.dataframe(pd.DataFrame(st.session_state.actions),hide_index=True)
-        st.caption('Persistent failed-run audit and real-data refresh history will be added with the live pipeline.')
+        st.subheader('Live pipeline attempts')
+        st.dataframe(pd.DataFrame(pipeline_attempts(engine)),hide_index=True)
+        st.caption('Live attempt stages and error classes are retained without connection credentials.')
 
 
 main()

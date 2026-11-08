@@ -6,7 +6,7 @@ Start local PostgreSQL/PostGIS, activate the Python environment, then run `strea
 
 Choose **Use demo dataset** to explicitly run database preflight/migrations, synthetic ingestion/validation and proximity calculation. The visible status lists each stage and reports completion/failure. Existing valid analyzed datasets remain available in the study-area/dataset selector. Filter changes and marker clicks only read results; they do not rerun ingestion. Database transactions and locks protect the seed and spatial calculations.
 
-The demo is development evidence. The completed app will use the real AER/provincial/federal stack in the supplied dataset reference. **Run full pipeline** and **Refresh production** are disabled until their source adapters and verified joins exist; their explanations are shown with the controls. No real-source acquisition or well production is implied by the demo.
+The demo is development evidence. The completed app will use the real AER/provincial/federal stack in the supplied dataset reference. **Run full pipeline** uses the verified-source readiness gate: it remains disabled while current official catalogue entries are unverified, and becomes available only after all core sources and coverage notes are configured. **Refresh production** remains disabled until production adapters/verified joins exist. No real-source acquisition or well production is implied by the demo.
 
 The map, result table and counts share one filtered record list. Available filters are licensee/company, status, environmental categories, threshold and known-threshold-matches-only. An empty company/status selection includes all values; an empty environmental-category selection produces unknown screening results. The incomplete demo protected-area layer remains unknown when selected. Company labels are explicitly licensees, with operator/producer values kept separate.
 
@@ -18,7 +18,7 @@ Selection persists through normal rerenders and filter changes. If a selected we
 
 ## Offline and online map modes
 
-Offline geometry is the default. Leaflet/jQuery/CSS are vendored with their licenses and SHA-256 manifest; no CDN is required. Valid environmental geometry can be overlaid. Optional **Show OpenStreetMap basemap (online)** uses the normal attributed tile layer and requires access to `tile.openstreetmap.org`. The managed cloud proxy currently denies this domain; the narrow network requirement is saved in the environment draft for review/application. The offline map remains functional while this setting is pending. Do not describe online tiles as verified until a fresh request succeeds after the setting is applied.
+Offline geometry is the default. Leaflet/jQuery/CSS are vendored with their licenses and SHA-256 manifest; no CDN is required. Valid environmental geometry can be overlaid. Optional **Show OpenStreetMap basemap (online)** uses the normal attributed tile layer and requires access to `tile.openstreetmap.org`. The published cloud policy now allows this domain, and a fresh tile request returned HTTP 200. The offline map remains available without network access. Analytical source-discovery access is separate and remains blocked pending the Phase 4 domain additions.
 
 Colors follow the shared proximity bands. Gray can mean beyond the search radius or unknown; the exact band, coverage and cumulative flags are given in the table. Incomplete/unavailable source coverage is never displayed as a known negative. WGS84 is used for map/export coordinates; EPSG:3400 metres is used for distances.
 
@@ -29,7 +29,7 @@ Colors follow the shared proximity bands. Gray can mean beyond the search radius
 - **Selection manifest:** current filters, count, source checksums/retrieval/provenance, study area and coverage states.
 - **Validation records:** quarantined rows with reason codes and raw references for the selected run.
 
-Data quality shows source/coverage tables and rejected records. Run history shows analyzed datasets plus workflow outcomes/stages for the current browser session. Persistent failed-run audit and live refresh history remain later orchestrator work.
+Data quality shows source/coverage tables and rejected records. Run history shows analyzed datasets plus workflow outcomes/stages for the current browser session. Live pipeline attempts now persist their stage/outcome/error class in PostgreSQL and appear separately in Run history. The currently unverified official catalogue prevents actual live attempts; simulated protocol tests validate this audit path.
 
 ## Checks
 

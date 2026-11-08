@@ -10,7 +10,7 @@ The completed application will use **real AER wells, Alberta surface water, Albe
 
 Phases 0–3 provide validated configuration, transactional PostGIS migrations, an offline synthetic seed, quarantine reasons, raw-snapshot checksums, spatial analysis and a Streamlit map with persistent well selection, filters, matching exports, data quality and session history. The demo contains **2 accepted wells, 2 accepted environmental features and 6 quarantined records**. Repeating it uses the same run and does not duplicate rows.
 
-Live downloading and production ingestion are not implemented yet. The ingestion run remains **seeded**; the separate spatial report has status **analyzed**. The UI labels synthetic data and unavailable fields explicitly.
+The Phase 4 acquisition framework is implemented and tested with simulated sources, but official endpoint/schema/licence verification and an actual regional run are **blocked by cloud network access**. Production ingestion is not implemented yet. Demo ingestion remains **seeded** and its spatial report is **analyzed**; a fully acquired and validated live run will use **succeeded**. The UI labels demo versus real-source mode explicitly.
 
 ## Managed cloud quick start
 
@@ -56,7 +56,7 @@ notepad .env
 .\.venv\Scripts\python.exe -m streamlit run app.py
 ```
 
-Setup applies pending migrations (`001_initial.sql`, `002_spatial_coverage.sql`); subsequent setup reports `none (already current)`. The seed prints a stable run ID and counts of 2 wells, 2 environmental features, 6 quarantine records and 0 production rows. Proximity rows start at 0; analysis stores 10 (one per well/category) and unchanged reseeding preserves them. Read `outputs/runs/<run_id>/manifest.json`, `validation.json` and `analysis.json`. No source download or basemap request is needed.
+Setup applies pending migrations (`001_initial.sql`, `002_spatial_coverage.sql`, `003_live_attempts.sql`); subsequent setup reports `none (already current)`. The seed prints a stable run ID and counts of 2 wells, 2 environmental features, 6 quarantine records and 0 production rows. Proximity rows start at 0; analysis stores 10 (one per well/category) and unchanged reseeding preserves them. Read `outputs/runs/<run_id>/manifest.json`, `validation.json` and `analysis.json`. No source download or basemap request is needed.
 
 The default analysis selects water: the wells are 50 m and 150 m from the synthetic stream. Its threshold sensitivity report changes matches from 2 at 500 m to 1 at 50 m. For another selection:
 
@@ -67,9 +67,9 @@ python scripts/analyze_demo.py --categories water protected_area
 
 The protected-area demo layer is incomplete because one polygon was quarantined. Selecting it makes the exact overall band unknown; that is different from no nearby feature. See [spatial methodology](docs/spatial_methodology.md) for coverage, cumulative flags and category selection rules. The clean boundary test fixture validates complete-category minima and exact distance boundaries.
 
-In the app, **Use demo dataset** performs setup, ingestion and analysis on an explicit click. Click a map marker or use **Inspect a well** for details; change company/status/category/threshold filters and download the matching CSV, GeoJSON, map HTML or manifest. The Data quality and Run history tabs show provenance, rejected inputs and workflow stages/outcomes. Full live pipeline and production actions remain disabled until their later milestones.
+In the app, **Use demo dataset** performs setup, ingestion and analysis on an explicit click. Click a map marker or use **Inspect a well** for details; change company/status/category/threshold filters and download the matching CSV, GeoJSON, map HTML or manifest. The Data quality and Run history tabs show provenance, rejected inputs and workflow stages/outcomes. The live pipeline action is gated by verified/enabled catalogue entries and explicit coverage notes; it is currently disabled because official entries are unverified. Production remains disabled until its later milestone.
 
-Offline geometry and map exports require no CDN: small Leaflet/jQuery assets are vendored with licenses. **Show OpenStreetMap basemap (online)** is optional and requires `tile.openstreetmap.org`. That domain is currently blocked by the managed cloud proxy; its narrow allowlist addition is saved in the environment draft and must be reviewed/applied in settings before online tiles can work here. Offline rendering and interaction remain available. See [UI workflow](docs/ui_workflow.md).
+Offline geometry and map exports require no CDN: small Leaflet/jQuery assets are vendored with licenses. **Show OpenStreetMap basemap (online)** is optional and requires `tile.openstreetmap.org`. The tile domain is now allowed by the published cloud policy and a fresh tile request returned HTTP 200. Analytical source-discovery hosts still require the separate Phase 4 network change. Offline rendering and interaction remain available. See [UI workflow](docs/ui_workflow.md).
 
 For a regular Linux/macOS checkout, use `python3.12 -m venv .venv`, `source .venv/bin/activate`, `python -m pip install -r requirements.txt`, and the same Python script commands after configuring local PostgreSQL/PostGIS and `.env`.
 
@@ -100,8 +100,17 @@ With the app running, the managed environment can also run `node tests/browser/u
 - [Data dictionary](docs/data_dictionary.md): tables, fields and fixture accounting.
 - [Limitations](docs/limitations.md): synthetic data, source verification and attribution boundaries.
 - [Spatial methodology](docs/spatial_methodology.md): nearest-feature calculations, coverage states and sensitivity evidence.
+- [Source verification](docs/source_verification.md): Phase 4 status, blocked hosts and acquisition commands.
 - [UI workflow](docs/ui_workflow.md): map interaction, offline/online modes, exports and browser checks.
 - `config/`: demo study extent and disabled, unverified live-source placeholders.
 - `sql/migrations/`, `src/`, `scripts/`, `tests/`: implementation and repeatable checks.
 
 Raw data, caches, reports, virtual environments and credentials are ignored. Small project-authored fixtures in `tests/fixtures/` are intentionally versioned. Add a new migration instead of editing one already applied. Next is Phase 4: verify live source URLs, fields, licensing and the first real study region, then implement real-source adapters. The dataset reference remains the intended final-data scope.
+
+## Phase 4 in progress: real-source acquisition
+
+The HTTP cache, ArcGIS ID-batch adapter, ZIP Shapefile/GPKG/FileGDB reader, 500 m environmental margin, atomic load/analysis, provenance manifests and persistent attempt history are implemented. **These mechanics are tested using local synthetic protocol servers; no official dataset has been acquired yet.**
+
+The cloud proxy denies `www.aer.ca`, `www.arcgis.com`, `open.canada.ca` and `open.alberta.ca`. Their domain additions are saved in the environment draft, preserving existing permissions. Review/save that network change in environment settings to unblock discovery; publish the reusable configuration when ready. Further official service/download hosts may be needed after discovering the actual resources.
+
+[Source verification status and commands](docs/source_verification.md) explain the remaining endpoint, licence, CRS and field-mapping checks. The configurable pilot is `config/study_area.live.yml` (Drayton Valley). `python scripts/run_live.py` intentionally fails preflight until all core source entries are verified/configured; it does not substitute synthetic records for missing real data.

@@ -1,0 +1,6 @@
+# Initial bounded pilot, not an operational review or a claim of data coverage.
+name: drayton_valley_pilot
+bbox_wgs84: [-115.08, 53.20, -114.94, 53.30]
+analysis_crs: EPSG:3400
+thresholds_m: [50, 100, 250, 500]
+mode: live

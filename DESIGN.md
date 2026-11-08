@@ -12,7 +12,7 @@ Update this document whenever work on a scoped step starts or finishes. Set the 
 
 Section 13 tracks implementation work; section 12 tracks acceptance checks; section 16 tracks unresolved decisions. Check acceptance and decision items only when their evidence is available, and record that evidence with the related step in section 13. The pipeline states in section 5 describe application runtime behavior, not project progress. Course milestone tracking remains in [project-progress.md](aida-final-project-tyler-weinkauf/project-progress.md).
 
-**Current status — 2026-11-08:** Phases 0–3 are complete for the offline interactive demonstration. The Streamlit map, stable-ID well selection, filters, matching exports, quality/provenance and session history are implemented. All 67 Python tests passed; a real Chromium offline browser smoke test passed, including marker clicks, filter persistence and downloaded standalone HTML. Optional OpenStreetMap tiles are blocked by the current cloud policy; the tile-domain addition and app startup instructions are saved in the environment draft but not applied/published. Real AER/government source ingestion remains Phase 4; production remains Phase 5.
+**Current status — 2026-11-08:** Phases 0–3 are implemented. Phase 4 remains in progress: bounded HTTP/GIS/ArcGIS adapters, cache/provenance, projected 500 m feature margin, atomic load/analysis, readiness gates and persistent attempt history are implemented. 80 Python tests pass against synthetic local protocol/GIS fixtures, and the offline browser smoke passes. Official metadata/licence/schema verification and a real regional run are blocked because www.aer.ca, www.arcgis.com, open.canada.ca and open.alberta.ca are not in the applied network policy. Their domain additions are saved in the draft, not applied. No official analytical dataset has been acquired.
 
 ## 1. Scope, success criteria and guardrails
 
@@ -167,7 +167,7 @@ Phase 1–3 evidence: fixture metadata/validation, known distances, stable marke
 | 1 | Local DB setup, migrations, synthetic fixtures and contracts | pytest green; demo rows in PostGIS | Complete | 2026-11-08 | 32 tests passed (25 unit, 7 PostGIS integration); setup and seed commands verified in a clean venv; demo counts 2 wells/2 features/6 quarantined, unchanged on rerun. See docs/reproducibility.md. |
 | 2 | Spatial proximity engine and tests | Known distance fixtures pass | Complete | 2026-11-08 | Known-distance and selection tests passed; synthetic water demo distances 50/150 m; 500-to-50 m threshold changes matches 2 to 1. See docs/spatial_methodology.md. |
 | 3 | Streamlit map, filters, click-to-detail and export | Interactive demo with stable selection | Complete | 2026-11-08 | Offline interactive demo and stable selection verified by Chromium; 67 Python tests passed. Online OSM tiles need the pending domain setting; see docs/ui_workflow.md. |
-| 4 | Real AER and provincial/federal adapters, caching and provenance | Small region live ingestion with manifest | Not started | — | Live source endpoints, schemas and permissions remain unverified. |
+| 4 | Real AER and provincial/federal adapters, caching and provenance | Small region live ingestion with manifest | In progress | 2026-11-08 | Acquisition framework and simulated-source tests pass; actual official source verification/real pilot run blocked on the saved network-domain additions. See docs/source_verification.md. |
 | 5 | Production ingestion and verified joins | Well chart or explicit unavailable message | Not started | — | Production source format and well attribution remain unverified. |
 | 6 | Performance, run recovery, documentation and course evidence | Fresh-clone demo and separate deliverable folders | Not started | — | Requires the implemented pipeline, application and separate course evidence. |
 
@@ -192,9 +192,13 @@ Update individual steps as work progresses; split a step into smaller rows when 
 | 3.1 | Build Streamlit workflow controls, status and map | Complete | 2026-11-08 | app.py and src/orchestrator.py provide explicit demo action/stages, read-only dashboard reruns, map, quality and session history. Empty test DB initialized through AppTest; offline browser startup/action passed. |
 | 3.2 | Implement filters, stable click selection and well details | Complete | 2026-11-08 | Actual Chromium marker clicks select the correct stable-ID detail panel; threshold/company filters preserve selection, show outside-filter status and update markers/counts. 67 Python checks passed; production is explicitly unavailable. |
 | 3.3 | Implement exports matching the filtered results | Complete | 2026-11-08 | CSV/GeoJSON/manifest downloads agree with filtered IDs, distances and counts; downloaded standalone HTML renders one marker for one filtered well offline. Vendored asset hashes and popup escaping checked. |
-| 4.1 | Verify live sources, schemas, CRS, permissions and study area | Not started | — | Resolve relevant source decisions in section 16 before ingestion. |
-| 4.2 | Implement AER and provincial/federal source adapters | Not started | — | Handle source formats, pagination and documented retry/failure behavior. |
-| 4.3 | Add snapshot caching, checksums, provenance and small-region live validation | Not started | — | Successful bounded live run and exportable manifest required. |
+| 4.1 | Verify live sources, schemas, CRS, permissions and study area | In progress | 2026-11-08 | Drayton Valley pilot defined in config/study_area.live.yml. Official discovery requests receive proxy CONNECT 403; endpoint/CRS/fields/licences remain unverified pending network access. |
+| 4.2 | Implement AER and provincial/federal source adapters | In progress | 2026-11-08 | Generic ZIP file/ArcGIS adapters are implemented/tested. Source-specific official URLs, layers and mappings cannot be finalized until publisher metadata is accessible. |
+| 4.3 | Add snapshot caching, checksums, provenance and small-region live validation | In progress | 2026-11-08 | Immutable HTTP/source bundles, provenance, atomic DB publication and failure retention are tested with simulated sources. An actual official-data regional run remains blocked/unrun. |
+| 4.2a | Implement generic bounded file and ArcGIS acquisition adapters | Complete | 2026-11-08 | Tests read real GIS file formats from synthetic HTTP servers, inspect CRS/fields, verify ArcGIS ID paging and reject partial pages; official schema compatibility is not claimed. |
+| 4.2b | Verify and configure each official source-specific endpoint/mapping | In progress | 2026-11-08 | Blocked by current source-discovery domain policy; catalogue remains disabled/unverified rather than inventing fields or URLs. |
+| 4.3a | Implement cache, provenance, atomic load/analyze and attempt history | Complete | 2026-11-08 | 80 tests pass overall; simulated-source repeats preserve one run, partial acquisition/DB failures preserve previous data, transfer/record caps and checksum validation tested. |
+| 4.3b | Execute and validate an official-data small-region run | In progress | 2026-11-08 | Unrun pending access and verified catalogue; no real AER/provincial/federal result has been produced. |
 | 5.1 | Verify Petrinex access, reporting level, identifiers and licensing | Not started | — | Do not infer well-level attribution from facility volumes. |
 | 5.2 | Implement monthly production ingestion and defensible joins | Not started | — | Retain unmatched/ambiguous records for audit. |
 | 5.3 | Validate production chart or explicit unavailable/facility-level display | Not started | — | Only verified well links may populate well-level charts. |
@@ -219,6 +223,10 @@ Update individual steps as work progresses; split a step into smaller rows when 
 
 | 2026-11-08 | 3 | Completed offline Streamlit workflow/map, stable record-reference selection, filters, quality/history and matching exports. 67 Python tests passed; real Chromium smoke passed including standalone HTML. Fixed component plain-text ID handling and isolated HTML export from the displayed figure. Saved app startup and tile-domain draft requirement; online tiles remain unverified pending settings. |
 
+| 2026-11-08 | 4.1–4.3 | Started official-source verification and bounded acquisition/cache/provenance implementation. |
+
+| 2026-11-08 | 4 (partial) | Implemented bounded acquisition framework, inspection/CLI, caches, bundles, live feature margin, transactionally published spatial data, readiness gates and attempt audit. 80 Python tests and offline browser smoke pass on synthetic inputs. Official discovery remains blocked by CONNECT 403; saved four required domains in the draft, preserving prior settings. Phase 4 is not complete. Published OSM tile permission separately verified with HTTP 200. |
+
 Prioritize a small, demonstrable end-to-end vertical slice before importing all Alberta wells. Build source adapters as replaceable modules so a format or service change does not require rewriting the UI or spatial analysis.
 
 ## 14. Course evidence and final handoff
@@ -231,7 +239,7 @@ You are implementing the attached Alberta Oil Well Environmental Screening desig
 
 ## 16. Open decisions and verification checklist
 
-- [ ] Choose first Alberta study region and geographic boundary; make it configurable.
+- [x] Choose first Alberta study region and geographic boundary; make it configurable.
 - [ ] Confirm current AER distribution format, field mapping, CRS, file size and permitted use.
 - [ ] Confirm exact ArcGIS REST service URLs/layer IDs and any paging/geometry limits; avoid guessing.
 - [ ] Confirm Petrinex download access, schema, well identifier availability and production licensing.

@@ -1,36 +1,18 @@
 """Offline, auditable fixture ingestion; spatial analysis begins in Phase 2."""
 import hashlib
 import json
-import os
-import tempfile
 from collections import Counter
 from pathlib import Path
 from uuid import NAMESPACE_URL, uuid5
 
 from sqlalchemy import Engine, text
 
+from src.artifacts import write_json as _write_report
 from src.config import ROOT, StudyArea, config_hash, load_study_area
 from src.contracts.spatial import CATEGORIES, validate_records
 from src.spatial.engine import demo_coverage
 
 FIXTURE = ROOT / 'tests/fixtures/demo.json'
-
-
-def _write_report(path: Path, payload: dict):
-    path.parent.mkdir(parents=True, exist_ok=True)
-    # A failed write must not leave a partially readable manifest.
-    with tempfile.NamedTemporaryFile('w', dir=path.parent, delete=False, encoding='utf-8') as handle:
-        temp_path = Path(handle.name)
-        try:
-            json.dump(payload, handle, indent=2, sort_keys=True, allow_nan=False)
-            handle.write('\n')
-        except Exception:
-            temp_path.unlink(missing_ok=True)
-            raise
-    try:
-        os.replace(temp_path, path)
-    finally:
-        temp_path.unlink(missing_ok=True)
 
 
 def _counts(conn, snapshot_id, run_id):

@@ -7,6 +7,16 @@ from sqlalchemy import Engine, text
 from src.spatial.engine import RESULTS_SQL
 
 
+def pipeline_attempts(engine: Engine) -> list[dict]:
+    with engine.connect() as conn:
+        if conn.execute(text("SELECT to_regclass('screening.pipeline_attempts')")).scalar_one() is None:
+            return []
+        rows=conn.execute(text('''SELECT attempt_id,started_at,finished_at,status,stage,run_id,error_code,error_summary
+            FROM screening.pipeline_attempts ORDER BY started_at DESC LIMIT 50''')).mappings()
+        return [{key:(value.isoformat() if hasattr(value,'isoformat') else str(value) if isinstance(value,UUID) else value)
+                 for key,value in row.items()} for row in rows]
+
+
 def list_analyzed_runs(engine: Engine) -> list[dict]:
     with engine.connect() as conn:
         records = conn.execute(text('''

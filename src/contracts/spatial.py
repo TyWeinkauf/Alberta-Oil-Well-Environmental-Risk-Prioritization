@@ -11,6 +11,7 @@ from shapely.errors import GEOSException
 from shapely.geometry import shape
 
 from src.config import StudyArea
+from src.spatial.extent import study_geometry
 
 CATEGORIES = {'water', 'protected_area', 'critical_habitat', 'wetland', 'esa'}
 WELL_FIELDS = ('licensee_name', 'uwi_if_available', 'operator_name_if_verified', 'lsd_text', 'status')
@@ -52,6 +53,7 @@ def validate_records(rows: list, entity: Literal['wells', 'features'], crs_value
     crs = require_crs(crs_value)
     to_wgs84 = Transformer.from_crs(crs, 4326, always_xy=True)
     to_analysis = Transformer.from_crs(crs, study_area.analysis_crs, always_xy=True)
+    feature_extent = study_geometry(study_area).buffer(500) if study_area.mode=='live' and entity=='features' else None
     id_field = 'source_well_id' if entity == 'wells' else 'source_feature_id'
     ids = Counter(row[id_field].strip() for row in rows if isinstance(row, dict)
                   and isinstance(row.get(id_field), str) and row[id_field].strip())
@@ -93,10 +95,18 @@ def validate_records(rows: list, entity: Literal['wells', 'features'], crs_value
             if not np.isfinite(get_coordinates(geographic)).all() or not np.isfinite(get_coordinates(projected)).all():
                 raise ContractError('invalid_coordinates', 'Coordinate transformation produced nonfinite values')
             west, south, east, north = study_area.bbox_wgs84
-            # Features may extend 500 m beyond the extent in future adapters;
-            # Phase 1 fixtures must be wholly within the configured demo extent.
+            # Demo fixtures use strict containment; live environmental inputs
+            # are clipped to the projected study polygon plus its 500 m margin.
             left, bottom, right, top = geographic.bounds
-            if not (west <= left <= right <= east and south <= bottom <= top <= north):
+            if feature_extent is not None:
+                clipped = projected.intersection(feature_extent)
+                if clipped.is_empty:
+                    raise ContractError('outside_study_area','Feature does not intersect the study area plus 500 m margin')
+                # Exact tangency can reduce a line/polygon to a point/line. Retain
+                # its valid original geometry so an inclusive 500 m match survives.
+                if clipped.geom_type in allowed:
+                    projected=clipped
+            elif not (west <= left <= right <= east and south <= bottom <= top <= north):
                 raise ContractError('outside_study_area', 'Geometry is outside the configured study extent')
             fields = WELL_FIELDS if entity == 'wells' else ('name',)
             if any(row.get(field) is not None and not isinstance(row[field], str) for field in fields):

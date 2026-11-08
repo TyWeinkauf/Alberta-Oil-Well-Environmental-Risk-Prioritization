@@ -71,3 +71,13 @@ A real headless Chromium run of `node tests/browser/ui_smoke.cjs` passed with al
 The offline map uses licensed vendored Leaflet/jQuery assets with recorded SHA-256 checksums. A direct fresh request to an OpenStreetMap tile was denied by the managed proxy (CONNECT 403); the required `tile.openstreetmap.org` allowance and actual app startup instructions were saved to the environment draft. Saving did not apply or publish them. Online tiles are not claimed as verified.
 
 Start the app with `streamlit run app.py` after activating the environment and starting PostgreSQL/PostGIS. The UI checks are synthetic development evidence; real data from the supplied sources remains the intended final project input. See [UI workflow](ui_workflow.md).
+
+## Phase 4 partial verification — 8 November 2026
+
+The full current suite passed **80 tests (57 unit, 23 integration), no skips/warnings**; affected acquisition tests are rerun after final cache/provenance refinements. The offline Chromium smoke also passed after readiness-gated live controls and persisted attempt history were added. `scripts/setup_db.py` applied migration 003 successfully to the prepared database. `scripts/run_live.py` was exercised and correctly refused the unverified official catalogue before creating a partial run.
+
+New tests acquire generated Shapefile, GPKG and OpenFileGDB ZIPs through local HTTP; inspect CRS and bounded subsets; exercise retries, conditional responses, byte/total budgets and corrupt-cache rejection; enforce ArcGIS count/ID-page completeness; and validate the live 500 m geometry margin. Simulated four-source integration verifies immutable bundles, original retrieval timestamps, one run on unchanged repeats, per-category coverage, failed-page retention and database rollback after a forced spatial-load error.
+
+These are synthetic protocol tests, **not official source data**. Fresh requests to the four official discovery hosts were rejected by the proxy with CONNECT 403. Their domains are saved in the environment draft but not applied; actual publisher terms/endpoints/layers/fields/CRS and the Drayton Valley regional run remain unverified. Phase 4 remains in progress. See [source verification](source_verification.md).
+
+The separately published OpenStreetMap tile rule was retested with a fresh request and returned HTTP 200. That does not establish access to analytical data hosts.

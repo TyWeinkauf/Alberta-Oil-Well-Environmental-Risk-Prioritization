@@ -32,6 +32,12 @@ class Source(StrictModel):
     native_crs: str | None = None
     layer_id: int | None = None
     field_mapping: dict[str, str] = Field(default_factory=dict)
+    category: Literal['water','protected_area','critical_habitat','wetland','esa'] | None = None
+    file_layer: str | None = None
+    archive_member: str | None = None
+    metadata_url: HttpUrl | None = None
+    license_url: HttpUrl | None = None
+    coverage_note: str | None = None
 
     @model_validator(mode='after')
     def require_verified_metadata(self):
