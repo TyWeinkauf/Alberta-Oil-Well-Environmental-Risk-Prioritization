@@ -1,0 +1,154 @@
+{
+  "fixture_version": 1,
+  "crs": "EPSG:3400",
+  "license_note": "Project-authored synthetic boundary fixtures; no real sites.",
+  "wells": [
+    {
+      "source_well_id": "BOUNDARY-0",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          500000,
+          5900000
+        ]
+      }
+    },
+    {
+      "source_well_id": "BOUNDARY-50",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          500050,
+          5900000
+        ]
+      }
+    },
+    {
+      "source_well_id": "BOUNDARY-100",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          500100,
+          5900000
+        ]
+      }
+    },
+    {
+      "source_well_id": "BOUNDARY-250",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          500250,
+          5900000
+        ]
+      }
+    },
+    {
+      "source_well_id": "BOUNDARY-500",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          500500,
+          5900000
+        ]
+      }
+    },
+    {
+      "source_well_id": "BOUNDARY-500.01",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          500500.01,
+          5900000
+        ]
+      }
+    },
+    {
+      "source_well_id": "INSIDE-POLYGON",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          500150,
+          5900000
+        ]
+      }
+    },
+    {
+      "source_well_id": "NEAR-LINE-END",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          500000,
+          5900900
+        ]
+      }
+    }
+  ],
+  "features": [
+    {
+      "source_feature_id": "TIE-B",
+      "category": "water",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            500000,
+            5899000
+          ],
+          [
+            500000,
+            5901000
+          ]
+        ]
+      }
+    },
+    {
+      "source_feature_id": "TIE-A",
+      "category": "water",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            500000,
+            5899000
+          ],
+          [
+            500000,
+            5901000
+          ]
+        ]
+      }
+    },
+    {
+      "source_feature_id": "POLYGON",
+      "category": "protected_area",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              500100,
+              5899950
+            ],
+            [
+              500200,
+              5899950
+            ],
+            [
+              500200,
+              5900050
+            ],
+            [
+              500100,
+              5900050
+            ],
+            [
+              500100,
+              5899950
+            ]
+          ]
+        ]
+      }
+    }
+  ]
+}

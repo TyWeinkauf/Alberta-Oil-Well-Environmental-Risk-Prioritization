@@ -1,0 +1,34 @@
+# Data dictionary
+
+All project tables are in `screening`. Geometry storage is EPSG:3400; output maps will transform to EPSG:4326 in later phases. Table/column definitions and constraints are authoritative in `sql/migrations/001_initial.sql`.
+
+| Table | Grain / keys | Important fields |
+|---|---|---|
+| schema_migrations | One applied SQL file; filename PK | checksum, applied_at; editing applied history is rejected |
+| pipeline_runs | One fixture/config/contract version; run_id UUID PK | started_at, finished_at, status, study_area JSON, config_hash, error_summary |
+| source_snapshots | One source within a run; snapshot_id UUID PK; unique run_id/source_key | URL/reference, timestamp, SHA-256, license_note, native_crs, input record_count |
+| wells | One accepted well in a snapshot; well_pk PK; unique snapshot_id/source_well_id | Original/normalized licensee, nullable UWI/operator/LSD/status, required Point geometry |
+| environmental_features | One accepted feature in a snapshot; feature_pk PK; unique snapshot_id/source_feature_id | source_key, feature_type, nullable name, line/polygon geometry |
+| quarantine_records | One rejected input row per run/source; quarantine_pk PK | zero-based entity/row reference, deterministic reason_code/detail, raw_payload_reference |
+| production_monthly | Reserved for Phase 5; unique snapshot_id/source_record_id | period (first day of month), product, activity, volume, unit, attribution_level; no demo production |
+| production_well_links | Reserved well/production pair PK | join_method, evidence, confidence_status; future queries must use only verified links |
+| well_proximity | One run/well/category PK | nearest feature, distance_m within 500 m, coverage_status, generated cumulative within_50/100/250/500 flags |
+| category_coverage | One run/category PK | complete/incomplete/unavailable status and explanation; explicit coverage, not inferred from match presence |
+
+Run statuses currently used are `loading` inside a transaction and `seeded` after successful ingestion. `succeeded`, `failed` and `cancelled` are reserved for later orchestration. A separate analysis report uses `analyzed`. Migration 002 makes flags false for complete coverage with no feature within 500 m, and null for incomplete/unavailable coverage. Source completeness must be verified at real-data acquisition time in Phase 4.
+
+## Fixture and validation accounting
+
+`tests/fixtures/demo.json` is manually authored synthetic data with CRS metadata, a version, provenance text, 7 well records and 3 feature records. No identifier or company represents a real well or operator. Geometry is GeoJSON-shaped but projected; its explicit document-level CRS is required. This is an internal fixture format, not an assumption about any official source format.
+
+| Outcome | Count | Explanation |
+|---|---|---|
+| Accepted wells | 2 | Valid point IDs and locations; optional fields may be null |
+| Accepted environmental features | 2 | One synthetic stream line and one protected-area polygon |
+| Rejected wells | 5 | Both duplicate-ID rows, one missing ID, one missing geometry, one outside-extent point |
+| Rejected environmental features | 1 | Self-intersecting polygon |
+| Total | 10 | 4 accepted + 6 quarantined; no silently dropped records |
+
+Other row-level reasons include unsupported geometry type, malformed geometry, invalid/nonfinite coordinates, invalid text-field type and unsupported feature category. Missing/unknown document CRS rejects the whole batch before any run is loaded. Geometry repair is deliberately not automatic.
+
+`manifest.json` contains run ID/status, config hash, study area, source checksum/reference/timestamp/CRS/permission, database counts and validation results. `validation.json` contains input/accepted/rejected counts, reason frequencies and each rejected row reference. Resolve `<raw file>#wells/2` as the third entry of the archived document's `wells` list. Raw snapshot bytes allow the retained source licensee label to be traced even when a search label is normalized.

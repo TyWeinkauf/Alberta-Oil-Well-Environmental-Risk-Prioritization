@@ -1,0 +1,19 @@
+{
+  "fixture_version": 1,
+  "crs": "EPSG:3400",
+  "license_note": "Project-authored synthetic training data; no real wells, companies or environmental features.",
+  "wells": [
+    {"source_well_id": "DEMO-WELL-001", "licensee_name": "Synthetic Company A", "lsd_text": "Synthetic legal location A (not a real LSD)", "status": "synthetic", "geometry": {"type": "Point", "coordinates": [500000, 5900000]}},
+    {"source_well_id": "DEMO-WELL-002", "licensee_name": "Synthetic Company B", "geometry": {"type": "Point", "coordinates": [500100, 5900000]}},
+    {"source_well_id": "DEMO-DUPLICATE", "geometry": {"type": "Point", "coordinates": [500050, 5900000]}},
+    {"source_well_id": "DEMO-DUPLICATE", "geometry": {"type": "Point", "coordinates": [500060, 5900000]}},
+    {"geometry": {"type": "Point", "coordinates": [500070, 5900000]}},
+    {"source_well_id": "DEMO-MISSING-GEOMETRY", "geometry": null},
+    {"source_well_id": "DEMO-OUTSIDE", "geometry": {"type": "Point", "coordinates": [500000, 0]}}
+  ],
+  "features": [
+    {"source_feature_id": "DEMO-STREAM", "category": "water", "name": "Synthetic stream", "geometry": {"type": "LineString", "coordinates": [[499950, 5899900], [499950, 5900100]]}},
+    {"source_feature_id": "DEMO-PARK", "category": "protected_area", "name": "Synthetic protected area", "geometry": {"type": "Polygon", "coordinates": [[[500200, 5899900], [500400, 5899900], [500400, 5900100], [500200, 5900100], [500200, 5899900]]]}},
+    {"source_feature_id": "DEMO-INVALID-POLYGON", "category": "protected_area", "geometry": {"type": "Polygon", "coordinates": [[[500200, 5899900], [500400, 5900100], [500400, 5899900], [500200, 5900100], [500200, 5899900]]]}}
+  ]
+}

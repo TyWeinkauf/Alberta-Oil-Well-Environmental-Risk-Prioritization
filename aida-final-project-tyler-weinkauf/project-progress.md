@@ -9,11 +9,15 @@ For each row, choose one status: **Not started**, **In progress**, **Ready for f
 | Week / checkpoint | Evidence to prepare | Status | Evidence path or commit | Feedback / next action |
 |---|---|---|---|---|
 | 6 — scope and feasibility | Approved or reviewed question; intended user/decision; scope boundary; course contribution; data source/permission; feasibility question. | Not started |  |  |
-| 8 — data and evidence plan | Data inventory/sample; permission/provenance; method/pipeline plan; baseline; success and quality checks. | Not started |  |  |
-| 10 — working prototype | One repeatable end-to-end run or spatial/vision/analysis workflow with an initial output and short run note. | Not started |  |  |
-| 12 — validation and revision | Validation/check results; sensitivity or changed-setting comparison; error/limitation; revisions and what changed. | Not started |  |  |
+| 8 — data and evidence plan | Data inventory/sample; permission/provenance; method/pipeline plan; baseline; success and quality checks. | In progress | `../config/`, `../docs/architecture.md`, `../docs/data_dictionary.md`, `shared-resources/data-inventory.md` | Synthetic inputs and contracts documented; verify live sources, permissions and baseline methodology in later phases. |
+| 10 — working prototype | One repeatable end-to-end run or spatial/vision/analysis workflow with an initial output and short run note. | In progress | `../scripts/analyze_demo.py`, `../docs/spatial_methodology.md`, `../docs/reproducibility.md`, `../tests/` | 2026-11-08: Phases 0-2 implemented, 61 tests passed; synthetic seed plus spatial analysis verified. Interactive application and real-data ingestion remain unfinished. |
+| 12 — validation and revision | Validation/check results; sensitivity or changed-setting comparison; error/limitation; revisions and what changed. | In progress | `../tests/integration/test_spatial.py`, `../docs/spatial_methodology.md` | Known-distance boundaries, coverage semantics, failure rollback and 500-to-50 m sensitivity verified on fixtures. Real-data, UI and final course validation remain open. |
 | 14 — release candidate | Organized course folders; evidence index; clean-run/release checks; peer review and response; presentation practice. | Not started |  |  |
 | 15 — final handoff | Final course packages; submission manifest; D2L submission evidence; in-class presentation; final limitation and next step. | Not started |  |  |
+
+## Implementation tracking
+
+See [the Markdown design and implementation tracker](../DESIGN.md#13-phased-codex-implementation-plan) for phase and step status. Update it when implementation work starts or completes. The course checkpoints in this file require their own evidence and are not automatically completed by environment setup.
 
 ## How to ask for feedback
 

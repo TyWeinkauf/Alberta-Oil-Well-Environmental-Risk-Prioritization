@@ -1,0 +1,10 @@
+# Limitations and responsible use
+
+- Development currently uses project-authored synthetic wells, companies and features. The completed project is intended to use real data from the supplied dataset reference. Synthetic results provide no real environmental findings, regulatory conclusions or operational recommendations.
+- The first live study area, AER distribution format/fields/CRS/permissions, ArcGIS service/layer IDs, federal coverage and redistribution rights remain unverified. Source-catalog nulls are intentional; live downloading is not implemented.
+- Proximity screening is calculated for synthetic inputs. No real-source environmental result has been produced. A null distance means no nearby feature only when coverage is complete; incomplete/unavailable coverage is explicitly unknown. The demo's rejected protected-area polygon prevents a complete-coverage assertion for that layer.
+- No production records or joins are implemented. Licensee, operator and producer are distinct roles. Null fields mean unavailable; synthetic legal-location text is explicitly not a real LSD.
+- Validation checks are input-quality safeguards, not a professional assessment. They do not establish source completeness, positional accuracy, historical correctness, ecology, engineering safety or regulatory compliance.
+- Invalid geometries are quarantined rather than silently repaired. Phase 1 checks full containment in the configured synthetic extent; buffered clipping and real source coverage checks remain future work.
+- PostgreSQL is local development infrastructure. The test suite requires a separate empty `_test` database and does not exercise Windows itself. Windows setup commands are supplied for review and have not been run on that platform.
+- The older AIDA 2362 course brief requests QGIS, while the newer project design selects Streamlit/OpenStreetMap without QGIS. The implementation follows that newer design; the instructor/D2L requirements remain authoritative for graded handoff. Course documents are retained unchanged.

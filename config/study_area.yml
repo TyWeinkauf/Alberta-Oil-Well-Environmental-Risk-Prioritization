@@ -1,0 +1,6 @@
+# Synthetic demonstration extent only; this is not a selected live study region.
+name: synthetic_demo
+bbox_wgs84: [-120.0, 49.0, -110.0, 60.0]
+analysis_crs: EPSG:3400
+thresholds_m: [50, 100, 250, 500]
+mode: demo

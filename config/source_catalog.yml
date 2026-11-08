@@ -1,0 +1,107 @@
+# Unverified entries are deliberately disabled. No live adapter runs in Phase 1.
+sources:
+  - key: aer_wells
+    kind: file
+    publisher: Alberta Energy Regulator
+    reference_crs: null  # Must inspect the actual ST37 .prj/metadata.
+    reference_license: AER copyright and product-specific information terms; not assumed OGL.
+    reference_document: docs/dataset_reference.md
+    enabled: false
+    url: null
+    verified: false
+    license_note: null
+    native_crs: null
+    layer_id: null
+    field_mapping: {}
+  - key: alberta_water
+    kind: arcgis
+    publisher: Government of Alberta
+    reference_crs: EPSG:3400
+    reference_license: Open Government Licence - Alberta (as described in the supplied reference).
+    reference_document: docs/dataset_reference.md
+    enabled: false
+    url: null
+    verified: false
+    license_note: null
+    native_crs: null
+    layer_id: null
+    field_mapping: {}
+  - key: alberta_protected_areas
+    kind: arcgis
+    publisher: Government of Alberta / Alberta Parks
+    reference_crs: EPSG:3400
+    reference_license: Public service; exact resource-use and redistribution terms require verification.
+    reference_document: docs/dataset_reference.md
+    enabled: false
+    url: null
+    verified: false
+    license_note: null
+    native_crs: null
+    layer_id: null
+    field_mapping: {}
+  - key: federal_critical_habitat
+    kind: file
+    publisher: Environment and Climate Change Canada / Canadian Wildlife Service
+    reference_crs: EPSG:3978
+    reference_license: Open Government Licence - Canada (as described in the supplied reference).
+    reference_document: docs/dataset_reference.md
+    enabled: false
+    url: null
+    verified: false
+    license_note: null
+    native_crs: null
+    layer_id: null
+    field_mapping: {}
+  - key: alberta_wetlands
+    kind: arcgis
+    priority: optional
+    publisher: Government of Alberta
+    reference_crs: EPSG:3400
+    reference_license: Older Informatics Branch digital-data licence; verify web use and redistribution.
+    reference_document: docs/dataset_reference.md
+    enabled: false
+    url: null
+    verified: false
+    license_note: null
+    native_crs: null
+    layer_id: null
+    field_mapping: {}
+  - key: alberta_esa_2014
+    kind: arcgis
+    priority: optional
+    publisher: Government of Alberta
+    reference_crs: EPSG:3400
+    reference_license: Distribution/use terms require verification; historical comparison only.
+    reference_document: docs/dataset_reference.md
+    enabled: false
+    url: null
+    verified: false
+    license_note: null
+    native_crs: null
+    layer_id: null
+    field_mapping: {}
+  - key: openstreetmap
+    kind: tiles
+    role: basemap
+    publisher: OpenStreetMap contributors / OpenStreetMap Foundation
+    reference_crs: EPSG:3857
+    reference_license: ODbL with contributor attribution and applicable tile/service usage policy.
+    reference_document: docs/dataset_reference.md
+    enabled: false
+    url: null
+    verified: false
+    license_note: null
+    native_crs: null
+    layer_id: null
+    field_mapping: {}
+  - key: petrinex_production
+    kind: file
+    role: production
+    priority: optional
+    enabled: false
+    url: null
+    verified: false
+    license_note: null
+    native_crs: null
+    layer_id: null
+    field_mapping: {}
