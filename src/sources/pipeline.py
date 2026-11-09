@@ -24,7 +24,7 @@ def live_requirements(catalog: SourceCatalog) -> list[str]:
     analytical=[s for s in catalog.sources if s.role=='analysis']
     for source in analytical:
         if source.priority=='core' and (not source.enabled or not source.verified):
-            requirements.append(f'{source.key}: official endpoint, licence, CRS and field mapping must be verified/enabled')
+            requirements.append(f'{source.key}: source location, licence, CRS and field mapping must be verified/enabled')
         if source.enabled and not source.coverage_note:
             requirements.append(f'{source.key}: verified geographic/layer coverage note is required')
     wells=[s for s in analytical if s.key=='aer_wells' and s.enabled and s.verified]
@@ -103,7 +103,7 @@ def run_live(engine, *, catalog: SourceCatalog | None=None, area: StudyArea | No
                     conn.execute(text('''INSERT INTO screening.source_snapshots
                         (snapshot_id,run_id,source_key,url,retrieved_at,checksum,license_note,native_crs,record_count)
                         VALUES (:snapshot,:run,:key,:url,:retrieved,:sha,:licence,:crs,:count)'''),
-                        {'snapshot':snapshot_id,'run':run_id,'key':source.key,'url':str(source.url),
+                        {'snapshot':snapshot_id,'run':run_id,'key':source.key,'url':str(source.url or source.metadata_url or ''),
                          'retrieved':max(datetime.fromisoformat(s.metadata['retrieved_at']) for s in acquisition.responses),
                          'sha':checksum,'licence':source.license_note,'crs':acquisition.native_crs,'count':len(acquisition.records)})
                     for row in batch.accepted:

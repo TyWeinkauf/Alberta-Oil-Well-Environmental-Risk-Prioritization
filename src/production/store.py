@@ -14,11 +14,12 @@ from src.db.migrations import migrate
 from src.production.contracts import month, resolve_link, validate_production
 from src.production.csv_source import read_csv
 from src.sources.http import HttpCache
+from src.sources.local import acquire_snapshot
 
 
 def production_requirements(source: Source | None) -> list[str]:
     if source is None or source.role!='production' or not source.enabled or not source.verified:
-        return ['Production endpoint, licence, reporting level and field mapping are not verified/enabled.']
+        return ['Production source, licence, reporting level and field mapping are not verified/enabled.']
     required={'source_record_id','period','product','activity','volume','unit'}
     missing=required-source.field_mapping.keys()
     errors=[f'Production mapping is missing {sorted(missing)}'] if missing else []
@@ -29,21 +30,27 @@ def production_requirements(source: Source | None) -> list[str]:
 
 def import_csv(engine,run_id: str,path: Path,source: Source,*,start: str,end: str,synthetic: bool=False,
                retrieved_at: str | None=None,raw_root: Path | None=None,output_root: Path | None=None,
-               max_records: int=100000) -> dict:
+               max_records: int=100000, acquisition: dict | None=None) -> dict:
     if not synthetic:
         errors=production_requirements(source)
         if errors:raise ValueError('; '.join(errors))
-    rows=read_csv(path,source,max_records=max_records)
-    validation=validate_production(rows,source,start,end)
-    if not validation.accepted and validation.rejected:
-        raise ValueError('No acceptable production records; the previous batch must be retained')
-    payload=path.read_bytes();checksum=hashlib.sha256(payload).hexdigest()
+    if path.stat().st_size>512*1024**2:
+        raise ValueError('Production input exceeds the 512 MiB file cap')
+    with path.open('rb') as handle:
+        payload=handle.read(512*1024**2+1)
+    if len(payload)>512*1024**2:
+        raise ValueError('Production input exceeds the 512 MiB file cap')
+    checksum=hashlib.sha256(payload).hexdigest()
     archive=(raw_root or ROOT/'data/raw/production')/checksum/'source_payload'
     archive.parent.mkdir(parents=True,exist_ok=True)
     try:
         with archive.open('xb') as handle:handle.write(payload)
     except FileExistsError:
         if archive.read_bytes()!=payload:raise ValueError('Immutable production snapshot checksum mismatch') from None
+    rows=read_csv(archive,source,max_records=max_records)
+    validation=validate_production(rows,source,start,end)
+    if not validation.accepted and validation.rejected:
+        raise ValueError('No acceptable production records; the previous batch must be retained')
     migrate(engine)
     run=UUID(str(run_id))
     with engine.begin() as conn:
@@ -78,7 +85,7 @@ def import_csv(engine,run_id: str,path: Path,source: Source,*,start: str,end: st
             conn.execute(text('''INSERT INTO screening.source_snapshots
                 (snapshot_id,run_id,source_key,url,retrieved_at,checksum,license_note,native_crs,record_count,revision_key,source_role)
                 VALUES (:snapshot,:run,:key,:url,:retrieved,:sha,:note,'not applicable (tabular)',:count,:revision,'production')'''),
-                {'snapshot':snapshot,'run':run,'key':source.key,'url':str(source.url) if not synthetic else 'fixture:'+str(path),
+                {'snapshot':snapshot,'run':run,'key':source.key,'url':str(source.url or source.metadata_url or '') if not synthetic else 'fixture:'+str(path),
                  'retrieved':datetime.fromisoformat(retrieved_at) if retrieved_at else datetime.now(timezone.utc),
                  'sha':checksum,'note':source.license_note or 'Project-authored synthetic production fixture only',
                  'count':len(rows),'revision':identity})
@@ -121,7 +128,7 @@ def import_csv(engine,run_id: str,path: Path,source: Source,*,start: str,end: st
         conn.execute(text('''INSERT INTO screening.production_active VALUES (:run,:batch)
             ON CONFLICT (run_id) DO UPDATE SET batch_id=excluded.batch_id'''),{'run':run,'batch':batch})
         report={'run_id':str(run),'batch_id':str(batch),'status':'imported','source_mode':'synthetic' if synthetic else 'live',
-                'source_key':source.key,'raw_sha256':checksum,'raw_payload_reference':str(archive),
+                'source_key':source.key,'acquisition':acquisition,'raw_sha256':checksum,'raw_payload_reference':str(archive),
                 'configuration':configuration,'validation':stats,
                 'disclaimer':'Only exact, uniquely verified well-level links may populate a well production chart. Facility volumes are never allocated.'}
         write_json((output_root or ROOT/'outputs/runs')/str(run)/'production'/str(batch)/'manifest.json',report)
@@ -144,13 +151,13 @@ def refresh_production(engine,run_id: str,*,start: str,end: str,source: Source |
             VALUES (:attempt,'running',:stage,CAST(:area AS jsonb),:run)'''),
             {'attempt':attempt,'stage':stage,'area':json.dumps({**area,'production_window':{'start':start,'end':end}}),'run':run})
     try:
-        snapshot=(cache or HttpCache()).get(str(source.url),refresh=refresh)
+        snapshot=acquire_snapshot(source,cache or HttpCache(),refresh=refresh)
         stage='production:load-and-link'
         with engine.begin() as conn:
             conn.execute(text('UPDATE screening.pipeline_attempts SET stage=:stage WHERE attempt_id=:attempt'),
                          {'stage':stage,'attempt':attempt})
         report=import_csv(engine,run_id,snapshot.path,source,start=start,end=end,
-                          retrieved_at=snapshot.metadata['retrieved_at'],**kwargs)
+                          retrieved_at=snapshot.metadata['retrieved_at'],acquisition=snapshot.metadata,**kwargs)
         with engine.begin() as conn:
             conn.execute(text("UPDATE screening.pipeline_attempts SET status='succeeded',stage='production:complete',finished_at=now() WHERE attempt_id=:attempt"),
                          {'attempt':attempt})

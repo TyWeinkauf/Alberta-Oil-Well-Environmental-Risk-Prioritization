@@ -1,24 +1,31 @@
 """Inspect a candidate source before configuring/enabling its verified mapping."""
 import argparse
 import json
+from pathlib import Path
 
 from _bootstrap import run_cli
 import pyogrio
 
 from src.sources.files import spatial_path
 from src.sources.http import HttpCache
+from src.config import Source
+from src.sources.local import acquire_snapshot
 
 
 def main():
     parser=argparse.ArgumentParser(description=__doc__)
     parser.add_argument('kind',choices=['file','arcgis'])
-    parser.add_argument('url',help='Candidate official public HTTPS URL; inspection does not certify its licence')
+    parser.add_argument('url',nargs='?',help='Candidate official public HTTPS URL; inspection does not certify its licence')
+    parser.add_argument('--path',type=Path,help='Local downloaded GIS file/ZIP to inspect without network access')
     parser.add_argument('--layer')
     parser.add_argument('--archive-member')
     parser.add_argument('--refresh',action='store_true')
     args=parser.parse_args()
+    if bool(args.url)==bool(args.path) or (args.path and args.kind!='file'):
+        raise ValueError('Provide either a URL, or --path for file inspection')
     cache=HttpCache()
-    snapshot=cache.get(args.url,{'f':'json'} if args.kind=='arcgis' else None,refresh=args.refresh)
+    snapshot=(acquire_snapshot(Source(key='inspection',kind='file',local_path=args.path),cache)
+              if args.path else cache.get(args.url,{'f':'json'} if args.kind=='arcgis' else None,refresh=args.refresh))
     if args.kind=='arcgis':
         metadata=snapshot.json()
         if 'error' in metadata:

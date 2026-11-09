@@ -46,3 +46,9 @@ The candidate reporting window is configurable in `../../config/production_windo
 ## Published-environment metadata discovery — 8 November 2026
 
 The prior discovery-host denial is superseded. Fresh provincial/ArcGIS searches and Petrinex public pages/terms returned HTTP 200. Official parks catalogue record `gda-6b96341f-2e19-4885-98af-66d12ed4f8dd` identifies its service and OGL-Alberta; Petrinex learning aids describe CSV/XML ZIPs, lag, masking and identifiers. These are metadata/documents only, not acquired analytical/production records. See `../../docs/source_discovery.md` and its URL/status/hash evidence. Actual service/metadata/download hosts remain CONNECT-denied; AER HTTP 403 and federal CKAN HTTP 429 require separate follow-up. No environment settings changed or published.
+
+User clarification: cloud access failures do not determine runtime source availability. Publisher APIs/direct downloads or user-downloaded CSV/GeoJSON/GIS files remain intended acquisition routes. Remote HTTP/ArcGIS acquisition is implemented; full local-file ingestion is planned in DESIGN step 4.2c, while the existing local production command only inspects files. See `../../docs/data_access.md`. No additional official dataset is claimed as acquired.
+
+## Local-file acquisition implemented — 8 November 2026
+
+Steps 4.2c/5.2c are complete: local GIS/GeoJSON, coordinate-mapped well CSV and production CSV/ZIP use immutable byte snapshots with publisher URL, original download timestamp and checksums. Runtime catalogue selection works through CLI/app; all 113 tests pass with synthetic offline import/refresh evidence. The disabled example catalogue is `../../config/source_catalog.local.example.yml`; see `../../docs/data_access.md`. No official analytical/production record has been acquired; source-specific schemas, terms and real-data validation remain open. This supersedes the earlier local-import planning status, not the source-verification limits.

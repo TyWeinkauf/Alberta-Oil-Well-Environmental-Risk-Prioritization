@@ -100,7 +100,8 @@ With the app running, the managed environment can also run `node tests/browser/u
 - [Data dictionary](docs/data_dictionary.md): tables, fields and fixture accounting.
 - [Limitations](docs/limitations.md): synthetic data, source verification and attribution boundaries.
 - [Spatial methodology](docs/spatial_methodology.md): nearest-feature calculations, coverage states and sensitivity evidence.
-- [Source verification](docs/source_verification.md): Phase 4 status, blocked hosts and acquisition commands.
+- [Source verification](docs/source_verification.md): Phase 4 status, observed cloud access failures and acquisition commands.
+- [Data access routes](docs/data_access.md): runtime APIs/downloads and configured local-file ingestion.
 - [UI workflow](docs/ui_workflow.md): map interaction, offline/online modes, exports and browser checks.
 - `config/`: demo study extent and disabled, unverified live-source placeholders.
 - `sql/migrations/`, `src/`, `scripts/`, `tests/`: implementation and repeatable checks.
@@ -111,7 +112,7 @@ Raw data, caches, reports, virtual environments and credentials are ignored. Sma
 
 The HTTP cache, ArcGIS ID-batch adapter, ZIP Shapefile/GPKG/FileGDB reader, 500 m environmental margin, atomic load/analysis, provenance manifests and persistent attempt history are implemented. **These mechanics are tested using local synthetic protocol servers; no official dataset has been acquired yet.**
 
-The cloud proxy denies `www.aer.ca`, `www.arcgis.com`, `open.canada.ca` and `open.alberta.ca`. Their domain additions are saved in the environment draft, preserving existing permissions. Review/save that network change in environment settings to unblock discovery; publish the reusable configuration when ready. Further official service/download hosts may be needed after discovering the actual resources.
+Published discovery permissions now allow provincial catalogue, ArcGIS portal and Petrinex documentation requests. Some actual service/download hosts still fail in this cloud session; these observations do not determine access from your own runtime. The program can acquire verified configured HTTP downloads and ArcGIS APIs. Import of user-downloaded GeoJSON/GIS, coordinate-mapped well CSV and production CSV/ZIP is implemented (steps 4.2c/5.2c). Use a verified custom catalogue through `--catalog` or `SOURCE_CATALOG_PATH`. See [data access routes](docs/data_access.md) for current support and remaining work.
 
 [Source verification status and commands](docs/source_verification.md) explain the remaining endpoint, licence, CRS and field-mapping checks. The configurable pilot is `config/study_area.live.yml` (Drayton Valley). `python scripts/run_live.py` intentionally fails preflight until all core source entries are verified/configured; it does not substitute synthetic records for missing real data.
 
@@ -127,3 +128,5 @@ python scripts/demo_production.py
 The example has 9 inputs: 6 accepted (3 verified well observations, 1 facility record, 1 unmatched record, 1 unknown reporting level), 2 quarantined and 1 outside the requested window. No facility volume is allocated to a well. An actual **Refresh production** requires a real-source analysis run and verified public-source configuration; neither current official source setup is ready.
 
 [Production workflow and limitations](docs/production.md) explains exact identifiers, decimal/adjustment contracts, compatible series, immutable batch history and audit exports. Published discovery-host permissions now work. [Source discovery evidence](docs/source_discovery.md) records official resource links and the additional service/download hosts still blocked. **103 Python tests**, the map browser smoke and the production chart/audit browser smoke pass with synthetic data; no actual Petrinex ingestion is claimed.
+
+Local-file setup, the disabled catalogue template and runnable commands are in [Data access routes](docs/data_access.md). The full Python suite now passes **113 tests**, including offline local-file spatial/production imports and app refresh. Official field mappings and a real-data run remain unverified; local input support does not mark Phases 4–5 complete.

@@ -56,3 +56,7 @@ The design's future flow is **Streamlit → orchestrator → source adapters →
 - **Phase 6:** performance, cancellation/recovery, last-successful-run publication, clean-clone app demonstration and separate course handoffs.
 
 Production storage is populated only through its explicit verified-source or labelled synthetic import; proximity rows are populated by the analysis command. `seeded` describes ingestion, and the separate report's `analyzed` status describes the spatial calculation without claiming full application publication. Live source integration will use the real-data stack recorded in [the supplied reference](dataset_reference.md). App-level acceptance remains tracked in `DESIGN.md`.
+
+## Configured local-file acquisition
+
+`src/sources/local.py` copies bounded local files to immutable SHA-256 snapshots, recording original path, publisher URL, declared download time and cache retrieval time. `acquire_file` and production refresh choose this route when `local_path` is configured; the publisher URL is provenance rather than a fetch target. Coordinate-mapped well CSVs preserve string IDs and pass invalid geometry to quarantine; environmental inputs retain actual GIS geometry. Production parses archived bytes rather than rereading the mutable original. Existing load/link transactions and failure audit are reused. Catalogue paths resolve relative to their YAML file; CLI `--catalog` or `SOURCE_CATALOG_PATH` selects runtime configuration. There is no file-upload UI.

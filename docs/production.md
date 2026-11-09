@@ -6,9 +6,11 @@ Fresh requests now reach the current [Alberta Public Data page](https://www.petr
 
 The website grants non-commercial use with Crown acknowledgment; commercial use needs prior consent. Product-specific terms still need resolution, including the confidentiality notice on the publicly linked learning aids. Successful documentation access does not verify actual files, exact reporting grain, historical attribution or identifier compatibility. No environment settings were changed or published in this pass.
 
+Cloud download failures do not establish access from the user's runtime. A reachable publisher API/download or a user-downloaded CSV/ZIP can support later source verification. Full local-file production ingestion is implemented in steps 4.2c/5.2c: configure a verified production entry with `local_path`, publisher provenance and actual mappings, then use `refresh_production.py --catalog` or the configured app. `inspect_production.py --path` still previews only. See [data access routes](data_access.md).
+
 ## Data boundary and configuration
 
-Petrinex ingestion is separate from geospatial ingestion. It appends production snapshots to an existing real analysis run and does not rerun the map pipeline. The current `petrinex_production` catalogue entry deliberately has no URL/mapping and remains disabled/unverified.
+Petrinex ingestion is separate from geospatial ingestion. It appends production snapshots to an existing real analysis run and does not rerun the map pipeline. The default `petrinex_production` catalogue entry deliberately has no download URL/mapping and remains disabled/unverified. A user-maintained catalogue can select verified local files or reachable downloads.
 
 The adapter currently supports a bounded CSV, or a ZIP containing one bounded CSV. The official learning aids now document CSV/XML ZIP downloads, but actual archive contents, headers, available periods and product-specific terms must still be inspected. `config/production_window.yml` proposes August–October 2026 as three complete calendar months before 8 November; month availability is unverified; the documentation states generation follows the reporting deadline. The UI lets the user choose its requested month window.
 
@@ -75,3 +77,7 @@ python scripts/inspect_production.py --path tests/fixtures/production_demo.csv
 ```
 
 For an actual verified candidate download, use `--url` with its official HTTPS URL. Once all metadata is verified, refresh with `python scripts/refresh_production.py --run-id <real-run-id> --start <YYYY-MM> --end <YYYY-MM>`. Placeholders are not actual endpoints or run identifiers. No official data/credentials belong in Git.
+
+## Local-file refresh evidence
+
+The full suite now passes 113 tests. New offline integration checks load a coordinate-mapped well CSV plus three GeoJSON layers, then import either CSV or ZIP production from a custom catalogue. They verify exact string-ID links, separate facility audit, repeat batch identity, original download-date provenance, failed-import retention and the app's production refresh/chart through AppTest. No official production records are included. Production parses its immutable archived bytes so validation and checksums describe the same input.

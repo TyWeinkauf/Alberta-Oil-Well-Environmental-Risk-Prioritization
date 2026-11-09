@@ -1,0 +1,79 @@
+# Disabled template: not a verified mapping or an assertion of actual publisher formats.
+# Copy to an ignored local data directory; paths resolve beside the copied catalogue.
+# Set actual fields, CRS/coordinates, publisher metadata URL, download timestamp and terms.
+# Enable/verify entries only after inspecting your files and source evidence.
+sources:
+- key: aer_wells
+  kind: file
+  publisher: Alberta Energy Regulator
+  enabled: false
+  verified: false
+  local_path: wells.csv
+  downloaded_at: null
+  metadata_url: null
+  url: null
+  license_note: null
+  field_mapping: {}
+  native_crs: null
+  coverage_note: null
+  csv_x_field: null
+  csv_y_field: null
+- key: alberta_water
+  kind: file
+  publisher: Government of Alberta
+  enabled: false
+  verified: false
+  local_path: water.geojson
+  downloaded_at: null
+  metadata_url: null
+  url: null
+  license_note: null
+  field_mapping: {}
+  native_crs: null
+  coverage_note: null
+  category: water
+- key: alberta_protected_areas
+  kind: file
+  publisher: Government of Alberta / Alberta Parks
+  enabled: false
+  verified: false
+  local_path: protected_areas.geojson
+  downloaded_at: null
+  metadata_url: null
+  url: null
+  license_note: null
+  field_mapping: {}
+  native_crs: null
+  coverage_note: null
+  category: protected_area
+- key: federal_critical_habitat
+  kind: file
+  publisher: Environment and Climate Change Canada
+  enabled: false
+  verified: false
+  local_path: critical_habitat.geojson
+  downloaded_at: null
+  metadata_url: null
+  url: null
+  license_note: null
+  field_mapping: {}
+  native_crs: null
+  coverage_note: null
+  category: critical_habitat
+- key: petrinex_production
+  kind: file
+  publisher: Petrinex
+  enabled: false
+  verified: false
+  local_path: production.csv
+  downloaded_at: null
+  metadata_url: null
+  url: null
+  license_note: null
+  field_mapping: {}
+  role: production
+  priority: optional
+  reporting_level: unknown
+  well_identifier_field: null
+  identifier_namespace: null
+  join_evidence: null

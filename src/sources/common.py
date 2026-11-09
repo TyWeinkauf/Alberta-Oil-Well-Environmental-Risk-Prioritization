@@ -46,7 +46,7 @@ class Acquisition:
 
     def archive(self,root: Path | None = None) -> tuple[str,Path,dict]:
         root=root or ROOT/'data/raw/live'
-        manifest={'source_key':self.source.key,'source_url':str(self.source.url),
+        manifest={'source_key':self.source.key,'source_url':str(self.source.url or self.source.metadata_url or ''),
                   'native_crs':self.native_crs,'records_crs':self.records_crs,
                   'field_mapping':self.source.field_mapping,'license_note':self.source.license_note,
                   'inspection':self.inspection,

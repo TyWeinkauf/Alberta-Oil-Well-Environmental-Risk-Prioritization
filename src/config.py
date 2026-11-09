@@ -7,7 +7,7 @@ from typing import Literal
 
 import yaml
 from dotenv import load_dotenv
-from pydantic import BaseModel, ConfigDict, Field, HttpUrl, model_validator
+from pydantic import AwareDatetime, BaseModel, ConfigDict, Field, HttpUrl, model_validator
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -27,6 +27,10 @@ class Source(StrictModel):
     reference_document: str | None = None
     enabled: bool = False
     url: HttpUrl | None = None
+    local_path: Path | None = None
+    downloaded_at: AwareDatetime | None = None
+    csv_x_field: str | None = None
+    csv_y_field: str | None = None
     verified: bool = False
     license_note: str | None = None
     native_crs: str | None = None
@@ -51,14 +55,24 @@ class Source(StrictModel):
 
     @model_validator(mode='after')
     def require_verified_metadata(self):
+        if self.local_path is not None and self.kind != 'file':
+            raise ValueError('Local paths require kind: file')
+        if bool(self.csv_x_field) != bool(self.csv_y_field):
+            raise ValueError('Well CSV requires both coordinate fields')
+        if self.csv_x_field and (self.kind != 'file' or self.role != 'analysis' or self.category):
+            raise ValueError('Coordinate CSV is supported for well locations only')
+        if self.enabled and self.local_path is not None and not (
+            self.publisher and self.downloaded_at and (self.url or self.metadata_url)
+        ):
+            raise ValueError('Local input requires publisher, download timestamp and publisher URL or metadata URL')
         if self.kind == 'tiles' and self.role != 'basemap':
             raise ValueError('Tile sources are basemaps, not analytical distance sources')
         if self.enabled and not (
-            self.verified and self.url and self.license_note and (self.role=='production' or self.native_crs)
+            self.verified and (self.url or self.local_path is not None) and self.license_note and (self.role=='production' or self.native_crs)
             and (self.role == 'basemap' or self.field_mapping)
             and (self.kind != 'arcgis' or self.layer_id is not None)
         ):
-            raise ValueError('An enabled source needs verified URL, permission, CRS, fields and ArcGIS layer ID')
+            raise ValueError('An enabled source needs verified URL or local file, permission, CRS, fields and ArcGIS layer ID')
         return self
 
 
@@ -96,7 +110,13 @@ def load_study_area(path: Path | None = None) -> StudyArea:
 
 
 def load_source_catalog(path: Path | None = None) -> SourceCatalog:
-    return SourceCatalog.model_validate(yaml.safe_load((path or ROOT / 'config/source_catalog.yml').read_text()))
+    load_dotenv(ROOT / '.env', override=False)
+    path = Path(path or os.getenv('SOURCE_CATALOG_PATH') or ROOT / 'config/source_catalog.yml').resolve()
+    catalog = SourceCatalog.model_validate(yaml.safe_load(path.read_text()))
+    for source in catalog.sources:
+        if source.local_path is not None:
+            source.local_path = (path.parent / source.local_path).resolve()
+    return catalog
 
 
 def config_hash(study_area: StudyArea) -> str:

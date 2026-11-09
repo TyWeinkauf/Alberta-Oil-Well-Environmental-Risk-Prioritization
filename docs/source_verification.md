@@ -2,6 +2,10 @@
 
 **Phase 4 is in progress, not complete.** Acquisition infrastructure is implemented and tested against explicitly synthetic local HTTP/GIS fixtures. No official AER, Alberta environmental or federal habitat dataset has been downloaded or represented as verified.
 
+## Access scope
+
+All access failures below were observed in this managed cloud session. They do not establish whether the user's eventual runtime can reach a publisher API or download URL. The user may also download files separately for the implemented local-import route. Keep those sources in scope; actual-file/schema/licence verification can happen in that runtime or with supplied samples. See [data access routes and implementation status](data_access.md). Cloud allowlist changes are not a prerequisite for the final project's real-data use.
+
 ## Current access and verification — 8 November 2026
 
 The new published environment applies all five previously requested discovery hosts. Fresh provincial catalogue, ArcGIS portal and Petrinex public-page requests returned HTTP 200. This supersedes the earlier blanket discovery-host CONNECT denial. See [official-source discovery](source_discovery.md) and its response hashes for the inspected resources, terms, reporting limitations and exact remaining access failures.
@@ -15,14 +19,14 @@ The previously published OpenStreetMap tile permission returned HTTP 200 in the 
 ## Prepared implementation
 
 - `src/sources/http.py`: inherited proxy/CA trust, HTTPS for remote sources, bounded GET retries (including 429/5xx), streamed download caps, SHA-256 byte cache, conditional refresh and corruption detection. Unchanged responses retain their input identity. HTTP is allowed only for local fixture servers.
-- `src/sources/files.py`: inspect actual layers/fields/CRS before bounded reads; ZIP Shapefile, GeoPackage and OpenFileGDB support; no unsafe ZIP extraction or silent layer choice. Acquired CRS must match verified catalogue metadata.
+- `src/sources/files.py`: inspect actual layers/fields/CRS before bounded reads; ZIP Shapefile, GeoPackage and OpenFileGDB support; no unsafe ZIP extraction or silent layer choice. Acquired CRS must match verified catalogue metadata. Local files use immutable acquisition snapshots too; plain well CSV supports explicitly configured coordinates/CRS.
 - `src/sources/arcgis.py`: inspect layer metadata and fields, require supported GeoJSON output, query the study envelope plus a 500 m environmental margin, check count/ID completeness, acquire ID batches and reject missing/duplicate/unexpected records or contradictory response CRS.
 - `src/sources/pipeline.py`: require all core sources to be enabled/verified with explicit coverage notes; acquire and validate all inputs before loading, archive raw-response metadata and selected-record lineage, then load all source snapshots/wells/features/quarantine and calculate proximity in one database transaction. A source/page/load failure retains the previous analyzed run. Persistent attempts contain stage/error class, without connection credentials.
-- `scripts/inspect_source.py` and `scripts/run_live.py`: inspection and bounded-run commands. The current official catalogue deliberately fails preflight until verified metadata is configured. The UI's full-pipeline action uses this readiness gate; demo actions remain usable.
+- `scripts/inspect_source.py` and `scripts/run_live.py`: inspection and bounded-run commands with `--path` for local GIS inspection and `--catalog` for runtime source selection. The current official catalogue deliberately fails preflight until verified metadata is configured. The UI's full-pipeline action uses this readiness gate; demo actions remain usable.
 
 The initial configurable pilot is `config/study_area.live.yml`: **Drayton Valley**, WGS84 box `[-115.08, 53.20, -114.94, 53.30]`, with EPSG:3400 analysis and 50/100/250/500 m thresholds. This is an educational pilot choice, not an assertion that a source covers it or that any location needs operational review. Keep or revise it after inspecting data availability.
 
-## Verification sequence after network access
+## Verification sequence with accessible runtime sources or supplied files
 
 1. Locate authoritative product/catalogue pages. Record publisher, exact resource/download URLs, update/version, terms and redistribution limits. Preserve AER's product-specific copyright terms rather than assuming OGL.
 2. Use the inspection command to read the actual file/layer metadata. Record source CRS, geometry types, IDs, company-role semantics, fields, source extent and ArcGIS limits. Do not infer an ST37 CRS from other products.
@@ -58,3 +62,7 @@ Source bundles record original HTTP request/final URL, checksums, retrieval time
 The Phase 4 suite had **80 passing tests**; the subsequent Phase 5 suite had **103 passing tests**. New tests use synthetic local HTTP services and generated GIS files: actual Shapefile/GPKG/FileGDB ZIP reads, CRS/subset checks, retry/304/corrupt-cache/byte-limit behavior, ArcGIS ID-page completeness, buffered clipping and transactional PostGIS loads. A simulated incomplete source and a trigger-induced load failure both preserve prior analyzed results. These tests validate adapter mechanics, not official schema compatibility or a real regional run.
 
 Phase 5 independent work now supplies synthetic production contracts/import, exact-ID audit, active-batch history and chart/availability behavior. It does not resolve the official-access blocker; see [production status](production.md).
+
+## Local-file implementation follow-up
+
+Local spatial and production routes are implemented and covered by the 113-test suite. A custom catalogue can mix file inputs and remote sources. See [data access](data_access.md) for provenance fields, formats, limits, commands and the disabled template. The local end-to-end proof uses synthetic files; official CRS/schema/coverage, permissions and identifier compatibility still need actual-data evidence in a suitable runtime. Neither source publication nor cloud network changes are required to develop or execute the local route.

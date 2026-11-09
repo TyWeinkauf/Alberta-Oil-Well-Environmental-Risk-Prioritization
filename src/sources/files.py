@@ -1,5 +1,7 @@
 """Spatial file/ZIP reader: inspect actual layers/CRS, then read only a bounded subset."""
 import zipfile
+import csv
+import math
 from pathlib import PurePosixPath
 
 import pandas as pd
@@ -10,6 +12,7 @@ from shapely.geometry import mapping
 from src.config import Source, StudyArea
 from src.sources.common import Acquisition, mapped_record, query_bounds, verify_crs
 from src.sources.http import HttpCache
+from src.sources.local import acquire_snapshot
 
 
 def spatial_path(path,member: str | None=None):
@@ -42,9 +45,9 @@ def spatial_path(path,member: str | None=None):
 
 def acquire_file(source: Source,area: StudyArea,cache: HttpCache,*,refresh: bool=False,
                  max_records: int=10000) -> Acquisition:
-    if not source.url:
-        raise ValueError('Verified spatial download URL is required')
-    snapshot=cache.get(str(source.url),refresh=refresh)
+    snapshot=acquire_snapshot(source,cache,refresh=refresh)
+    if source.csv_x_field:
+        return acquire_well_csv(source, snapshot, max_records=max_records)
     dataset=spatial_path(snapshot.path,source.archive_member)
     layers=pyogrio.list_layers(dataset)
     names=[str(row[0]) for row in layers]
@@ -80,3 +83,32 @@ def acquire_file(source: Source,area: StudyArea,cache: HttpCache,*,refresh: bool
                         'fields':list(info['fields']),'geometry_type':info['geometry_type'],
                         'selected_count':len(frame),'native_query_bounds':list(native_bounds),
                         'environmental_margin_m':500 if environmental else 0})
+
+
+def acquire_well_csv(source, snapshot, *, max_records):
+    """CSV coordinates are explicitly configured; invalid coordinates reach quarantine."""
+    if zipfile.is_zipfile(snapshot.path):
+        raise ValueError('Coordinate well CSV must be an uncompressed CSV file')
+    crs=verify_crs(source.native_crs,source)
+    fields=set(source.field_mapping.values())|{source.csv_x_field,source.csv_y_field}
+    records=[]
+    with snapshot.path.open(encoding=source.csv_encoding,newline='') as handle:
+        reader=csv.DictReader(handle,delimiter=source.csv_delimiter)
+        headers=reader.fieldnames or []
+        if len(headers)!=len(set(headers)) or not fields<=set(headers):
+            raise ValueError('Well CSV headers do not match configured fields/coordinates')
+        for raw in reader:
+            if len(records)>=max_records:
+                raise ValueError('Well CSV exceeds record limit; input was not truncated')
+            if None in raw or any(value is None for value in raw.values()):
+                raise ValueError('Malformed well CSV row has unexpected/missing columns')
+            try:
+                x,y=float(raw[source.csv_x_field]),float(raw[source.csv_y_field])
+                geometry={'type':'Point','coordinates':[x,y]} if math.isfinite(x) and math.isfinite(y) else None
+            except ValueError:
+                geometry=None
+            records.append(mapped_record(source,raw,geometry,environmental=False))
+    return Acquisition(source,records,crs.to_string(),crs.to_string(),[snapshot],
+                       {'driver':'CSV','fields':headers,'coordinate_fields':[source.csv_x_field,source.csv_y_field],
+                        'coordinate_crs_note':'Declared by source configuration; CSV has no embedded CRS.',
+                        'selected_count':len(records),'environmental_margin_m':0})
