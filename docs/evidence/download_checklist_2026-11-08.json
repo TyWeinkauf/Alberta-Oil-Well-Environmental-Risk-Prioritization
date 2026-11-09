@@ -1,0 +1,164 @@
+{
+  "client_date": "2026-11-08",
+  "scope": "Download-link/format and local-handoff documentation only; no analytical datasets acquired or local deployment tested.",
+  "responses": [
+    {
+      "url": "https://open.alberta.ca/api/3/action/package_search?q=title%3A%22Base+Waterbody%22&rows=30",
+      "status": 200,
+      "response_sha256": "8a28ef273f3421d3c2b7e809f6eb99678ee59d8474809cbb561fa10d10e824c8",
+      "bytes": 10912,
+      "captured_at_utc": "2026-11-09T03:36:00.341979+00:00",
+      "selected_metadata": [
+        {
+          "id": "4d138133-0a66-49a0-8628-72e22d3c93bb",
+          "name": "gda-91d6eac8-e03d-49c1-bed1-9bf962f7eb71",
+          "title": "Base Waterbody Polygon Update",
+          "owner": null,
+          "licence": "Open Government Licence - Alberta",
+          "url": "https://geodiscover.alberta.ca/geoportal/rest/metadata/item/103556b6869a4957955c2971eb6588b2",
+          "resource_formats": [
+            "ESRI REST",
+            "HTML",
+            "XML"
+          ]
+        },
+        {
+          "id": "994ff4ae-ab81-4439-80a3-ed5816d37a1d",
+          "name": "gda-a2216d84-77ab-4f65-ab34-03434442cf32",
+          "title": "Base Waterbody Polygon Arc",
+          "owner": null,
+          "licence": "Open Government Licence - Alberta",
+          "url": "https://geodiscover.alberta.ca/geoportal/rest/metadata/item/27af6a3ebc9f4a449a9fe7dfc992f428",
+          "resource_formats": [
+            "HTML",
+            "XML"
+          ]
+        }
+      ]
+    },
+    {
+      "url": "https://open.alberta.ca/api/3/action/package_search?q=title%3A%22Base+Stream%22&rows=30",
+      "status": 200,
+      "response_sha256": "a3a6295453b823e8c013300f8688c936db74bc9f2e1ad6534ec8a916643f1bc9",
+      "bytes": 11374,
+      "captured_at_utc": "2026-11-09T03:34:15.531544+00:00",
+      "selected_metadata": [
+        {
+          "id": "4cb36aa3-eef5-417c-b2c3-a5544435d038",
+          "name": "gda-07172210-57aa-4958-a127-ce204ccb21c2",
+          "title": "Base Stream and Flow Representation Update",
+          "owner": null,
+          "licence": "Open Government Licence - Alberta",
+          "url": "https://geodiscover.alberta.ca/geoportal/rest/metadata/item/c14c4ea78aa741f795d7106e1d31b6cd",
+          "resource_formats": [
+            "ESRI REST",
+            "HTML",
+            "XML"
+          ]
+        },
+        {
+          "id": "2d88cc58-9ddb-4fa8-821c-634ded461a00",
+          "name": "gda-7f9c0f33-6ddb-4479-b2d9-1419d79e2d26",
+          "title": "Base Stream and Flow Representation",
+          "owner": null,
+          "licence": "Open Government Licence - Alberta",
+          "url": "https://geodiscover.alberta.ca/geoportal/rest/metadata/item/a8739420b43f467ebde0b1618a177409",
+          "resource_formats": [
+            "HTML",
+            "XML"
+          ]
+        }
+      ]
+    },
+    {
+      "url": "https://open.alberta.ca/api/3/action/package_show?id=gda-6b96341f-2e19-4885-98af-66d12ed4f8dd",
+      "status": 200,
+      "response_sha256": "7dcdc87a7bd2d03663e8b6fd6a329138ee869af03137492ee64ed1f07a735ab9",
+      "bytes": 9445,
+      "captured_at_utc": "2026-11-09T03:36:00.154554+00:00",
+      "selected_metadata": [
+        {
+          "id": "936b1a57-c7de-4f42-b032-5d97bc541fe6",
+          "name": "gda-6b96341f-2e19-4885-98af-66d12ed4f8dd",
+          "title": "Parks and Protected Areas of Alberta",
+          "owner": null,
+          "licence": "Open Government Licence - Alberta",
+          "url": "https://geodiscover.alberta.ca/geoportal/rest/metadata/item/0d1ac1474eba42fe9444a42a23a4ea1b",
+          "resource_formats": [
+            "ESRI REST",
+            "HTML",
+            "KML",
+            "XML"
+          ]
+        }
+      ]
+    },
+    {
+      "url": "https://open.canada.ca/data/api/action/package_show?id=47caa405-be2b-4e9e-8f53-c478ade2ca74",
+      "status": 200,
+      "response_sha256": "0f2bbf5555aa67bdc14366e69cf2f63e2a2941bec634a03e277bb7f8c886a444",
+      "bytes": 17169,
+      "captured_at_utc": "2026-11-09T03:36:00.370050+00:00",
+      "selected_metadata": [
+        {
+          "id": "47caa405-be2b-4e9e-8f53-c478ade2ca74",
+          "name": "47caa405-be2b-4e9e-8f53-c478ade2ca74",
+          "title": "Critical Habitat for Species at Risk National Dataset - Canada",
+          "owner": null,
+          "licence": "Open Government Licence - Canada",
+          "url": null,
+          "resource_formats": [
+            "ESRI REST",
+            "FGDB/GDB",
+            "WMS",
+            "XLSX"
+          ]
+        }
+      ]
+    },
+    {
+      "url": "https://www.arcgis.com/sharing/rest/content/items/c2fbd445f89a4139bcfdae771e44b93a?f=json",
+      "status": 200,
+      "response_sha256": "d16170839197badfc0798767ea15262acb3869cc2dbfd55bde319dc8f8ee581d",
+      "bytes": 2467,
+      "captured_at_utc": "2026-11-09T03:36:00.141044+00:00",
+      "selected_metadata": [
+        {
+          "id": "c2fbd445f89a4139bcfdae771e44b93a",
+          "name": null,
+          "title": "Base_Water_Feature",
+          "owner": "SN-ArcGIS",
+          "licence": null,
+          "url": "https://geospatial.alberta.ca/titan/rest/services/Environment/base_water_feature/MapServer",
+          "resource_formats": []
+        }
+      ]
+    },
+    {
+      "url": "https://open.alberta.ca/api/3/action/package_search?q=title%3A%22Environmentally+Significant+Areas%22&rows=30",
+      "status": 200,
+      "response_sha256": "8290f5c383fd5742d77acec7f099bcc63d786cbdc611e3252316a3fead22052b",
+      "bytes": 40039,
+      "captured_at_utc": "2026-11-09T03:34:15.434786+00:00",
+      "selected_metadata": [
+        {
+          "id": "91444b6b-395b-4c83-ba37-a2e07ffbe69e",
+          "name": "environmentally-significant-areas-in-alberta-2014-update-final-report",
+          "title": "Environmentally significant areas in Alberta : 2014 update : final report",
+          "owner": null,
+          "licence": "Open Government Licence - Alberta",
+          "url": null,
+          "resource_formats": [
+            "PDF"
+          ]
+        }
+      ]
+    }
+  ],
+  "format_conclusions": {
+    "parks": "Catalogue lists REST, HTML/XML and KML; no supported one-click vector file download confirmed. KMZ outline ZIP not directly supported.",
+    "water": "Base service candidate and base/update catalogue references identified; full-base coverage and layer IDs still unverified. No supported one-click vector file download confirmed.",
+    "habitat": "Publisher catalogue lists FGDB/GDB ZIP, REST and WMS; choose English FGDB/GDB ZIP. XLSX is reference dictionary only.",
+    "esa": "Located 2014 report record provides PDF references, not a verified polygon dataset."
+  }
+}

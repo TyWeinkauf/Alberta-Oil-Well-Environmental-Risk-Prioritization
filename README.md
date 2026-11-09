@@ -124,6 +124,8 @@ Every user must download permitted source files themselves. The entire `data/` d
 
 The user's ST37 screenshot lists a 1.23 GB geodatabase ZIP. Use the new **regional preparation** route to inspect that original directly and create a bounded study-area package; the app keeps its ordinary 512 MiB/10,000-record defaults. The original download/hashing still costs disk/I/O, but it is not copied into the ingestion cache. The 170 MB Excel distribution is not a direct supported input. Actual ST37 schema/coverage and full-archive performance remain unverified.
 
+Moving to a local project folder: the [download checklist](docs/download_inputs.md) now centralizes all publisher/service links, the exact listed download format where confirmed, and the remaining local setup, mapping, extraction, PostGIS and acceptance steps. Actual water/parks vector export availability is still to be confirmed; REST is a separate supported route.
+
 ## Prepare a regional extract from a large download
 
 Point the private catalogue's `local_path` at the original ZIP or `.gdb`, then inspect it before setting actual layer/CRS/field mappings and provenance:
