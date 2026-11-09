@@ -36,9 +36,11 @@ sources:
     reference_license: Public service; exact resource-use and redistribution terms require verification.
     reference_document: docs/dataset_reference.md
     enabled: false
-    url: null
+    url: https://geospatial.alberta.ca/titan/rest/services/boundary/parks_protected_areas_alberta/FeatureServer
     verified: false
-    license_note: null
+    license_note: Provincial catalogue lists Open Government Licence - Alberta; service metadata/layers remain uninspected.
+    metadata_url: https://open.alberta.ca/dataset/gda-6b96341f-2e19-4885-98af-66d12ed4f8dd
+    license_url: https://open.alberta.ca/licence
     native_crs: null
     layer_id: null
     field_mapping: {}
@@ -116,7 +118,9 @@ sources:
     enabled: false
     url: null
     verified: false
-    license_note: null
+    license_note: Website permits non-commercial use with Crown acknowledgment; product-specific terms remain unresolved.
+    metadata_url: https://www.petrinex.ca/public-data/apd/
+    license_url: https://www.petrinex.ca/terms
     native_crs: null
     layer_id: null
     field_mapping: {}

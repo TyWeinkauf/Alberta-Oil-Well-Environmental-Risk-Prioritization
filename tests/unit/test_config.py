@@ -5,7 +5,7 @@ from src.config import Source, StudyArea, config_hash, load_source_catalog, load
 
 
 def test_default_sources_are_disabled_and_config_is_stable():
-    assert all(not source.enabled and source.url is None for source in load_source_catalog().sources)
+    assert all(not source.enabled and not source.verified for source in load_source_catalog().sources)
     area = load_study_area()
     assert area.thresholds_m == [50, 100, 250, 500]
     assert config_hash(area) == config_hash(StudyArea.model_validate(area.model_dump()))
@@ -14,6 +14,14 @@ def test_default_sources_are_disabled_and_config_is_stable():
 def test_unverified_enabled_source_fails_closed():
     with pytest.raises(ValidationError, match='verified URL'):
         Source(key='unverified', kind='arcgis', enabled=True)
+
+
+def test_discovered_endpoint_cannot_enable_an_uninspected_source():
+    source = next(s for s in load_source_catalog().sources if s.key == 'alberta_protected_areas')
+    assert source.url and source.metadata_url and source.license_url
+    assert not source.field_mapping and source.native_crs is None and source.layer_id is None
+    with pytest.raises(ValidationError, match='verified URL'):
+        Source.model_validate(source.model_dump() | {'enabled': True, 'verified': True})
 
 
 def test_reference_records_real_data_intent_without_claiming_verified_acquisition():

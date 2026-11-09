@@ -18,7 +18,7 @@ Selection persists through normal rerenders and filter changes. If a selected we
 
 ## Offline and online map modes
 
-Offline geometry is the default. Leaflet/jQuery/CSS are vendored with their licenses and SHA-256 manifest; no CDN is required. Valid environmental geometry can be overlaid. Optional **Show OpenStreetMap basemap (online)** uses the normal attributed tile layer and requires access to `tile.openstreetmap.org`. The published cloud policy now allows this domain, and a fresh tile request returned HTTP 200. The offline map remains available without network access. Analytical source-discovery access is separate and remains blocked pending the Phase 4 domain additions.
+Offline geometry is the default. Leaflet/jQuery/CSS are vendored with their licenses and SHA-256 manifest; no CDN is required. Valid environmental geometry can be overlaid. Optional **Show OpenStreetMap basemap (online)** uses the normal attributed tile layer and requires access to `tile.openstreetmap.org`. The published cloud policy now allows this domain, and a fresh tile request returned HTTP 200. The offline map remains available without network access. Analytical discovery hosts now respond; actual service/download access and schema verification remain incomplete. See [source discovery](source_discovery.md).
 
 Colors follow the shared proximity bands. Gray can mean beyond the search radius or unknown; the exact band, coverage and cumulative flags are given in the table. Incomplete/unavailable source coverage is never displayed as a known negative. WGS84 is used for map/export coordinates; EPSG:3400 metres is used for distances.
 

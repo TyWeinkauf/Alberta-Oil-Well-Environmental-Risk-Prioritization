@@ -1,0 +1,126 @@
+{
+  "scope": "Metadata discovery only; no analytical/production records imported. Raw responses and third-party PDFs are not redistributed.",
+  "client_date": "2026-11-08",
+  "responses": [
+    {
+      "url": "https://open.alberta.ca/api/3/action/package_search?q=hydrography&rows=5",
+      "status": 200,
+      "bytes": 30676,
+      "sha256": "5636388df450aa75a7a8a6f76689e028a9d40694b63d0e78ef39b57bbc3245c3",
+      "captured_at_utc": "2026-11-09T01:30:55.996083+00:00"
+    },
+    {
+      "url": "https://open.alberta.ca/api/3/action/package_search?q=title:%22Parks%20and%20Protected%20Areas%22&rows=5",
+      "status": 200,
+      "bytes": 32888,
+      "sha256": "3749a4e59093c334dcf24dd97a94d412288048d4c2e9847a3895e937a2eeba7e",
+      "captured_at_utc": "2026-11-09T01:31:50.061152+00:00"
+    },
+    {
+      "url": "https://www.arcgis.com/sharing/rest/content/items/478c3bd0ad9f444aaa089d6652346082?f=json",
+      "status": 200,
+      "bytes": 2400,
+      "sha256": "3774b2e6d220eae946004a707fdd3ebd1a6e7e4c26268d2db5726902d3183339",
+      "captured_at_utc": "2026-11-09T01:31:23.588175+00:00"
+    },
+    {
+      "url": "https://www.arcgis.com/sharing/rest/search?f=json&q=title:%22Base%20Water%20Feature%22&num=10",
+      "status": 200,
+      "bytes": 2478,
+      "sha256": "65a49c19d9d82de35d21ffc122e2ffde21e1ac0e965da2eae0082f096654241f",
+      "captured_at_utc": "2026-11-09T01:31:51.256257+00:00"
+    },
+    {
+      "url": "https://open.alberta.ca/licence",
+      "status": 200,
+      "bytes": 20220,
+      "sha256": "9495c8c6bcfbc8c781110178aff6fa5b5e0f8e7b44ec5bd62f66da7b93ac1eb2",
+      "captured_at_utc": "2026-11-09T01:31:23.580549+00:00"
+    },
+    {
+      "url": "https://www.petrinex.ca/",
+      "status": 200,
+      "bytes": 9913,
+      "sha256": "9e756640e5b699ecd3df61581951792d968d0a55ee72c4ee710d6cea816f1502",
+      "captured_at_utc": "2026-11-09T01:31:24.341437+00:00"
+    },
+    {
+      "url": "https://www.petrinex.ca/public-data/",
+      "status": 200,
+      "bytes": 6211,
+      "sha256": "77bbe0df37785abbed9b24869f6225a0990039544da11d18818e0f574cc6c64c",
+      "captured_at_utc": "2026-11-09T01:31:51.685748+00:00"
+    },
+    {
+      "url": "https://www.petrinex.ca/public-data/apd/",
+      "status": 200,
+      "bytes": 12676,
+      "sha256": "5e93012a63395d8b365671bbfb87af09598cb77903b8c5284701df23c1e1da2d",
+      "captured_at_utc": "2026-11-09T01:32:15.647516+00:00"
+    },
+    {
+      "url": "https://www.petrinex.ca/terms",
+      "status": 200,
+      "bytes": 5888,
+      "sha256": "79665648b06243028a91bf785c18f829443b50f3831ddce55ecea1c3ac826172",
+      "captured_at_utc": "2026-11-09T01:31:51.904781+00:00"
+    },
+    {
+      "url": "https://www.petrinex.ca/media/4gfhoah5/pd_conventional_volumetrics_report.pdf",
+      "status": 200,
+      "bytes": 504546,
+      "sha256": "0e77838179bd5821b350dcb55c2bccbb0a3a10eb92f7dddf1244bb8700710707",
+      "captured_at_utc": "2026-11-09T01:32:33.592587+00:00"
+    },
+    {
+      "url": "https://www.petrinex.ca/media/1q5dwf5w/pd_well_to_facility_link_report.pdf",
+      "status": 200,
+      "bytes": 742318,
+      "sha256": "bb3a87329d92913612fec3e0e1a5a7c68850fae67da2179f2d4c54e5371c705f",
+      "captured_at_utc": "2026-11-09T01:32:32.566122+00:00"
+    },
+    {
+      "url": "https://www.aer.ca/providing-information/data-and-reports/statistical-reports/st37",
+      "status": 403,
+      "bytes": 1484,
+      "sha256": "fed0277aef478bf83e648f6a1388821ee46c98921d00a674aeb7aec8b4fd5557",
+      "captured_at_utc": "2026-11-09T01:30:55.580384+00:00"
+    },
+    {
+      "url": "https://www.aer.ca/",
+      "status": 403,
+      "bytes": 1484,
+      "sha256": "f78ed3bcdbb984cad16e2cb080f0d3c130dcb58a7c4849174aa9ac70f75c7e9f",
+      "captured_at_utc": "2026-11-09T01:31:51.261626+00:00"
+    },
+    {
+      "url": "https://open.canada.ca/data/api/action/package_search?q=critical%20habitat&rows=5",
+      "status": 429,
+      "bytes": 162,
+      "sha256": "413d294fad14524bf94e764b33ff0f327682549408545171fcf9240189c154ae",
+      "captured_at_utc": "2026-11-09T01:30:55.046458+00:00"
+    }
+  ],
+  "blocked_destinations": [
+    {
+      "url": "https://geospatial.alberta.ca/titan/rest/services/boundary/parks_protected_areas_alberta/FeatureServer?f=json",
+      "outcome": "proxy CONNECT 403; no HTTP response body acquired"
+    },
+    {
+      "url": "https://geospatial.alberta.ca/titan/rest/services/Environment/base_water_feature/MapServer?f=json",
+      "outcome": "proxy CONNECT 403; no HTTP response body acquired"
+    },
+    {
+      "url": "https://geodiscover.alberta.ca/geoportal/rest/metadata/item/0d1ac1474eba42fe9444a42a23a4ea1b/xml",
+      "outcome": "proxy CONNECT 403; no HTTP response body acquired"
+    },
+    {
+      "url": "https://search.open.canada.ca/en/opendata?keywords=critical+habitat",
+      "outcome": "proxy CONNECT 403; no HTTP response body acquired"
+    },
+    {
+      "url": "https://www.petrinex.gov.ab.ca/PublicData?Jurisdiction=AB",
+      "outcome": "proxy CONNECT 403; no HTTP response body acquired"
+    }
+  ]
+}

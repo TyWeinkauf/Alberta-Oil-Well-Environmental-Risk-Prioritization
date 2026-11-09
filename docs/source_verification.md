@@ -2,21 +2,15 @@
 
 **Phase 4 is in progress, not complete.** Acquisition infrastructure is implemented and tested against explicitly synthetic local HTTP/GIS fixtures. No official AER, Alberta environmental or federal habitat dataset has been downloaded or represented as verified.
 
-## Current external blocker — 8 November 2026
+## Current access and verification — 8 November 2026
 
-Fresh source-discovery requests were rejected by the managed proxy with CONNECT **403 Forbidden**. The running policy permits package-manager hosts and the published OpenStreetMap tile host, but not the discovery sites below. Their additions were saved in the environment configuration draft, preserving the existing tile host and package presets. Saving a draft does not apply or publish it.
+The new published environment applies all five previously requested discovery hosts. Fresh provincial catalogue, ArcGIS portal and Petrinex public-page requests returned HTTP 200. This supersedes the earlier blanket discovery-host CONNECT denial. See [official-source discovery](source_discovery.md) and its response hashes for the inspected resources, terms, reporting limitations and exact remaining access failures.
 
-| Host | Purpose / observed request | Current evidence |
-|---|---|---|
-| `www.aer.ca` | Locate current ST37 product/distribution and AER use terms | Proxy denied the candidate ST37 discovery path; its current path/download format remains unverified. |
-| `www.arcgis.com` | Search public ArcGIS metadata for the named Alberta layers and verify publisher/service/layer IDs | Proxy denied the standard portal search request. No analytical service/layer endpoint has been selected. |
-| `open.canada.ca` | Locate the critical-habitat catalogue record/resources and licence metadata | Proxy denied the catalogue search request. Dataset UUID and resources remain unverified. |
-| `open.alberta.ca` | Verify provincial catalogue/licence metadata | Proxy denied the catalogue request. Product-specific use statements remain unverified. |
-| `www.petrinex.ca` | Discover public production resources and reporting/licence metadata | Phase 5 discovery also denied with CONNECT 403; domain saved in the pending draft. Actual production access/schema remain unverified. |
+The provincial parks catalogue now establishes an official service URL and Open Government Licence – Alberta metadata. Petrinex's current Alberta Public Data page establishes the separate public-download host, and linked learning aids document CSV/XML ZIPs, reporting lag, masking and mixed facility/well identifier semantics. Actual service layers/files and AER/Petrinex identifier correspondence remain uninspected; catalogue entries stay disabled/unverified.
 
-Review and save these domains in environment settings to unblock discovery; publish the reusable environment when ready. Once access is applied, retry with a fresh connection, discover official service/download hosts and add only any further required destinations. Do not route requests through a different allowed service to bypass destination policy, disable TLS checks or invent dataset URLs/field mappings. No credentials have been requested for these intended public sources.
+Newly discovered `geospatial.alberta.ca`, `geodiscover.alberta.ca`, `search.open.canada.ca` and `www.petrinex.gov.ab.ca` are blocked by proxy CONNECT 403. AER instead returns HTTP 403 with a “request is blocked” page, while Canada's CKAN search returned HTTP 429. These failures require different follow-up; allowing discovery roots alone does not resolve them. No environment configuration was changed or published during this pass.
 
-The previously saved `tile.openstreetmap.org` permission **is now published and a fresh tile request returned HTTP 200**. That result does not establish analytical-source access.
+The previously published OpenStreetMap tile permission returned HTTP 200 in the prior phase. That result establishes display access only. No credentials have been requested for the intended public analytical sources.
 
 ## Prepared implementation
 
@@ -61,6 +55,6 @@ Source bundles record original HTTP request/final URL, checksums, retrieval time
 
 ## Evidence so far
 
-The current suite has **80 passing tests**. New tests use synthetic local HTTP services and generated GIS files: actual Shapefile/GPKG/FileGDB ZIP reads, CRS/subset checks, retry/304/corrupt-cache/byte-limit behavior, ArcGIS ID-page completeness, buffered clipping and transactional PostGIS loads. A simulated incomplete source and a trigger-induced load failure both preserve prior analyzed results. These tests validate adapter mechanics, not official schema compatibility or a real regional run.
+The Phase 4 suite had **80 passing tests**; the subsequent Phase 5 suite had **103 passing tests**. New tests use synthetic local HTTP services and generated GIS files: actual Shapefile/GPKG/FileGDB ZIP reads, CRS/subset checks, retry/304/corrupt-cache/byte-limit behavior, ArcGIS ID-page completeness, buffered clipping and transactional PostGIS loads. A simulated incomplete source and a trigger-induced load failure both preserve prior analyzed results. These tests validate adapter mechanics, not official schema compatibility or a real regional run.
 
 Phase 5 independent work now supplies synthetic production contracts/import, exact-ID audit, active-batch history and chart/availability behavior. It does not resolve the official-access blocker; see [production status](production.md).
