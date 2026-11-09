@@ -1,0 +1,118 @@
+{
+  "client_date": "2026-11-08",
+  "recorded_at_utc": "2026-11-09T02:05:47.521516+00:00",
+  "fresh_checkout": {
+    "scope": "Isolated local clone plus candidate overlay, new isolated Python virtual environment installed offline from the local wheel cache and a new PostgreSQL database. Linux only; no OS provisioning or Windows verification.",
+    "base_commit": "98d290479be6a765595b3d5b8e094ee1188c0715",
+    "candidate_overlay": true,
+    "new_database": true,
+    "new_virtual_environment": true,
+    "dependencies": "67 pinned packages installed with uv, no system-site packages; uv pip check passed",
+    "no_existing_env_or_generated_data": true,
+    "commands": [
+      {
+        "script": "setup_db.py",
+        "exit_code": 0,
+        "cwd": "outside checkout"
+      },
+      {
+        "script": "setup_db.py",
+        "exit_code": 0,
+        "cwd": "outside checkout"
+      },
+      {
+        "script": "demo_seed.py",
+        "exit_code": 0,
+        "cwd": "outside checkout"
+      },
+      {
+        "script": "demo_seed.py",
+        "exit_code": 0,
+        "cwd": "outside checkout"
+      },
+      {
+        "script": "analyze_demo.py",
+        "exit_code": 0,
+        "cwd": "outside checkout"
+      },
+      {
+        "script": "demo_production.py",
+        "exit_code": 0,
+        "cwd": "outside checkout"
+      },
+      {
+        "script": "demo_production.py",
+        "exit_code": 0,
+        "cwd": "outside checkout"
+      },
+      {
+        "browser_test": "ui_smoke.cjs",
+        "exit_code": 0,
+        "external_requests": "blocked by test"
+      },
+      {
+        "browser_test": "production_smoke.cjs",
+        "exit_code": 0,
+        "external_requests": "blocked by test"
+      }
+    ],
+    "test_suites": [
+      {
+        "tests": "118",
+        "failures": "0",
+        "errors": "0",
+        "skipped": "0"
+      }
+    ],
+    "counts": {
+      "pipeline_runs": 1,
+      "wells": 2,
+      "environmental_features": 2,
+      "quarantine_records": 6,
+      "well_proximity": 10,
+      "production_batches": 1,
+      "production_monthly": 6
+    },
+    "sensitivity": {
+      "baseline_matched": 2,
+      "baseline_threshold_m": 500,
+      "baseline_unknown": 0,
+      "changed_count": 1,
+      "changed_matched": 1,
+      "changed_threshold_m": 50,
+      "changed_unknown": 0,
+      "changed_well_ids": [
+        "DEMO-WELL-002"
+      ]
+    },
+    "code_tree_sha256": "6c80198ac2d55dbd66cc5962ec1a4d27048f2806464708053bd44b3c35857849",
+    "code_file_count": 64,
+    "requirements_sha256": "7e386dd0e928a42469f68c3e4371b2b3098bf28176adbf918bd4ea293be402ad",
+    "outcome": "passed",
+    "final_cleanup_edge_case_verified": true
+  },
+  "bounded_benchmark": {
+    "counts": {
+      "features": 30,
+      "proximity_rows": 5000,
+      "quarantined": 0,
+      "wells": 1000
+    },
+    "csv_bytes": 204040,
+    "dashboard_filter_export_seconds": 0.0534,
+    "exported_rows": 1000,
+    "first_run_seconds": 0.2953,
+    "generator_version": 1,
+    "limitations": "Local synthetic inputs, 30 features, two runs; not province-wide performance or official data. Temporary inputs/schema are removed.",
+    "mode": "synthetic_benchmark",
+    "postgis": "3.5 USE_GEOS=1 USE_PROJ=1 USE_STATS=1",
+    "postgresql": "PostgreSQL 17.5 (Debian 17.5-1.pgdg110+1) on x86_64-pc-linux-gnu, compiled by gcc (Debian 10.2.1-6) 10.2.1 20210110, 64-bit",
+    "python": "3.12.14",
+    "repeat_identity_matches": true,
+    "repeat_run_seconds": 0.1851,
+    "wells_requested": 1000
+  },
+  "official_data_verified": false,
+  "environment_configuration_changed": false,
+  "final_verified_at_utc": "2026-11-09T02:09:53.573158+00:00"
+}

@@ -12,6 +12,7 @@ import yaml
 from src.contracts.spatial import CATEGORIES
 from src.exports.selection import FIELDS, csv_bytes, geojson_bytes, table_records
 from src.orchestrator import run_demo
+from src.db.workflow import WorkflowBusy
 from src.ui.data import list_analyzed_runs, load_dashboard, pipeline_attempts
 from src.ui.map import build_map
 from src.ui.model import filtered_wells, map_selection
@@ -77,6 +78,10 @@ def main():
                 st.session_state.last_map_event = None
                 status.update(label='Demo ready' if demo_requested else 'Live dataset ready',state='complete')
                 outcome = 'Complete'
+            except WorkflowBusy as exc:
+                status.update(label='Another workflow is running',state='error')
+                st.warning(str(exc))
+                outcome = 'Busy'
             except Exception as exc:
                 # Do not render raw database exceptions or connection credentials.
                 status.update(label='Workflow action failed',state='error')
@@ -113,31 +118,38 @@ def main():
         st.info('Synthetic demonstration data. These are test fixtures, not real AER wells or government environmental layers.')
     else:
         st.info('Real-source dataset. Inspect provenance, coverage and quarantine records before interpreting proximity results.')
-    production_source=next((s for s in catalog.sources if s.key=='petrinex_production'),None) if catalog else None
-    production_blockers=production_requirements(production_source)
-    with st.sidebar.expander('Production'):
-        window=yaml.safe_load((ROOT/'config/production_window.yml').read_text())
-        production_start=st.text_input('Production start month',window['start'])
-        production_end=st.text_input('Production end month',window['end'])
-        demo_production=st.button('Load synthetic production demo',disabled=st.session_state.busy or dashboard['study_area']['mode']!='demo')
-        real_production=st.button('Refresh production',disabled=st.session_state.busy or bool(production_blockers) or dashboard['study_area']['mode']!='live')
-        if production_blockers:st.caption('Official production remains unverified; refresh is disabled. The demo uses project-authored observations only.')
-    if demo_production or real_production:
-        st.session_state.busy=True
-        with st.status('Updating production',expanded=True) as production_status:
-            try:
-                result=(load_demo_production(engine,run_id,start=production_start,end=production_end) if demo_production else
-                        refresh_production(engine,run_id,start=production_start,end=production_end,source=production_source))
-                dashboard=load_dashboard(engine,run_id)
-                production_status.update(label='Production ready',state='complete')
-                st.session_state.actions.append({'time_utc':datetime.now(timezone.utc).isoformat(),'action':'Production update',
-                    'outcome':'Complete','stages':f'Active batch {result["batch_id"]}; {result["source_mode"]}'})
-            except Exception as exc:
-                production_status.update(label='Production update failed',state='error')
-                st.error(f'Production could not update ({type(exc).__name__}); the previous active batch remains available. Check source metadata, identifier evidence and network settings.')
-                st.session_state.actions.append({'time_utc':datetime.now(timezone.utc).isoformat(),'action':'Production update',
-                    'outcome':'Failed','stages':type(exc).__name__})
-            finally:st.session_state.busy=False
+    # Production is outside the current scope; only an explicit enabled custom source exposes the retained workflow.
+    production_source=next((s for s in catalog.sources if s.role=='production' and s.enabled),None) if catalog else None
+    if production_source is not None:
+        production_blockers=production_requirements(production_source)
+        with st.sidebar.expander('Production'):
+            window=yaml.safe_load((ROOT/'config/production_window.yml').read_text())
+            production_start=st.text_input('Production start month',window['start'])
+            production_end=st.text_input('Production end month',window['end'])
+            demo_production=st.button('Load synthetic production demo',disabled=st.session_state.busy or dashboard['study_area']['mode']!='demo')
+            real_production=st.button('Refresh production',disabled=st.session_state.busy or bool(production_blockers) or dashboard['study_area']['mode']!='live')
+            if production_blockers:st.caption('Official production remains unverified; refresh is disabled. The demo uses project-authored observations only.')
+        if demo_production or real_production:
+            st.session_state.busy=True
+            with st.status('Updating production',expanded=True) as production_status:
+                try:
+                    result=(load_demo_production(engine,run_id,start=production_start,end=production_end) if demo_production else
+                            refresh_production(engine,run_id,start=production_start,end=production_end,source=production_source))
+                    dashboard=load_dashboard(engine,run_id)
+                    production_status.update(label='Production ready',state='complete')
+                    st.session_state.actions.append({'time_utc':datetime.now(timezone.utc).isoformat(),'action':'Production update',
+                        'outcome':'Complete','stages':f'Active batch {result["batch_id"]}; {result["source_mode"]}'})
+                except WorkflowBusy as exc:
+                    production_status.update(label='Another workflow is running',state='error')
+                    st.warning(str(exc))
+                    st.session_state.actions.append({'time_utc':datetime.now(timezone.utc).isoformat(),'action':'Production update',
+                        'outcome':'Busy','stages':'Another workflow owns the database lock'})
+                except Exception as exc:
+                    production_status.update(label='Production update failed',state='error')
+                    st.error(f'Production could not update ({type(exc).__name__}); the previous active batch remains available. Check source metadata, identifier evidence and network settings.')
+                    st.session_state.actions.append({'time_utc':datetime.now(timezone.utc).isoformat(),'action':'Production update',
+                        'outcome':'Failed','stages':type(exc).__name__})
+                finally:st.session_state.busy=False
     st.sidebar.header('Filters')
     companies = sorted({r['licensee_name'] or MISSING for r in dashboard['wells']})
     statuses = sorted({r['status'] or MISSING for r in dashboard['wells']})
@@ -197,7 +209,8 @@ def main():
                 st.text(f'Latitude: {well["latitude"]:.7f}\nLongitude: {well["longitude"]:.7f}\nBand: {well["band"]}')
                 st.text(f'Source: {well["source_key"]}\nSnapshot retrieved: {well["retrieved_at"]}\nSource CRS: {well["native_crs"]}')
             st.dataframe(pd.DataFrame([r for r in dashboard['proximity'] if r['well_pk']==well['well_pk']]),hide_index=True)
-            show_well_production(production_view(engine,run_id,well['well_pk']))
+            if production_source is not None:
+                show_well_production(production_view(engine,run_id,well['well_pk']))
         st.subheader('Filtered results')
         table = pd.DataFrame(table_records(records),columns=FIELDS)
         st.dataframe(table,hide_index=True)
@@ -228,7 +241,8 @@ def main():
                       'rejected_records':len(dashboard['quarantine']),'quarantined':dashboard['quarantine'],
                       'coverage':dashboard['coverage']}
         st.download_button('Download validation records',json.dumps(validation,indent=2).encode(),'validation.json','application/json',on_click='ignore')
-        show_production_audit(production_view(engine,run_id))
+        if production_source is not None:
+            show_production_audit(production_view(engine,run_id))
     with history_tab:
         st.subheader('Analyzed datasets')
         st.dataframe(pd.DataFrame([{'run_id':r['run_id'],'started_at':r['started_at'],'study_area':r['study_area']['name']} for r in runs]),hide_index=True)

@@ -8,6 +8,8 @@ from uuid import NAMESPACE_URL, UUID, uuid4, uuid5
 
 from sqlalchemy import text
 
+from src.db.workflow import serialized_workflow
+
 from src.artifacts import write_json
 from src.config import ROOT, Source, load_source_catalog
 from src.db.migrations import migrate
@@ -28,6 +30,7 @@ def production_requirements(source: Source | None) -> list[str]:
     return errors
 
 
+@serialized_workflow
 def import_csv(engine,run_id: str,path: Path,source: Source,*,start: str,end: str,synthetic: bool=False,
                retrieved_at: str | None=None,raw_root: Path | None=None,output_root: Path | None=None,
                max_records: int=100000, acquisition: dict | None=None) -> dict:
@@ -135,6 +138,7 @@ def import_csv(engine,run_id: str,path: Path,source: Source,*,start: str,end: st
     return report
 
 
+@serialized_workflow
 def refresh_production(engine,run_id: str,*,start: str,end: str,source: Source | None=None,
                        cache: HttpCache | None=None,refresh: bool=True,**kwargs) -> dict:
     if month(start)>month(end):raise ValueError('Production window start must not follow its end')

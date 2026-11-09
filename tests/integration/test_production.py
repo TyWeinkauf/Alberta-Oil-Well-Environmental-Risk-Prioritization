@@ -102,6 +102,13 @@ def test_well_production_read_cannot_cross_analysis_run_scope(test_engine,produc
 def test_streamlit_demo_production_chart_and_unavailable_other_well(test_engine,production_run,tmp_path,monkeypatch):
     load(test_engine,production_run,tmp_path)
     monkeypatch.setenv('DATABASE_URL',test_engine.url.render_as_string(hide_password=False))
+    # Retained production UI is opt-in through a custom catalogue, outside the default project scope.
+    from src.config import SourceCatalog
+    source=Source(key='legacy_synthetic',kind='file',role='production',enabled=True,verified=True,
+                  url='https://example.invalid/synthetic',license_note='Synthetic test only',
+                  field_mapping={'source_record_id':'ROW_ID','period':'MONTH','product':'PRODUCT',
+                                 'activity':'ACTIVITY','volume':'VOLUME','unit':'UNIT'})
+    monkeypatch.setattr('src.config.load_source_catalog',lambda:SourceCatalog(sources=[source]))
     app=AppTest.from_file(str(ROOT/'app.py')).run(timeout=30)
     with test_engine.connect() as conn:
         wells=conn.execute(text('SELECT well_pk FROM screening.wells ORDER BY source_well_id')).scalars().all()

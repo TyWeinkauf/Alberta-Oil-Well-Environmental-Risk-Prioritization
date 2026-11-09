@@ -37,6 +37,8 @@ const os=require('node:os');
    await page.keyboard.press('Escape');
   }
   await markers(2);
+  assert.equal(await page.getByRole('button',{name:'Refresh production',exact:true}).count(),0);
+  assert.equal(await page.getByRole('button',{name:'Load synthetic production demo',exact:true}).count(),0);
   await page.getByRole('button',{name:'Use demo dataset',exact:true}).click();
   await page.getByText('Demo ready',{exact:true}).waitFor();
   await markers(2);

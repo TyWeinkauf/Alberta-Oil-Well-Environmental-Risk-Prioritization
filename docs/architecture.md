@@ -1,5 +1,7 @@
 # Architecture
 
+**Current scope:** AER wells and environmental proximity. Petrinex is excluded. Production modules/tables described below are retained optional legacy functionality, hidden in the default app/catalogues; they do not block current source readiness.
+
 ## Implemented foundation (Phases 0–1)
 
 `src/config.py` reads strict YAML contracts. Study extents use WGS84 bounds; stored geometries use EPSG:3400 metres. The configured bounding box is a broad synthetic test extent, not a chosen real study area. Unknown or incomplete live-source metadata stays disabled. Credentials come from `DATABASE_URL` or an ignored root `.env`; process bindings take precedence.
@@ -60,3 +62,15 @@ Production storage is populated only through its explicit verified-source or lab
 ## Configured local-file acquisition
 
 `src/sources/local.py` copies bounded local files to immutable SHA-256 snapshots, recording original path, publisher URL, declared download time and cache retrieval time. `acquire_file` and production refresh choose this route when `local_path` is configured; the publisher URL is provenance rather than a fetch target. Coordinate-mapped well CSVs preserve string IDs and pass invalid geometry to quarantine; environmental inputs retain actual GIS geometry. Production parses archived bytes rather than rereading the mutable original. Existing load/link transactions and failure audit are reused. Catalogue paths resolve relative to their YAML file; CLI `--catalog` or `SOURCE_CATALOG_PATH` selects runtime configuration. There is no file-upload UI.
+
+## Workflow coordination and interruption
+
+`src/db/workflow.py` owns a PostgreSQL session advisory lock for the full mutation workflow, including acquisition and report writes. Public migration, demo seed/analysis, real acquisition and production import/refresh functions share the guard. Nested calls on the same engine reuse it; another process/session is rejected immediately with `WorkflowBusy`. The app renders a retry message, while read-only dashboard queries remain available. Keep at least two available pool connections, since one connection holds the guard.
+
+The next exclusive owner marks any prior running attempt as `failed` with `InterruptedWorkflow`, retaining its stage and existing committed data. Lock release follows session lifetime, not an arbitrary age timeout; a slow live owner is not reclaimed. Stop old unguarded application versions before upgrade. Database transactions still determine which results are published; filesystem artifacts alone cannot establish success. See [verification and recovery](release_verification.md).
+
+## Regional preparation before acquisition
+
+`src/sources/extract.py` reads local originals directly through GDAL, fingerprints file bytes or FileGDB directory contents with streamed hashes, and selects a configured layer/native query envelope with a hard record cap. It writes a bounded zipped GeoPackage and embedded scope/original-source manifest, then atomically publishes an immutable identity directory. Container timestamps/SQLite counters are normalized for repeatable bytes; original attributes/geometries are retained for normal contracts. A generated catalogue replaces only that source's input path; verification flags remain unchanged.
+
+The ordinary `acquire_file` path snapshots only the small ZIP, checks the embedded study/source/category/mapping/data checksum, and archives the original-input lineage with its selected-record bundle. A differently scoped extract is rejected before database loading. Environmental preparation includes the 500 m margin. Normal raw acquisition/ZIP limits are not widened; the large-original ZIP path is limited to explicit local preparation with no full extraction to disk. Parent hashing and native driver scans still scale with original input size. See [regional preparation](regional_extracts.md).

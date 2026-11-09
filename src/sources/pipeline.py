@@ -9,6 +9,8 @@ from uuid import NAMESPACE_URL, uuid4, uuid5
 
 from sqlalchemy import text
 
+from src.db.workflow import serialized_workflow
+
 from src.artifacts import write_json
 from src.config import ROOT, SourceCatalog, StudyArea, load_source_catalog, load_study_area
 from src.contracts.spatial import CATEGORIES, validate_records
@@ -36,6 +38,7 @@ def live_requirements(catalog: SourceCatalog) -> list[str]:
     return requirements
 
 
+@serialized_workflow
 def run_live(engine, *, catalog: SourceCatalog | None=None, area: StudyArea | None=None,
              cache: HttpCache | None=None, refresh: bool=False, max_records: int=10000,
              raw_root: Path | None=None, output_root: Path | None=None, progress=lambda _:None) -> dict:

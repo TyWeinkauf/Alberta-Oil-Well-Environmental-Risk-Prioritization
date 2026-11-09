@@ -1,0 +1,48 @@
+{
+  "client_date": "2026-11-08",
+  "recorded_at_utc": "2026-11-09T03:16:51.014742+00:00",
+  "base_commit": "98d290479be6a765595b3d5b8e094ee1188c0715",
+  "candidate_overlay": true,
+  "scope": "Bounded local regional GIS preparation; ordinary ingestion caps unchanged; no actual ST37 release tested",
+  "tests": [
+    {
+      "tests": "128",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0"
+    }
+  ],
+  "code_tree_sha256": "74fcf2d7d5a5313e32ea822ad975d4267d4a87a8dc35d086f28e76c2a8417788",
+  "cli": {
+    "mode": "synthetic_extract_cli",
+    "parent_format": "zipped FileGDB",
+    "parent_bytes": 2153063,
+    "parent_sha256": "5e60300a81047bf747ca435c5457588c5aae75385f433277d61b03901c43de03",
+    "package_bytes": 4940,
+    "package_sha256": "3eafdd6939d743dbb6f13ab054665ae632d7a51e11e73b99a27713772a06a318",
+    "selected_records": 2,
+    "selected_fields": [
+      "COMPANY",
+      "ID"
+    ],
+    "ingestion_cache_limit_bytes": 65536,
+    "flags_preserved_disabled": true,
+    "other_catalogue_entries_preserved": true,
+    "repeat_package_reused": true,
+    "record_cap_failure_preserves_previous_catalogue": true,
+    "actual_ST37_tested": false
+  },
+  "empty_environmental_extract_manual_check": "passed: zero selected records, zero acquired records",
+  "postgis_extract_check": {
+    "wells": 2,
+    "features": 4,
+    "proximity_rows": 10,
+    "water_distances_m": [
+      50,
+      100
+    ],
+    "outside_unbuffered_area_feature_included": true,
+    "wider_scope_retry_preserves_previous_run": true
+  },
+  "actual_ST37_schema_terms_performance_coverage_verified": false
+}

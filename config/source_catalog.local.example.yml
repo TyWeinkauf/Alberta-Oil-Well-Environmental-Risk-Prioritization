@@ -1,3 +1,4 @@
+# Current scope: AER wells plus water/protected-area/critical-habitat inputs; no Petrinex required.
 # Disabled template: not a verified mapping or an assertion of actual publisher formats.
 # Copy to an ignored local data directory; paths resolve beside the copied catalogue.
 # Set actual fields, CRS/coordinates, publisher metadata URL, download timestamp and terms.
@@ -8,7 +9,7 @@ sources:
   publisher: Alberta Energy Regulator
   enabled: false
   verified: false
-  local_path: wells.csv
+  local_path: wells.zip
   downloaded_at: null
   metadata_url: null
   url: null
@@ -60,20 +61,3 @@ sources:
   native_crs: null
   coverage_note: null
   category: critical_habitat
-- key: petrinex_production
-  kind: file
-  publisher: Petrinex
-  enabled: false
-  verified: false
-  local_path: production.csv
-  downloaded_at: null
-  metadata_url: null
-  url: null
-  license_note: null
-  field_mapping: {}
-  role: production
-  priority: optional
-  reporting_level: unknown
-  well_identifier_field: null
-  identifier_namespace: null
-  join_evidence: null

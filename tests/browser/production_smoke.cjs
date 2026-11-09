@@ -1,4 +1,5 @@
-// Requires a locally running app plus managed Playwright/Chromium.
+// Legacy optional check, outside current AER/environment scope.
+// Requires a custom catalogue with an explicitly enabled production source, plus Playwright/Chromium.
 const {chromium}=require('playwright');
 const assert=require('node:assert/strict');
 const fs=require('node:fs/promises');

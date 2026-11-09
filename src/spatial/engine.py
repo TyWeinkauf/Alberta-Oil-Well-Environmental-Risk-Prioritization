@@ -3,6 +3,8 @@ from uuid import UUID
 
 from pydantic import Field
 from sqlalchemy import Engine, text
+
+from src.db.workflow import serialized_workflow
 from typing import Literal
 
 from src.config import StrictModel
@@ -63,6 +65,7 @@ ORDER BY w.source_well_id, w.well_pk, p.category
 '''
 
 
+@serialized_workflow
 def analyze_run(engine: Engine, run_id: str, coverage: dict[str, Coverage] | None = None) -> list[dict]:
     """Rebuild a run's proximity results in one transaction, preserving prior rows on error.
 

@@ -46,7 +46,8 @@ def test_streamlit_workflow_filter_selection_and_rerender_do_not_reload(test_eng
     app.selectbox(key='detail_choice').select(key).run()
     assert not app.exception
     assert app.session_state.selected_well==key
-    assert any('production not available/verified' in element.value for element in app.info)
+    assert not any(b.label in ('Refresh production','Load synthetic production demo') for b in app.button)
+    assert not any(h.value=='Monthly production' for h in app.subheader)
     app.selectbox(key='threshold').select(50).run()
     assert app.metric[1].value=='1' and app.session_state.selected_well==key
     app.multiselect(key='companies').set_value(['Synthetic Company B']).run()

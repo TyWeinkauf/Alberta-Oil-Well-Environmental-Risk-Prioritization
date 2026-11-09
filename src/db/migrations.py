@@ -4,9 +4,12 @@ from pathlib import Path
 
 from sqlalchemy import Engine, text
 
+from src.db.workflow import serialized_workflow
+
 from src.config import ROOT
 
 
+@serialized_workflow
 def migrate(engine: Engine, directory: Path | None = None) -> list[str]:
     files = sorted((directory or ROOT / 'sql/migrations').glob('*.sql'))
     if not files:

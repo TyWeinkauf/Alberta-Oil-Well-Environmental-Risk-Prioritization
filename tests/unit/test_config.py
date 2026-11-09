@@ -6,6 +6,7 @@ from src.config import Source, StudyArea, config_hash, load_source_catalog, load
 
 def test_default_sources_are_disabled_and_config_is_stable():
     assert all(not source.enabled and not source.verified for source in load_source_catalog().sources)
+    assert all(source.role!='production' for source in load_source_catalog().sources)
     area = load_study_area()
     assert area.thresholds_m == [50, 100, 250, 500]
     assert config_hash(area) == config_hash(StudyArea.model_validate(area.model_dump()))

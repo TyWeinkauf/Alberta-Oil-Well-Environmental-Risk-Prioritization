@@ -4,13 +4,13 @@ Educational training project for **AIDA 1145 (Data Engineering)** and **AIDA 236
 
 The existing course workspace is preserved in [aida-final-project-tyler-weinkauf/](aida-final-project-tyler-weinkauf/README.md). See [DESIGN.md](DESIGN.md#13-phased-codex-implementation-plan) for scope and live progress tracking.
 
-The completed application will use **real AER wells, Alberta surface water, Alberta parks/protected areas and federal critical habitat**, with OpenStreetMap as the basemap. Alberta wetlands are an optional additional factor; the 2014 ESA layer is an optional historical comparison. The [user-supplied dataset reference](docs/dataset_reference.md) records these sources and their CRS/licensing cautions. Synthetic fixtures verify the implementation before live ingestion; they are not the final project dataset. The production framework is implemented separately; actual Petrinex verification/ingestion remains an open milestone.
+The completed application will use **real AER wells, Alberta surface water, Alberta parks/protected areas and federal critical habitat**, with OpenStreetMap as the basemap. Alberta wetlands are an optional additional factor; the 2014 ESA layer is an optional historical comparison. The [user-supplied dataset reference](docs/dataset_reference.md) records these sources and their CRS/licensing cautions. Synthetic fixtures verify the implementation before live ingestion; they are not the final project dataset. Petrinex/monthly production has been removed from the current scope; AER supplies well location and descriptive attributes.
 
 ## What works now
 
 Phases 0–3 provide validated configuration, transactional PostGIS migrations, an offline synthetic seed, quarantine reasons, raw-snapshot checksums, spatial analysis and a Streamlit map with persistent well selection, filters, matching exports, data quality and session history. The demo contains **2 accepted wells, 2 accepted environmental features and 6 quarantined records**. Repeating it uses the same run and does not duplicate rows.
 
-The Phase 4 acquisition framework is implemented and tested with simulated sources, but official endpoint/schema/licence verification and an actual regional run are **in progress**; official service/download hosts still need access. The production import/link/audit/chart framework is also implemented using synthetic evidence; Petrinex documentation is now reachable, while the actual public-download host remains blocked. Demo ingestion remains **seeded** and its spatial report is **analyzed**; a fully acquired and validated live run will use **succeeded**. The UI labels demo versus real-source mode explicitly.
+The Phase 4 acquisition framework is implemented and tested with simulated sources, but official endpoint/schema/licence verification and an actual regional run are **in progress**; official service/download hosts still need access. Optional legacy production code remains in the repository, but Petrinex access is no longer a project milestone. Demo ingestion remains **seeded** and its spatial report is **analyzed**; a fully acquired and validated live run will use **succeeded**. The UI labels demo versus real-source mode explicitly.
 
 ## Managed cloud quick start
 
@@ -67,9 +67,9 @@ python scripts/analyze_demo.py --categories water protected_area
 
 The protected-area demo layer is incomplete because one polygon was quarantined. Selecting it makes the exact overall band unknown; that is different from no nearby feature. See [spatial methodology](docs/spatial_methodology.md) for coverage, cumulative flags and category selection rules. The clean boundary test fixture validates complete-category minima and exact distance boundaries.
 
-In the app, **Use demo dataset** performs setup, ingestion and analysis on an explicit click. Click a map marker or use **Inspect a well** for details; change company/status/category/threshold filters and download the matching CSV, GeoJSON, map HTML or manifest. The Data quality and Run history tabs show provenance, rejected inputs and workflow stages/outcomes. The live pipeline action is gated by verified/enabled catalogue entries and explicit coverage notes; it is currently disabled because official entries are unverified. Official production refresh remains disabled while its catalogue is unverified; the Production expander offers a separately labelled synthetic demo for a demo dataset.
+In the app, **Use demo dataset** performs setup, ingestion and analysis on an explicit click. Click a map marker or use **Inspect a well** for details; change company/status/category/threshold filters and download the matching CSV, GeoJSON, map HTML or manifest. The Data quality and Run history tabs show provenance, rejected inputs and workflow stages/outcomes. The live pipeline action is gated by verified/enabled catalogue entries and explicit coverage notes; it is currently disabled because official entries are unverified. No production controls are shown with the current default catalogue.
 
-Offline geometry and map exports require no CDN: small Leaflet/jQuery assets are vendored with licenses. **Show OpenStreetMap basemap (online)** is optional and requires `tile.openstreetmap.org`. The tile domain is now allowed by the published cloud policy and a fresh tile request returned HTTP 200. Analytical source-discovery hosts still require the separate Phase 4 network change. Offline rendering and interaction remain available. See [UI workflow](docs/ui_workflow.md).
+Offline geometry and map exports require no CDN: small Leaflet/jQuery assets are vendored with licenses. **Show OpenStreetMap basemap (online)** is optional and requires `tile.openstreetmap.org`. The tile domain is now allowed by the published cloud policy and a fresh tile request returned HTTP 200. Some actual analytical service/download hosts remain inaccessible from this cloud session; access may differ on your machine. Offline rendering and interaction remain available. See [UI workflow](docs/ui_workflow.md).
 
 For a regular Linux/macOS checkout, use `python3.12 -m venv .venv`, `source .venv/bin/activate`, `python -m pip install -r requirements.txt`, and the same Python script commands after configuring local PostgreSQL/PostGIS and `.env`.
 
@@ -106,7 +106,7 @@ With the app running, the managed environment can also run `node tests/browser/u
 - `config/`: demo study extent and disabled, unverified live-source placeholders.
 - `sql/migrations/`, `src/`, `scripts/`, `tests/`: implementation and repeatable checks.
 
-Raw data, caches, reports, virtual environments and credentials are ignored. Small project-authored fixtures in `tests/fixtures/` are intentionally versioned. Add a new migration instead of editing one already applied. Next is Phase 4: verify live source URLs, fields, licensing and the first real study region, then implement real-source adapters. The dataset reference remains the intended final-data scope.
+Raw data, caches, reports, virtual environments and credentials are ignored. Small project-authored fixtures in `tests/fixtures/` are intentionally versioned. Add a new migration instead of editing one already applied. Remaining source work is to verify actual fields, CRS, licensing and coverage, finish any source-specific transformations, and validate a real study-region run. The dataset reference remains the intended final-data scope.
 
 ## Phase 4 in progress: real-source acquisition
 
@@ -116,17 +116,28 @@ Published discovery permissions now allow provincial catalogue, ArcGIS portal an
 
 [Source verification status and commands](docs/source_verification.md) explain the remaining endpoint, licence, CRS and field-mapping checks. The configurable pilot is `config/study_area.live.yml` (Drayton Valley). `python scripts/run_live.py` intentionally fails preflight until all core source entries are verified/configured; it does not substitute synthetic records for missing real data.
 
-## Phase 5 in progress: production observations
+## AER wells and environmental inputs — current scope
 
-The Production expander offers **Load synthetic production demo** for demo datasets. Select DEMO-WELL-001 to view the explicitly synthetic monthly oil-production chart; adjustment activity is a separate series. DEMO-WELL-002 remains unavailable. Data quality includes the production attribution audit, with facility, unmatched/ambiguous and unknown records excluded from well charts.
+Petrinex and monthly production are excluded from the current project. The app focuses on AER surface-well locations/identifiers, licensee, available legal location and licence attributes, plus proximity to water, protected areas and critical habitat. ST37's production-string layer is well/string metadata, not monthly volumes. The default source catalogue and local template no longer include Petrinex, and the default app has no production controls/chart. Previously implemented production code/tables remain optional legacy functionality; existing data/migration history is preserved.
+
+Every user must download permitted source files themselves. The entire `data/` directory is ignored by Git. Put originals under `data/raw/`, configure a private catalogue, and let the project pipeline create its normalized PostGIS tables and proximity results. Raw publisher datasets are not bundled on GitHub. See [the download checklist](docs/download_inputs.md), [ST37 guide review](docs/st37_reference.md) and [runtime input configuration](docs/data_access.md).
+
+The user's ST37 screenshot lists a 1.23 GB geodatabase ZIP. Use the new **regional preparation** route to inspect that original directly and create a bounded study-area package; the app keeps its ordinary 512 MiB/10,000-record defaults. The original download/hashing still costs disk/I/O, but it is not copied into the ingestion cache. The 170 MB Excel distribution is not a direct supported input. Actual ST37 schema/coverage and full-archive performance remain unverified.
+
+## Prepare a regional extract from a large download
+
+Point the private catalogue's `local_path` at the original ZIP or `.gdb`, then inspect it before setting actual layer/CRS/field mappings and provenance:
 
 ```bash
-python scripts/setup_db.py
-python scripts/demo_production.py
+python scripts/prepare_extract.py --catalog data/raw/imports/catalog.yml --source aer_wells --inspect
+python scripts/prepare_extract.py --catalog data/raw/imports/catalog.yml --source aer_wells --study-area config/study_area.live.yml
+python scripts/run_live.py --catalog data/raw/extracts/prepared_catalogue.json --study-area config/study_area.live.yml
 ```
 
-The example has 9 inputs: 6 accepted (3 verified well observations, 1 facility record, 1 unmatched record, 1 unknown reporting level), 2 quarantined and 1 outside the requested window. No facility volume is allocated to a well. An actual **Refresh production** requires a real-source analysis run and verified public-source configuration; neither current official source setup is ready.
+Preparation retains only the selected layer/fields and regional candidates, includes a 500 m margin for environmental sources, records original input checksums and refuses truncation or incompatible scope reuse. It preserves verification flags and other catalogue entries; all required sources must still be ready before ingestion. Read [regional extract instructions](docs/regional_extracts.md) for limits, original-file handling and configuration steps. The full suite now passes **128 tests**, including prepared-package PostGIS ingestion and failure retention. No actual ST37 release has been loaded.
 
-[Production workflow and limitations](docs/production.md) explains exact identifiers, decimal/adjustment contracts, compatible series, immutable batch history and audit exports. Published discovery-host permissions now work. [Source discovery evidence](docs/source_discovery.md) records official resource links and the additional service/download hosts still blocked. **103 Python tests**, the map browser smoke and the production chart/audit browser smoke pass with synthetic data; no actual Petrinex ingestion is claimed.
+## Release verification and recovery
 
-Local-file setup, the disabled catalogue template and runnable commands are in [Data access routes](docs/data_access.md). The full Python suite now passes **113 tests**, including offline local-file spatial/production imports and app refresh. Official field mappings and a real-data run remain unverified; local input support does not mark Phases 4–5 complete.
+A database-wide advisory lock rejects duplicate mutation workflows across app sessions/CLI processes; reads remain available. A stopped process releases its lock, and the next mutation marks unfinished attempt history interrupted without deleting committed results. [Release verification](docs/release_verification.md) records the previous candidate's 118-test/new-environment and browser evidence; the new wells/environment scope is checked separately. Official input mappings and a real-data run remain open.
+
+Separate candidate evidence indexes identify methods and remaining deliverables for [AIDA 1145](aida-final-project-tyler-weinkauf/courses/AIDA-1145/EVIDENCE.md) and [AIDA 2362](aida-final-project-tyler-weinkauf/courses/AIDA-2362/EVIDENCE.md).

@@ -15,14 +15,15 @@ from src.sources.http import HttpCache
 from src.sources.local import acquire_snapshot
 
 
-def spatial_path(path,member: str | None=None):
+def spatial_path(path,member: str | None=None,*,max_uncompressed_bytes: int | None=2*1024**3):
     if not zipfile.is_zipfile(path):
         if member:
             raise ValueError('archive_member configured for a non-ZIP source')
         return str(path)
     with zipfile.ZipFile(path) as archive:
         names=[name.replace('\\','/') for name in archive.namelist()]
-        if len(names)>10000 or sum(i.file_size for i in archive.infolist())>2*1024**3:
+        if len(names)>10000 or (max_uncompressed_bytes is not None and
+                               sum(i.file_size for i in archive.infolist())>max_uncompressed_bytes):
             raise ValueError('ZIP archive exceeds safe file-count/uncompressed-size limits')
         if any(PurePosixPath(name).is_absolute() or '..' in PurePosixPath(name).parts or ':' in name for name in names):
             raise ValueError('ZIP contains unsafe member paths')
@@ -49,6 +50,9 @@ def acquire_file(source: Source,area: StudyArea,cache: HttpCache,*,refresh: bool
     if source.csv_x_field:
         return acquire_well_csv(source, snapshot, max_records=max_records)
     dataset=spatial_path(snapshot.path,source.archive_member)
+    # Regional packages carry their coverage and original-file lineage with the data.
+    from src.sources.extract import extract_lineage
+    lineage=extract_lineage(snapshot.path,source,area)
     layers=pyogrio.list_layers(dataset)
     names=[str(row[0]) for row in layers]
     if source.file_layer:
@@ -82,7 +86,8 @@ def acquire_file(source: Source,area: StudyArea,cache: HttpCache,*,refresh: bool
                        {'driver':info['driver'],'layer':layer,'available_layers':names,
                         'fields':list(info['fields']),'geometry_type':info['geometry_type'],
                         'selected_count':len(frame),'native_query_bounds':list(native_bounds),
-                        'environmental_margin_m':500 if environmental else 0})
+                        'environmental_margin_m':500 if environmental else 0,
+                        **({'regional_extract':lineage} if lineage is not None else {})})
 
 
 def acquire_well_csv(source, snapshot, *, max_records):

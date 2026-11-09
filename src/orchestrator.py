@@ -3,11 +3,14 @@ from collections.abc import Callable
 
 from sqlalchemy import Engine, text
 
+from src.db.workflow import serialized_workflow
+
 from src.db.demo import seed_demo
 from src.db.migrations import migrate
 from src.spatial.engine import analyze_run
 
 
+@serialized_workflow
 def run_demo(engine: Engine, progress: Callable[[str],None] = lambda _: None) -> str:
     progress('Preflight: checking PostgreSQL/PostGIS and schema')
     with engine.connect() as conn:

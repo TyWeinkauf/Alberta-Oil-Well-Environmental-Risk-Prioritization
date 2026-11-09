@@ -1,6 +1,8 @@
-# Production ingestion and verified well attribution — Phase 5
+# Legacy production ingestion (outside current scope)
 
-**Phase 5 is in progress.** The generic CSV/ZIP importer, production contracts, exact-ID audit, immutable refresh history and verified-only chart are implemented and tested using project-authored synthetic observations. No actual Petrinex record has been acquired, and actual download access, file grain, product-specific terms, file headers and identifier correspondence remain unverified.
+**Scope revision:** The user has removed Petrinex/monthly production. No production download or chart is required. The default catalogues omit this source and the app hides production unless an enabled custom production source is explicitly configured. Existing code, tables and data are retained; the details below describe the historical production milestone, not the revised Phase 5 (AER well attributes).
+
+**Historical implementation status.** The generic CSV/ZIP importer, production contracts, exact-ID audit, immutable refresh history and verified-only chart are implemented and tested using project-authored synthetic observations. No actual Petrinex record has been acquired, and actual download access, file grain, product-specific terms, file headers and identifier correspondence remain unverified.
 
 Fresh requests now reach the current [Alberta Public Data page](https://www.petrinex.ca/public-data/apd/) and [terms](https://www.petrinex.ca/terms). Linked official learning aids document CSV/XML ZIPs, monthly reporting lag, product-dependent units, masked/aggregated records and current well-to-facility links. Actual data uses `www.petrinex.gov.ab.ca`, which remains blocked by proxy CONNECT 403. The old `/PD/Pages/APD.aspx` path is obsolete (404). See [discovery evidence and attribution implications](source_discovery.md) before defining a source-specific mapping.
 
@@ -80,4 +82,4 @@ For an actual verified candidate download, use `--url` with its official HTTPS U
 
 ## Local-file refresh evidence
 
-The full suite now passes 113 tests. New offline integration checks load a coordinate-mapped well CSV plus three GeoJSON layers, then import either CSV or ZIP production from a custom catalogue. They verify exact string-ID links, separate facility audit, repeat batch identity, original download-date provenance, failed-import retention and the app's production refresh/chart through AppTest. No official production records are included. Production parses its immutable archived bytes so validation and checksums describe the same input.
+The full suite now passes 118 tests. New offline integration checks load a coordinate-mapped well CSV plus three GeoJSON layers, then import either CSV or ZIP production from a custom catalogue. They verify exact string-ID links, separate facility audit, repeat batch identity, original download-date provenance, failed-import retention and the app's production refresh/chart through AppTest. No official production records are included. Production parses its immutable archived bytes so validation and checksums describe the same input.

@@ -52,3 +52,11 @@ User clarification: cloud access failures do not determine runtime source availa
 ## Local-file acquisition implemented — 8 November 2026
 
 Steps 4.2c/5.2c are complete: local GIS/GeoJSON, coordinate-mapped well CSV and production CSV/ZIP use immutable byte snapshots with publisher URL, original download timestamp and checksums. Runtime catalogue selection works through CLI/app; all 113 tests pass with synthetic offline import/refresh evidence. The disabled example catalogue is `../../config/source_catalog.local.example.yml`; see `../../docs/data_access.md`. No official analytical/production record has been acquired; source-specific schemas, terms and real-data validation remain open. This supersedes the earlier local-import planning status, not the source-verification limits.
+
+## Revised required inputs — 8 November 2026
+
+The user removed Petrinex/monthly production. Required inputs are AER surface-well locations/attributes plus water, protected areas and federal critical habitat. The uploaded June 2026 ST37 guide was reviewed; candidate fields/layer grain and file-size limits are documented in `../../docs/st37_reference.md`. Fresh metadata located ECCC record `47caa405-be2b-4e9e-8f53-c478ade2ca74` and its listed FileGDB ZIP, plus provincial water/parks resources. See `../../docs/download_inputs.md` and `../../docs/evidence/input_discovery_2026-11-08.json`. These are metadata/documentation, not loaded official records. All data/ is ignored; users download their own files.
+
+## Regional preparation — 8 November 2026
+
+Step 4.2d is complete on synthetic data: large local GIS/ZIP/FileGDB originals can be read directly into bounded regional packages with selected fields, native geometry, parent SHA-256 provenance and embedded area/margin checks. Normal app/import caps remain unchanged. The original download/hash I/O still scales with source size. CLI inspect/preparation/reuse/cap failure and 128 tests (including PostGIS distances/failed-scope retention) pass; no real ST37 compatibility/coverage is claimed. See `../../docs/regional_extracts.md` and its evidence. The entire data/ directory remains ignored.

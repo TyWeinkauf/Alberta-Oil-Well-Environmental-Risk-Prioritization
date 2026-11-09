@@ -9,7 +9,6 @@ __pycache__/
 .coverage
 htmlcov/
 *.egg-info/
-/data/raw/
-/data/cache/
-/data/quarantine/
+# User-downloaded datasets, private import catalogues, caches and quarantine.
+/data/
 /outputs/

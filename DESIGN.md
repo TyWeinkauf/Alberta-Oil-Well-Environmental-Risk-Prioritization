@@ -2,7 +2,7 @@
 
 Codex implementation design • AIDA 1145 Data Engineering + AIDA 2362 GIS • Version 1.0 • 8 November 2026
 
-Objective: A reproducible, locally hosted Streamlit web application that retrieves permitted Alberta well/environmental data, validates and loads it into PostgreSQL/PostGIS, computes proximity at 50/100/250/500 metres, and displays clickable wells with company, legal land location and defensibly matched production information on an OpenStreetMap basemap.
+Objective: A reproducible, locally hosted Streamlit web application that retrieves permitted Alberta well/environmental data, validates and loads it into PostgreSQL/PostGIS, computes proximity at 50/100/250/500 metres, and displays clickable wells with company, legal land location and available AER well attributes on an OpenStreetMap basemap.
 
 > Working design and implementation tracker. Converted from [the original Word design](<Alberta_Oil_Well_Streamlit_Codex_Design (1).docx>); the original is retained. The numbered design sections below preserve its scope.
 
@@ -12,14 +12,14 @@ Update this document whenever work on a scoped step starts or finishes. Set the 
 
 Section 13 tracks implementation work; section 12 tracks acceptance checks; section 16 tracks unresolved decisions. Check acceptance and decision items only when their evidence is available, and record that evidence with the related step in section 13. The pipeline states in section 5 describe application runtime behavior, not project progress. Course milestone tracking remains in [project-progress.md](aida-final-project-tyler-weinkauf/project-progress.md).
 
-**Current status — 2026-11-08:** Phases 0–3 are implemented. Phases 4–5 now support configured local GIS/GeoJSON, coordinate-mapped well CSV and production CSV/ZIP as well as remote acquisition. Local bytes are cached immutably with publisher/download provenance; the existing validation, atomic load and verified-only chart apply. The complete suite passes 113 tests, including offline local-file end-to-end and AppTest refresh checks. Official source mappings, product-specific terms and a bounded real-data run remain unverified, so Phases 4–5 stay in progress. Cloud access does not determine availability in the user's runtime.
+**Current status — 2026-11-08:** Current scope is AER well locations/attributes plus water, protected areas and critical habitat; Petrinex is excluded. Regional preparation now reads original local GIS/ZIP/FileGDB inputs directly and creates small immutable study-area packages with parent checksums and scope enforcement. Ordinary import caps remain unchanged. All 128 tests pass, including prepared-package PostGIS distances and failed wider-scope retention. Actual ST37 schema/terms, surface-key uniqueness, large-original performance and a bounded official-data run remain open. Phase 6 candidate/handoff work is retained; no official analytical dataset has been loaded.
 
 ## 1. Scope, success criteria and guardrails
 
 - Primary user: environmental reclamation screening analyst. The output identifies wells for further investigation, not verified environmental hazards.
-- One-click “Run pipeline” from Streamlit; progress, stage statuses, failures and audit summary visible. Separate “Refresh production” action and cached reruns.
+- One-click “Run pipeline” from Streamlit; progress, stage statuses, failures and audit summary visible. Cached reruns; production is outside the current scope.
 - Selectable Alberta study area (start with small configured bounding box or region), company filter, environmental-layer filter and four proximity thresholds.
-- Click a well marker to see ID, licensee, reported operator/producer where supported, LSD/legal location if present, well status, closest environmental feature by category, and monthly production chart where well-level attribution is supported.
+- Click a well marker to see ID, licensee, reported operator/producer where supported, LSD/legal location if present, well status, closest environmental feature by category, with missing attributes explicitly unavailable.
 - Export CSV/GeoJSON results, map screenshot or HTML where feasible, validation report, provenance manifest, and run metadata.
 - No QGIS dependency. GIS calculations in PostGIS/GeoPandas; OpenStreetMap is the basemap only.
 - Use a clear training-only disclaimer; do not present proximity as contamination likelihood or engineering advice.
@@ -27,6 +27,8 @@ Section 13 tracks implementation work; section 12 tracks acceptance checks; sect
 ## 2. Evidence and source decisions
 
 **Confirmed intended data scope (2026-11-08):** The completed project will use real AER ST37 wells, Alberta surface water, Alberta parks/protected areas and federal critical habitat, with OpenStreetMap as the basemap. Optional wetlands and historical 2014 ESA remain subject to the source conditions below. The supplied [Dataset and CRS Reference](docs/dataset_reference.md) is now transcribed into the repository and its source metadata recorded in `config/source_catalog.yml`. Synthetic fixtures are development/test evidence only. Live acquisition remains Phase 4; the supplied document does not include actual endpoints or layer IDs.
+
+**Scope revision (2026-11-08):** The user chose to skip Petrinex. Monthly production, facility allocation and production joins are excluded from current acceptance. AER ST37 supplies well/geometry/licence attributes; its production-string metadata is not monthly volume history. Phase 5 is now AER well-attribute/detail integration. Previously completed production code/tests/migrations remain as legacy functionality, but no Petrinex configuration/download is required and the default UI hides it. See [ST37 guide review](docs/st37_reference.md) and [download checklist](docs/download_inputs.md).
 
 **Runtime access clarification (2026-11-08):** The user may access sources through publisher APIs, direct CSV/GeoJSON downloads or files downloaded separately when running the program. ChatGPT/Codex cloud-access failures are environment-specific observations, not evidence that a dataset is unavailable everywhere. Keep the intended real sources; verify schemas/terms against actual responses or supplied files in the execution environment. Remote HTTP/ArcGIS and configured user-downloaded local-file ingestion are implemented; actual source-specific verification remains open. See [data access routes](docs/data_access.md).
 
@@ -39,14 +41,14 @@ User-provided dataset reference identifies AER ST37 well data, Alberta Base Wate
 | Alberta parks and protected areas | ArcGIS FeatureServer geometries | Boundary is screening geometry, not legal determination |
 | Federal critical habitat | Federal download/service; filter to Alberta | EPSG:3978 in reference; sensitivity/generalization caveats |
 | Wetlands / ESA | Optional after licensing/coverage check | Older inventories; ESA 2014 comparison only |
-| Petrinex conventional volumetrics | Optional monthly production ingestion | Reporting may be facility-level; never misattribute to a well |
+| Petrinex conventional volumetrics | Removed from current scope | Legacy code retained; no production requirement or download |
 | OpenStreetMap | Tile basemap with attribution | Not used for measuring distance; obey tile usage limits |
 
 Source reference document lists EPSG:3400 for provincial GIS layers and EPSG:3978 for federal critical habitat; inspect actual downloaded metadata and AER .prj/CRS rather than assume. Keep URLs and layer IDs in config/source_catalog.yml, not hard-coded into application logic.
 
 ## 3. System architecture
 
-Streamlit UI → orchestrator → source adapters (AER file / ArcGIS REST / federal data / Petrinex) → immutable raw cache → data contracts and quarantine → normalized staging → PostGIS authoritative tables → spatial analysis SQL → materialized results / cached query → Folium + streamlit-folium OpenStreetMap UI → CSV/GeoJSON/JSON evidence exports.
+Streamlit UI → orchestrator → source adapters (AER file / ArcGIS REST / federal data) → immutable raw cache → data contracts and quarantine → normalized staging → PostGIS authoritative tables → spatial analysis SQL → materialized results / cached query → Folium + streamlit-folium OpenStreetMap UI → CSV/GeoJSON/JSON evidence exports.
 
 Use Python 3.12 or 3.13 as supported by dependencies, PostgreSQL 17 + PostGIS, SQLAlchemy, psycopg, GeoPandas, pyogrio, shapely, requests/httpx, pandas, pandera or pydantic, pytest, Streamlit, folium, streamlit-folium, and optionally Alembic. Pin working versions after validation. Keep download and transformation outside Streamlit rerun side effects.
 
@@ -69,7 +71,7 @@ Preserve existing README.md, project-charter.md, scope-matrix.md, project-progre
 4. Contract validation: validate required IDs, geometry, allowed ranges, geometry types, date/number formats and duplicates. Save rejected records with reason codes.
 5. Transform: standardize column names, normalize identifiers/company names, repair only safe geometries, clip environmental features to study area plus 500 m margin, transform to EPSG:3400.
 6. Load: transactional staging/upsert into PostGIS; preserve raw snapshot and run ID. Avoid deleting last successful dataset if a new run fails.
-7. Production join: import monthly records; link to well only with verified well identifier and documented join confidence; otherwise show facility-level records separately or unavailable.
+7. Well attributes: retain AER surface-location grain, licence identifier, licensee, legal location and licence-status meaning; show unavailable optional fields without inventing a UWI/operator.
 8. Analyze: ST_DWithin and ST_Distance to actual feature geometries, compute minimum distance by category, assign inclusive threshold bands, store results and QA metrics.
 9. Publish: mark run succeeded atomically, refresh map data and expose run reports and exports.
 
@@ -82,10 +84,10 @@ States: idle → preflight → downloading → validating → transforming → l
 | Wells | source_well_id unique within source; valid point geometry; coordinate bounds; source provenance | Null/duplicate ID, invalid location or unknown CRS rejected; missing optional LSD/status retained as null |
 | Environmental features | source_feature_id or stable derived hash; category; valid line/polygon geometry; CRS | Invalid/empty geometry quarantined; record repair before/after and reason |
 | Companies | source name retained; normalized search label; company type (licensee/operator) | Do not merge distinct companies based only on fuzzy text |
-| Production | period YYYY-MM; units; product/activity; nonnegative or documented signed adjustments; source identifier | Unmatched rows retained; no fabricated well production |
+| Legacy production (outside scope) | Retained contracts/migrations only; not a current required input | Default app hides this workflow |
 | Run manifest | run ID, source versions, counts, rejects, CRS, elapsed time, analysis configuration | Any source failure recorded; partial run not published |
 
-Tests include missing required column, malformed coordinates, duplicate well identifier, invalid polygon, unknown CRS, pagination error, HTTP retry, idempotent rerun, production join ambiguity and out-of-study-area feature. Report accepted/quarantined counts and examples without silently dropping records.
+Tests include missing required column, malformed coordinates, duplicate well identifier, invalid polygon, unknown CRS, pagination error, HTTP retry, idempotent rerun, out-of-study-area feature and nullable AER attributes. Legacy production join tests are retained separately. Report accepted/quarantined counts and examples without silently dropping records.
 
 ## 7. PostGIS database design
 
@@ -99,6 +101,8 @@ Tests include missing required column, malformed coordinates, duplicate well ide
 | production_well_links | well_pk, production_pk, join_method, evidence, confidence_status; only verified links used in well chart |
 | well_proximity | run_id, well_pk, category, nearest_feature_pk, distance_m, within_50, within_100, within_250, within_500 |
 | quarantine_records | run_id, source_key, record_reference, reason_code, reason_detail, raw_payload_reference |
+
+The production tables above are retained migration history outside the current scope; no data/table deletion is part of this scope change.
 
 Indexes: GIST on well and environmental geometries; B-tree on source_well_id, normalized company name, production period, run_id, and proximity (run_id, well_pk, category). Use migration scripts; apply primary/foreign key constraints. Store geometry in EPSG:3400, convert to EPSG:4326 for Leaflet/Folium rendering.
 
@@ -120,8 +124,8 @@ Bands are mutually exclusive for display, but boolean within_X flags are cumulat
 
 ### Sidebar
 
-- Study region selector, producer/licensee searchable multiselect, well status, environmental category checkboxes, distance threshold selector (50/100/250/500 m), date/production filters where data supports them.
-- Buttons: Run full pipeline, Refresh production, Use demo dataset, Clear filters, Export current selection. Disable expensive actions while a run is active.
+- Study region selector, producer/licensee searchable multiselect, well status, environmental category checkboxes, distance threshold selector (50/100/250/500 m), available AER attribute filters.
+- Buttons: Run full pipeline, Use demo dataset, Clear filters, Export current selection. Disable expensive actions while a run is active.
 
 ### Main screen
 
@@ -129,14 +133,14 @@ Bands are mutually exclusive for display, but boolean within_X flags are cumulat
 - Middle: Folium OpenStreetMap map with clustered or canvas-rendered well markers, legend, optional environmental overlays and threshold buffers. Start with a manageable study area; use viewport-based queries and marker clustering for performance.
 - Well click: marker popup contains well ID and concise company/status plus “View details”; use streamlit-folium last_object_clicked / last_object_clicked_popup or a stable marker ID in the returned interaction to update st.session_state.selected_well_id. Never rely on marker coordinates as the primary key.
 - Right-side detail panel or below-map panel persists after rerenders: official well ID/UWI if present, licensee, verified operator/producer, LSD/legal description, well status, latitude/longitude, source snapshot and update date, nearest feature by category, distances and threshold flags.
-- Production tab: month-by-month chart and table (product, activity, units, source, reporting level), latest period and totals only where comparable. If no verified well-level join, display “Well-level production not available/verified” and optionally clearly labeled facility data.
+- Well detail panel: surface-site identifier, licensee, legal location, licence status, coordinates, source provenance and nearest environmental results. No monthly-production section appears with the current catalogue.
 - Clicking another well replaces detail panel; changing buffer or producer filters retains selection if well remains in current result, otherwise show “Selected well is outside current filters” with option to clear selection.
 
 Do not assume production data, LSD, UWI or operator is always present. Show “Not available from this source” rather than blank or invented values. Distinguish licensee, operator and producer labels in the UI.
 
-## 10. Production data integration: separate milestone
+## 10. AER well attributes and detail integration
 
-Build a Petrinex adapter with configurable source endpoints and format detection. Determine whether public data is monthly conventional volumetrics, facility-level, well-level or mixed; inspect actual column definitions before coding the join. Normalize IDs carefully, retain source reporting units, product and activity codes, and show a “reported at facility level” label when appropriate. Only populate a well production chart when a source-supplied well identifier is uniquely and defensibly mapped to the AER well identifier; keep unmatched records for audit. Do not divide facility volumes across wells or imply an allocation.
+Use the surface-hole layer as the proposed site-screening location grain, subject to actual-file validation. The supplied guide lists `Well_Licence_Number`, `Licensee`, `Licence_Status`, `Licence_Surface_Location_Label` and surface coordinate columns. Verify actual geometry/CRS, field types and identifier uniqueness, and preserve the distinction between licence status and operational well status. The listed surface layer has no UWI; leave it unavailable unless separately supported. Petrinex and monthly production are removed from this scope. Existing optional production code/migrations are retained without requiring their completion or a download.
 
 ## 11. Installation and reproducibility
 
@@ -152,14 +156,14 @@ For live source runs, clearly document network requirement, source rate limits, 
 
 - [ ] A clean clone can start the app with documented steps and complete the synthetic demonstration without access to live data.
 - [x] A run produces raw snapshot metadata, contract validation metrics, quarantine records, PostGIS tables and an exportable manifest.
-- [ ] A second run with unchanged snapshots does not duplicate wells, production or proximity rows.
+- [x] A second run with unchanged snapshots does not duplicate wells or proximity rows. Legacy production repeat checks remain historical evidence.
 - [x] Distances are verified against known synthetic examples at 0, 50, 100, 250, 500 and just-over-500 metres; ensure inclusive boundaries and correct category filtering.
-- [x] Clicking a map well opens the correct persistent detail panel and shows company, LSD if present, distances, and production chart only when verified.
+- [x] Clicking a map well opens the correct persistent detail panel and shows company, LSD if present, distances, and available AER attributes without requiring production.
 - [x] Changing producer filter, threshold and category changes counts and map markers consistently; exporting matches the filtered table.
-- [ ] Failed downloads, missing CRS, ambiguous production joins and invalid geometries show informative status and do not corrupt last successful results.
+- [ ] Failed downloads, missing CRS, missing AER fields and invalid geometries show informative status and do not corrupt last successful results.
 - [ ] The README and each course package separately identify methods, evidence, limitations and submission deliverables.
 
-Phase 1–3 evidence: fixture metadata/validation, known distances, stable marker/details and filtered export parity are verified. The available company filter is explicitly licensee-based; no producer attribution or production chart is fabricated. A real Chromium test proves offline map interaction and standalone HTML. Clean test-database UI initialization is verified; a released fresh-clone handoff remains open for Phase 6. The broader production rerun criterion, live-source failures and final course packages also remain open.
+Phase 1–3 evidence: fixture metadata/validation, known distances, stable marker/details and filtered export parity are verified. The available company filter is explicitly licensee-based; no producer attribution or production chart is fabricated. A real Chromium test proves offline map interaction and standalone HTML. Clean test-database UI initialization is verified; a released fresh-clone handoff remains open for Phase 6. The unchanged-input rerun criterion is now verified by local-file integration and isolated-checkout repeated CLI counts. Phase 6 candidate checks also verify fresh dependency installation and both offline browser smokes; exact final committed-checkout/platform acceptance, live-source failure presentation and final course packages remain open.
 
 ## 13. Phased Codex implementation plan
 
@@ -170,12 +174,12 @@ Phase 1–3 evidence: fixture metadata/validation, known distances, stable marke
 | 2 | Spatial proximity engine and tests | Known distance fixtures pass | Complete | 2026-11-08 | Known-distance and selection tests passed; synthetic water demo distances 50/150 m; 500-to-50 m threshold changes matches 2 to 1. See docs/spatial_methodology.md. |
 | 3 | Streamlit map, filters, click-to-detail and export | Interactive demo with stable selection | Complete | 2026-11-08 | Offline interactive demo and stable selection verified by Chromium; 67 Python tests passed. Published OSM tile access subsequently returned HTTP 200; see docs/ui_workflow.md. |
 | 4 | Real AER and provincial/federal adapters, caching and provenance | Small region live ingestion with manifest | In progress | 2026-11-08 | Acquisition framework and simulated-source tests pass; discovery now reaches catalogue/public pages, but actual service/download access, schemas and real pilot remain incomplete. See docs/source_verification.md. |
-| 5 | Production ingestion and verified joins | Well chart or explicit unavailable message | In progress | 2026-11-08 | Import/link/audit/chart mechanics verified on synthetic records; official Petrinex schema/licence/access and real refresh remain blocked. See docs/production.md. |
-| 6 | Performance, run recovery, documentation and course evidence | Fresh-clone demo and separate deliverable folders | Not started | — | Requires the implemented pipeline, application and separate course evidence. |
+| 5 | AER well attributes and detail integration | Actual well/licence/location attributes render with correct meaning and unavailable fields | In progress | 2026-11-08 | Replaces the removed Petrinex milestone. Guide reviewed; actual surface-layer fields, IDs and UI mapping remain to be verified. See docs/st37_reference.md. |
+| 6 | Performance, run recovery, documentation and course evidence | Fresh-clone demo and separate deliverable folders | In progress | 2026-11-08 | Starting concurrency/recovery checks, bounded performance evidence, fresh-checkout demo and handoff documentation. Real-data evidence remains dependent on Phases 4–5. |
 
 ### Implementation steps
 
-Update individual steps as work progresses; split a step into smaller rows when needed. A phase is complete only when all its required steps and the phase completion proof are verified.
+Update individual steps as work progresses; split a step into smaller rows when needed. A phase is complete only when all its required steps and the phase completion proof are verified. Legacy production steps 5.1–5.3 are retained as history outside the revised Phase 5 acceptance; Out of scope denotes user-removed work, not completed verification.
 
 | Step | Scope | Status | Last updated | Evidence / remaining work |
 |---|---|---|---|---|
@@ -199,20 +203,28 @@ Update individual steps as work progresses; split a step into smaller rows when 
 | 4.2 | Implement AER and provincial/federal source adapters | In progress | 2026-11-08 | Generic ZIP file/ArcGIS adapters are implemented/tested. Source-specific official URLs, layers and mappings cannot be finalized until publisher metadata is accessible. |
 | 4.3 | Add snapshot caching, checksums, provenance and small-region live validation | In progress | 2026-11-08 | Immutable HTTP/source bundles, provenance, atomic DB publication and failure retention are tested with simulated sources. An actual official-data regional run remains blocked/unrun. |
 | 4.1a | Recheck published access and discover provincial/Petrinex resource hosts | Complete | 2026-11-08 | Fresh HTTP requests, official parks catalogue, Petrinex public pages/terms and two learning aids inspected; URLs/statuses/hashes and remaining destination failures in docs/source_discovery.md and docs/evidence/source_discovery_2026-11-08.json. Full source/schema verification is still open. |
+| 4.1b | Review supplied ST37 guide and document manual-download/provenance workflow | Complete | 2026-11-08 | All four guide pages reviewed; surface/bottom/string fields, archive limits and self-download workflow in docs/st37_reference.md and download_inputs.md. Fresh environmental metadata/resources and SHA evidence retained. git check-ignore confirms all data/ excluded and no tracked data files; actual file inspection still open. |
 | 4.2a | Implement generic bounded file and ArcGIS acquisition adapters | Complete | 2026-11-08 | Tests read real GIS file formats from synthetic HTTP servers, inspect CRS/fields, verify ArcGIS ID paging and reject partial pages; official schema compatibility is not claimed. |
 | 4.2b | Verify and configure each official source-specific endpoint/mapping | In progress | 2026-11-08 | Official parks service URL/licence metadata recorded; actual layers/fields/CRS remain uninspected behind new service-host restrictions. Catalogue stays disabled/unverified. |
 | 4.2c | Add user-downloaded local GIS/CSV inputs with provenance and shared validation | Complete | 2026-11-08 | src/sources/local.py, coordinate CSV reader, CLI/app catalogue selection and disabled template implemented. 113 tests pass, including offline four-source local-file load, 50 m distance, string IDs, quarantine, repeat identity and failed-import retention. Official compatibility remains unverified; see docs/data_access.md. |
+| 4.2d | Prepare bounded study-area extracts from large local GIS downloads | Complete | 2026-11-08 | src/sources/extract.py, prepare_extract.py and automatic lineage checks implemented. 128 tests pass; FileGDB/ZIP/native-coordinate/cap/scope/corruption checks and four-source PostGIS distances pass. CLI inspect/prepare/repeat/failure preserves flags/other entries; original is hashed, not cached. Actual ST37 compatibility/performance unverified. See docs/regional_extracts.md. |
 | 4.3a | Implement cache, provenance, atomic load/analyze and attempt history | Complete | 2026-11-08 | 80 tests pass overall; simulated-source repeats preserve one run, partial acquisition/DB failures preserve previous data, transfer/record caps and checksum validation tested. |
 | 4.3b | Execute and validate an official-data small-region run | In progress | 2026-11-08 | Unrun pending actual service/download access and verified source mappings; no real AER/provincial/federal result has been produced. |
-| 5.1 | Verify Petrinex access, reporting level, identifiers and licensing | In progress | 2026-11-08 | Current public pages/terms and linked learning aids inspected. Documented API host remains CONNECT-denied. File grain, product-specific terms, actual headers/units and AER identifier correspondence remain unverified. |
-| 5.2 | Implement monthly production ingestion and defensible joins | In progress | 2026-11-08 | Generic canonical CSV/ZIP import, validation, exact-ID linking and immutable refresh/audit are implemented with synthetic tests. Official Petrinex mapping and bounded real-data import remain blocked. |
-| 5.3 | Validate production chart or explicit unavailable/facility-level display | Complete | 2026-11-08 | Verified-only monthly chart, separate product/activity/unit series, explicit synthetic label and unavailable other-well message passed Python and real browser checks; facility volume remains audit-only. |
-| 5.2a | Implement production contracts/import, exact-ID audit and refresh history | Complete | 2026-11-08 | Synthetic fixture: 9 inputs, 6 accepted, 2 quarantined, 1 outside window; verified/facility/unmatched/unknown and ambiguous cases tested. Repeats reuse a batch; forced failures retain prior active data. |
-| 5.2c | Import configured local production CSV/ZIP with provenance and refresh audit | Complete | 2026-11-08 | Local CSV/ZIP imports use immutable bytes and preserve original download-date provenance; synthetic integration checks verify exact links, facility audit, repeat batches, failure retention and actual AppTest refresh/chart. Included in 113 passing tests; actual Petrinex mapping remains open. |
-| 5.2b | Verify actual Petrinex mapping and execute a bounded real refresh | In progress | 2026-11-08 | Blocked on actual download-host access and official file/licence/identifier verification. Documented masking, product-dependent units and current-only facility links require explicit source handling. |
-| 6.1 | Validate performance, locking, idempotency and failed-run recovery | Not started | — | Preserve last successful results and demonstrate repeatable reruns. |
-| 6.2 | Complete methodology, provenance, limitations and course evidence | Not started | — | Keep AIDA 1145 and AIDA 2362 deliverables identifiable. |
-| 6.3 | Verify fresh-clone demo, handoff and separate course packages | Not started | — | Follow acceptance checks in section 12; record remaining limitations. |
+| 5.1 | Verify Petrinex access, reporting level, identifiers and licensing | Out of scope | 2026-11-08 | User removed Petrinex/monthly production; no actual download, production mapping or real refresh is required for the revised project. |
+| 5.2 | Implement monthly production ingestion and defensible joins | Out of scope | 2026-11-08 | User removed Petrinex/monthly production; no actual download, production mapping or real refresh is required for the revised project. |
+| 5.3 | Legacy: Validate production chart or explicit unavailable/facility-level display (outside current scope) | Complete | 2026-11-08 | Verified-only monthly chart, separate product/activity/unit series, explicit synthetic label and unavailable other-well message passed Python and real browser checks; facility volume remains audit-only. |
+| 5.2a | Legacy: Implement production contracts/import, exact-ID audit and refresh history (outside current scope) | Complete | 2026-11-08 | Synthetic fixture: 9 inputs, 6 accepted, 2 quarantined, 1 outside window; verified/facility/unmatched/unknown and ambiguous cases tested. Repeats reuse a batch; forced failures retain prior active data. |
+| 5.2c | Legacy: Import configured local production CSV/ZIP with provenance and refresh audit (outside current scope) | Complete | 2026-11-08 | Local CSV/ZIP imports use immutable bytes and preserve original download-date provenance; synthetic integration checks verify exact links, facility audit, repeat batches, failure retention and actual AppTest refresh/chart. Included in 113 passing tests; actual Petrinex mapping remains open. |
+| 5.2b | Verify actual Petrinex mapping and execute a bounded real refresh | Out of scope | 2026-11-08 | User removed Petrinex/monthly production; no actual download, production mapping or real refresh is required for the revised project. |
+| 5.4 | Verify AER surface-hole fields, identifiers and status/location meaning | In progress | 2026-11-08 | Guide provides candidate fields; inspect actual FileGDB/converted CSV schema, CRS and key uniqueness before enabling. |
+| 5.5 | Validate real AER well attributes in the detail panel and exports | Not started | 2026-11-08 | Requires a bounded actual AER input and verified mapping; no monthly production chart required. |
+| 6.1 | Validate performance, locking, idempotency and failed-run recovery | Complete | 2026-11-08 | src/db/workflow.py and integration crash/concurrency/export-failure tests; 118 tests and both offline browser checks pass. Synthetic 1,000 wells/30 features: first 0.2953 s, repeat 0.1851 s, dashboard/export 0.0534 s. Scope/limits in docs/release_verification.md. |
+| 6.2 | Complete methodology, provenance, limitations and course evidence | In progress | 2026-11-08 | Current implementation/recovery/limitations docs and separate course indexes updated (6.2a). Actual-source provenance, final results/interpretation and submission evidence remain open (6.2b). |
+| 6.3 | Verify fresh-clone demo, handoff and separate course packages | In progress | 2026-11-08 | Isolated candidate clone, new venv, new DB and offline demo/browser checks passed (6.3a). Exact final Git commit/user platform verification and final course packages remain open (6.3b). |
+| 6.2a | Update implementation/recovery documentation and separate course evidence indexes | Complete | 2026-11-08 | docs/limitations.md, release_verification.md, retained code/evidence hashes and AIDA-1145/AIDA-2362 EVIDENCE.md link current methods, checks and remaining actual-data deliverables. |
+| 6.2b | Complete actual-data provenance, interpretation and final course evidence | Not started | 2026-11-08 | Requires verified source inputs/results from Phases 4–5; no final findings or course submission claimed. |
+| 6.3a | Verify isolated candidate checkout with fresh dependencies and offline demo | Complete | 2026-11-08 | Local clone of 98d2904 plus candidate overlay; new Python 3.12 venv with 67 pinned packages, new DB, 118 tests, repeated setup/demo CLI and both offline Chromium checks passed. Test DB/app cleaned up; durable summary in docs/evidence/release_verification_2026-11-08.json. |
+| 6.3b | Verify final committed checkout/user platform and prepare final course packages | Not started | 2026-11-08 | Candidate remains uncommitted in this pass; repeat checkout smoke at final commit, check intended platform, finish permitted output/screenshot/presentation/review packages and current D2L requirements. |
 
 ### Progress log
 
@@ -236,6 +248,11 @@ Update individual steps as work progresses; split a step into smaller rows when 
 | 2026-11-08 | D.2; 4.2c planned | User confirmed eventual runtime API/download access may differ from cloud access. Documented remote/direct-download/local-file routes and preserved intended sources. Local-file ingestion is a separate Not started step; current local production inspector does not establish full import support. Cloud domain changes are not a prerequisite for eventual runtime validation. |
 | 2026-11-08 | 4.2c, 5.2c | Started local-file acquisition, coordinate-mapped well CSV, catalogue selection and provenance for spatial/production pipelines. Testing will use labelled synthetic files; official compatibility is still unverified. |
 | 2026-11-08 | 4.2c, 5.2c complete; Phases 4/5 partial | Implemented local snapshots, coordinate well CSV, GIS/GeoJSON and production CSV/ZIP, runtime catalogue selection, local inspection and disabled template. Full suite: 113 passed, no skips; synthetic offline spatial/production integration and AppTest refresh/chart verified. No official data acquired or environment published. Source-specific verification and a bounded real-data run remain open. |
+| 2026-11-08 | 6.1–6.3 started | Starting database-wide workflow concurrency/recovery validation, bounded performance checks, isolated-checkout offline demo and handoff evidence cleanup. Official input/schema validation remains open. |
+| 2026-11-08 | 6.1, 6.2a, 6.3a complete; Phase 6 partial | Added full-workflow DB advisory lock, busy UI and interrupted-attempt recovery. 118 tests pass in the final new isolated environment; killed-process and report-write failures retain committed data. Synthetic 1,000-well benchmark recorded; fresh candidate clone/new dependencies/new DB/repeated CLI and both offline Chromium checks pass. Updated limitations and separate course indexes. Final committed-platform check, real-data interpretation and final course packages remain open; no environment settings changed or published. |
+| 2026-11-08 | 4.1b / scope revision | Reviewed all four ST37 guide pages, verified its printed duplicate BH_Latitude label, documented surface/bottom/string grain and archive-cap issue. User removed Petrinex; Phase 5 now covers AER attributes. Default app/catalogues omit production and retain legacy code/data. All data/ ignored; manual download instructions and environmental catalogue candidates recorded.  Current scope checks: 118 tests and the offline default map/browser smoke pass, with production buttons absent; config follow-up 10 tests pass. See docs/evidence/current_scope_2026-11-08.json. |
+| 2026-11-08 | 4.2d started | User chose a smaller-extract workflow for growing ST37 archives. Preparing regional GIS packages without caching/copying the full original, while retaining parent-input provenance and bounded app/database imports. |
+| 2026-11-08 | 4.2d complete | Implemented local regional preparation with streamed parent provenance, native geometry/selected fields, bounded small ZIP, deterministic bytes, atomic publish/reuse and scope/mapping/data checks. 128 tests pass; edge distances 50/100 m and failed wider-area retry verified in PostGIS. CLI synthetic 2,153,063-byte original produces a 4,940-byte two-record package without enabling sources. Whole download/hashing still scales with original size; actual ST37 remains untested. |
 
 Prioritize a small, demonstrable end-to-end vertical slice before importing all Alberta wells. Build source adapters as replaceable modules so a format or service change does not require rewriting the UI or spatial analysis.
 
@@ -252,7 +269,7 @@ You are implementing the attached Alberta Oil Well Environmental Screening desig
 - [x] Choose first Alberta study region and geographic boundary; make it configurable.
 - [ ] Confirm current AER distribution format, field mapping, CRS, file size and permitted use.
 - [ ] Confirm exact ArcGIS REST service URLs/layer IDs and any paging/geometry limits; avoid guessing.
-- [ ] Confirm Petrinex download access, schema, well identifier availability and production licensing.
+- [x] Remove Petrinex/monthly production from required scope — user decision 2026-11-08; default catalogues/UI exclude it.
 - [ ] Confirm whether environmental layers may be redistributed or must be fetched at runtime.
 - [ ] Confirm desired presentation style and whether optional wetlands/ESA should be deferred until after first successful release.
 

@@ -1,0 +1,217 @@
+{
+  "client_date": "2026-11-08",
+  "scope": "Publisher metadata and user-supplied guide only; no well/environment records imported. Petrinex removed from current scope.",
+  "st37_guide": {
+    "name": "ST37_ReferenceGuide.pdf",
+    "edition": "June 2026",
+    "pages": 4,
+    "sha256": "2c00ed79d0c4fee94e92be0727b7d8a1af9675c045203c730deddbc868255c2d"
+  },
+  "responses": [
+    {
+      "url": "https://open.alberta.ca/api/3/action/package_search?q=title%3A%22Base+Waterbody+Polygon%22&rows=5",
+      "status": 200,
+      "sha256": "8a28ef273f3421d3c2b7e809f6eb99678ee59d8474809cbb561fa10d10e824c8",
+      "bytes": 10912,
+      "captured_at_utc": "2026-11-09T02:37:19.838560+00:00",
+      "selected_records": [
+        {
+          "id": "4d138133-0a66-49a0-8628-72e22d3c93bb",
+          "name": "gda-91d6eac8-e03d-49c1-bed1-9bf962f7eb71",
+          "title": "Base Waterbody Polygon Update",
+          "license_title": "Open Government Licence - Alberta",
+          "license_url": "https://open.alberta.ca/licence",
+          "resources": [
+            {
+              "name": "Base Waterbody Polygon Update - (HTML)",
+              "format": "HTML",
+              "url": "https://geodiscover.alberta.ca/geoportal/rest/metadata/item/103556b6869a4957955c2971eb6588b2/html"
+            },
+            {
+              "name": "Base Waterbody Polygon Update - (XML)",
+              "format": "XML",
+              "url": "https://geodiscover.alberta.ca/geoportal/rest/metadata/item/103556b6869a4957955c2971eb6588b2/xml"
+            },
+            {
+              "name": "Base Waterbody Polygon Update - (ESRI REST)",
+              "format": "ESRI REST",
+              "url": "https://geospatial.alberta.ca/titan/rest/services/environment/inland_base_hydrography_update_10tm_nad83_aep/MapServer"
+            }
+          ]
+        },
+        {
+          "id": "994ff4ae-ab81-4439-80a3-ed5816d37a1d",
+          "name": "gda-a2216d84-77ab-4f65-ab34-03434442cf32",
+          "title": "Base Waterbody Polygon Arc",
+          "license_title": "Open Government Licence - Alberta",
+          "license_url": "https://open.alberta.ca/licence",
+          "resources": [
+            {
+              "name": "Base Waterbody Polygon Arc - (HTML)",
+              "format": "HTML",
+              "url": "https://geodiscover.alberta.ca/geoportal/rest/metadata/item/27af6a3ebc9f4a449a9fe7dfc992f428/html"
+            },
+            {
+              "name": "Base Waterbody Polygon Arc - (XML)",
+              "format": "XML",
+              "url": "https://geodiscover.alberta.ca/geoportal/rest/metadata/item/27af6a3ebc9f4a449a9fe7dfc992f428/xml"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "url": "https://open.alberta.ca/api/3/action/package_search?q=title%3A%22Base+Stream+and+Flow+Representation%22&rows=5",
+      "status": 200,
+      "sha256": "a3a6295453b823e8c013300f8688c936db74bc9f2e1ad6534ec8a916643f1bc9",
+      "bytes": 11374,
+      "captured_at_utc": "2026-11-09T02:37:19.838967+00:00",
+      "selected_records": [
+        {
+          "id": "4cb36aa3-eef5-417c-b2c3-a5544435d038",
+          "name": "gda-07172210-57aa-4958-a127-ce204ccb21c2",
+          "title": "Base Stream and Flow Representation Update",
+          "license_title": "Open Government Licence - Alberta",
+          "license_url": "https://open.alberta.ca/licence",
+          "resources": [
+            {
+              "name": "Base Stream and Flow Representation Update - (HTML)",
+              "format": "HTML",
+              "url": "https://geodiscover.alberta.ca/geoportal/rest/metadata/item/c14c4ea78aa741f795d7106e1d31b6cd/html"
+            },
+            {
+              "name": "Base Stream and Flow Representation Update - (XML)",
+              "format": "XML",
+              "url": "https://geodiscover.alberta.ca/geoportal/rest/metadata/item/c14c4ea78aa741f795d7106e1d31b6cd/xml"
+            },
+            {
+              "name": "Base Stream and Flow Representation Update - (ESRI REST)",
+              "format": "ESRI REST",
+              "url": "https://geospatial.alberta.ca/titan/rest/services/environment/inland_base_hydrography_update_10tm_nad83_aep/MapServer"
+            }
+          ]
+        },
+        {
+          "id": "2d88cc58-9ddb-4fa8-821c-634ded461a00",
+          "name": "gda-7f9c0f33-6ddb-4479-b2d9-1419d79e2d26",
+          "title": "Base Stream and Flow Representation",
+          "license_title": "Open Government Licence - Alberta",
+          "license_url": "https://open.alberta.ca/licence",
+          "resources": [
+            {
+              "name": "Base Stream and Flow Representation - (HTML)",
+              "format": "HTML",
+              "url": "https://geodiscover.alberta.ca/geoportal/rest/metadata/item/a8739420b43f467ebde0b1618a177409/html"
+            },
+            {
+              "name": "Base Stream and Flow Representation - (XML)",
+              "format": "XML",
+              "url": "https://geodiscover.alberta.ca/geoportal/rest/metadata/item/a8739420b43f467ebde0b1618a177409/xml"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "url": "https://open.alberta.ca/api/3/action/package_show?id=gda-6b96341f-2e19-4885-98af-66d12ed4f8dd",
+      "status": 200,
+      "sha256": "7dcdc87a7bd2d03663e8b6fd6a329138ee869af03137492ee64ed1f07a735ab9",
+      "bytes": 9445,
+      "captured_at_utc": "2026-11-09T02:37:20.334875+00:00",
+      "selected_records": [
+        {
+          "id": "936b1a57-c7de-4f42-b032-5d97bc541fe6",
+          "name": "gda-6b96341f-2e19-4885-98af-66d12ed4f8dd",
+          "title": "Parks and Protected Areas of Alberta",
+          "license_title": "Open Government Licence - Alberta",
+          "license_url": "https://open.alberta.ca/licence",
+          "resources": [
+            {
+              "name": "Parks and Protected Areas of Alberta - (HTML)",
+              "format": "HTML",
+              "url": "https://geodiscover.alberta.ca/geoportal/rest/metadata/item/0d1ac1474eba42fe9444a42a23a4ea1b/html"
+            },
+            {
+              "name": "Parks and Protected Areas of Alberta - (XML)",
+              "format": "XML",
+              "url": "https://geodiscover.alberta.ca/geoportal/rest/metadata/item/0d1ac1474eba42fe9444a42a23a4ea1b/xml"
+            },
+            {
+              "name": "Parks and Protected Areas of Alberta - (ESRI REST)",
+              "format": "ESRI REST",
+              "url": "https://geospatial.alberta.ca/titan/rest/services/boundary/parks_protected_areas_alberta/FeatureServer"
+            },
+            {
+              "name": "Parks and Protected Areas of Alberta - (ESRI REST)",
+              "format": "ESRI REST",
+              "url": "https://geospatial.alberta.ca/titan/rest/services/boundary/parks_protected_areas_alberta/MapServer"
+            },
+            {
+              "name": "Parks and Protected Areas of Alberta - (KML)",
+              "format": "KML",
+              "url": "https://geospatial.alberta.ca/titan/services/boundary/parks_protected_areas_alberta/MapServer/WMSServer"
+            },
+            {
+              "name": "Parks and Protected Areas of Alberta - (KML)",
+              "format": "KML",
+              "url": "https://www.albertaparks.ca/media/6492787/protected-area-kmz-outline.zip"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "url": "https://open.canada.ca/data/api/action/package_search?q=%22critical+habitat%22&rows=100",
+      "status": 200,
+      "sha256": "4b1148f7a044d3119d04b9e100f31cf26a739ab163ad1abdb34214679c72873b",
+      "bytes": 543928,
+      "captured_at_utc": "2026-11-09T02:38:58.897135+00:00",
+      "selected_records": [
+        {
+          "id": "47caa405-be2b-4e9e-8f53-c478ade2ca74",
+          "name": "47caa405-be2b-4e9e-8f53-c478ade2ca74",
+          "title": "Critical Habitat for Species at Risk National Dataset - Canada",
+          "license_title": "Open Government Licence - Canada",
+          "license_url": "https://open.canada.ca/en/open-government-licence-canada",
+          "resources": [
+            {
+              "name": "Critical Habitat",
+              "format": "ESRI REST",
+              "url": "https://maps-cartes.ec.gc.ca/arcgis/rest/services/CWS_SCF/CriticalHabitat/MapServer/0"
+            },
+            {
+              "name": "Critical Habitat",
+              "format": "ESRI REST",
+              "url": "https://maps-cartes.ec.gc.ca/arcgis/rest/services/CWS_SCF/HabitatEssentiel/MapServer/0"
+            },
+            {
+              "name": "Critical Habitat",
+              "format": "WMS",
+              "url": "https://maps-cartes.ec.gc.ca/arcgis/services/CWS_SCF/CriticalHabitat/MapServer/WMSServer?request=GetCapabilities&service=WMS"
+            },
+            {
+              "name": "Critical Habitat",
+              "format": "WMS",
+              "url": "https://maps-cartes.ec.gc.ca/arcgis/services/CWS_SCF/HabitatEssentiel/MapServer/WMSServer?request=GetCapabilities&service=WMS"
+            },
+            {
+              "name": "Critical Habitat",
+              "format": "FGDB/GDB",
+              "url": "https://data-donnees.ec.gc.ca/data/species/protectrestore/critical-habitat-species-at-risk-canada/CriticalHabitat.zip"
+            },
+            {
+              "name": "Critical Habitat",
+              "format": "FGDB/GDB",
+              "url": "https://data-donnees.ec.gc.ca/data/species/protectrestore/critical-habitat-species-at-risk-canada/HabitatEssentiel.zip"
+            },
+            {
+              "name": "Critical Habitat - Data Dictionary",
+              "format": "XLSX",
+              "url": "https://data-donnees.ec.gc.ca/data/species/protectrestore/critical-habitat-species-at-risk-canada/HE_CH_DictionnaireDonnees_DataDictionary.xlsx"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

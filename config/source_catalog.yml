@@ -6,7 +6,7 @@ sources:
     publisher: Alberta Energy Regulator
     reference_crs: null  # Must inspect the actual ST37 .prj/metadata.
     reference_license: AER copyright and product-specific information terms; not assumed OGL.
-    reference_document: docs/dataset_reference.md
+    reference_document: docs/st37_reference.md
     enabled: false
     url: null
     verified: false
@@ -52,9 +52,11 @@ sources:
     reference_license: Open Government Licence - Canada (as described in the supplied reference).
     reference_document: docs/dataset_reference.md
     enabled: false
-    url: null
+    url: https://data-donnees.ec.gc.ca/data/species/protectrestore/critical-habitat-species-at-risk-canada/CriticalHabitat.zip
     verified: false
-    license_note: null
+    license_note: ECCC catalogue lists Open Government Licence - Canada; actual resource schema and coverage remain uninspected.
+    metadata_url: https://open.canada.ca/data/en/dataset/47caa405-be2b-4e9e-8f53-c478ade2ca74
+    license_url: https://open.canada.ca/en/open-government-licence-canada
     native_crs: null
     layer_id: null
     field_mapping: {}
@@ -99,28 +101,6 @@ sources:
     url: null
     verified: false
     license_note: null
-    native_crs: null
-    layer_id: null
-    field_mapping: {}
-  - key: petrinex_production
-    kind: file
-    role: production
-    priority: optional
-    publisher: Petrinex
-    reference_document: docs/production.md
-    reference_license: Public access, reporting grain, identifier semantics and product licence remain unverified.
-    reporting_level: unknown
-    well_identifier_field: null
-    identifier_namespace: null
-    join_evidence: null
-    adjustment_activities: []
-    adjustment_note: null
-    enabled: false
-    url: null
-    verified: false
-    license_note: Website permits non-commercial use with Crown acknowledgment; product-specific terms remain unresolved.
-    metadata_url: https://www.petrinex.ca/public-data/apd/
-    license_url: https://www.petrinex.ca/terms
     native_crs: null
     layer_id: null
     field_mapping: {}

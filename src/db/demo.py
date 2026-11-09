@@ -7,6 +7,8 @@ from uuid import NAMESPACE_URL, uuid5
 
 from sqlalchemy import Engine, text
 
+from src.db.workflow import serialized_workflow
+
 from src.artifacts import write_json as _write_report
 from src.config import ROOT, StudyArea, config_hash, load_study_area
 from src.contracts.spatial import CATEGORIES, validate_records
@@ -29,6 +31,7 @@ def _counts(conn, snapshot_id, run_id):
     return result
 
 
+@serialized_workflow
 def seed_demo(engine: Engine, fixture_path: Path = FIXTURE, *, study_area: StudyArea | None = None,
               raw_root: Path | None = None, output_root: Path | None = None) -> dict:
     """Load a content-addressed demo once; retain every rejected row's raw reference.

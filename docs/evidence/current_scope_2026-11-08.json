@@ -1,0 +1,29 @@
+{
+  "scope": "AER well locations/attributes plus environmental layers; Petrinex excluded from required scope",
+  "recorded_at_utc": "2026-11-09T02:48:04.018138+00:00",
+  "base_commit": "98d290479be6a765595b3d5b8e094ee1188c0715",
+  "candidate_overlay": true,
+  "code_tree_sha256": "997af9444effa881a9655bd06629599c42d42729654d2085e57044e64a7ff6af",
+  "tests": [
+    {
+      "tests": "118",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0"
+    }
+  ],
+  "configuration_followup": "10 config tests passed after metadata-only catalogue updates",
+  "browser": {
+    "scope": "AER wells and environmental layers; no default production workflow",
+    "browser": "ui_smoke.cjs",
+    "external_requests": "blocked by test",
+    "no_production_buttons": true,
+    "outcome": "passed"
+  },
+  "git_exclusion": {
+    "entire_data_directory": true,
+    "tracked_data_files": [],
+    "synthetic_fixtures_trackable": true
+  },
+  "actual_ST37_or_environmental_records_loaded": false
+}

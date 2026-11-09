@@ -12,7 +12,7 @@ The new published environment applies all five previously requested discovery ho
 
 The provincial parks catalogue now establishes an official service URL and Open Government Licence – Alberta metadata. Petrinex's current Alberta Public Data page establishes the separate public-download host, and linked learning aids document CSV/XML ZIPs, reporting lag, masking and mixed facility/well identifier semantics. Actual service layers/files and AER/Petrinex identifier correspondence remain uninspected; catalogue entries stay disabled/unverified.
 
-Newly discovered `geospatial.alberta.ca`, `geodiscover.alberta.ca`, `search.open.canada.ca` and `www.petrinex.gov.ab.ca` are blocked by proxy CONNECT 403. AER instead returns HTTP 403 with a “request is blocked” page, while Canada's CKAN search returned HTTP 429. These failures require different follow-up; allowing discovery roots alone does not resolve them. No environment configuration was changed or published during this pass.
+Newly discovered `geospatial.alberta.ca`, `geodiscover.alberta.ca`, `search.open.canada.ca` and `www.petrinex.gov.ab.ca` are blocked by proxy CONNECT 403. AER instead returns HTTP 403 with a “request is blocked” page, while Canada's earlier CKAN search returned HTTP 429. A later successful search now identifies ECCC's national critical-habitat record and its listed FileGDB ZIP; see [the download checklist](download_inputs.md) and [new metadata evidence](evidence/input_discovery_2026-11-08.json). These failures require different follow-up; allowing discovery roots alone does not resolve them. No environment configuration was changed or published during this pass.
 
 The previously published OpenStreetMap tile permission returned HTTP 200 in the prior phase. That result establishes display access only. No credentials have been requested for the intended public analytical sources.
 
@@ -66,3 +66,11 @@ Phase 5 independent work now supplies synthetic production contracts/import, exa
 ## Local-file implementation follow-up
 
 Local spatial and production routes are implemented and covered by the 113-test suite. A custom catalogue can mix file inputs and remote sources. See [data access](data_access.md) for provenance fields, formats, limits, commands and the disabled template. The local end-to-end proof uses synthetic files; official CRS/schema/coverage, permissions and identifier compatibility still need actual-data evidence in a suitable runtime. Neither source publication nor cloud network changes are required to develop or execute the local route.
+
+## Current source scope after user revision
+
+Petrinex is excluded; no production download or join is required. Revised Phase 5 verifies AER surface-well attributes. The uploaded June 2026 [ST37 guide](st37_reference.md) establishes candidate surface/bottom/string layers and fields, with actual geometry/schema/unique keys still uninspected. The 1.23 GB geodatabase ZIP shown by the user exceeds current default acquisition limits; expanded ZIP size must also be checked. The [manual download checklist](download_inputs.md) explains current limits and the four required datasets. All of `data/` is ignored by Git; each user supplies their own files.
+
+## Bounded regional preparation implemented
+
+The ST37 size mismatch now has a local preparation route: inspect/select directly from the original ZIP or FileGDB, then ingest only a capped regional package. The 128-test suite includes FileGDB/ZIP originals, source lineage, exact geometry/ID preservation, reuse, limits, incompatible-scope refusal and a four-source PostGIS load with buffered edge distances. This is synthetic compatibility evidence, not an acquired official regional run. See [regional extracts](regional_extracts.md). Actual AER fields, terms, key uniqueness and original archive performance remain open.
