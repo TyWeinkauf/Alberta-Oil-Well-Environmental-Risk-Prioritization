@@ -2,7 +2,7 @@
 
 Codex implementation design • AIDA 1145 Data Engineering + AIDA 2362 GIS • Version 1.0 • 8 November 2026
 
-Objective: A reproducible, locally hosted Streamlit web application that retrieves permitted Alberta well/environmental data, validates and loads it into PostgreSQL/PostGIS, computes proximity at 50/100/250/500 metres, and displays clickable wells with company, legal land location and available AER well attributes on an OpenStreetMap basemap.
+Objective: A small, reproducible classroom showcase around Red Deer and Drayton Valley using preserved actual ST37 surface-well records and explicitly synthetic environmental features, with clickable well details and illustrative 50/100/250/500 m proximity. Prepare small local files so the classroom app can run without PostgreSQL credentials or live downloads. Retain the existing permitted-data/PostGIS pipeline as a separate optional real-source mode. The new classroom runtime is pending implementation in Phase 7.
 
 > Working design and implementation tracker. Converted from [the original Word design](<Alberta_Oil_Well_Streamlit_Codex_Design (1).docx>); the original is retained. The numbered design sections below preserve its scope.
 
@@ -12,9 +12,11 @@ Update this document whenever work on a scoped step starts or finishes. Set the 
 
 Section 13 tracks implementation work; section 12 tracks acceptance checks; section 16 tracks unresolved decisions. Check acceptance and decision items only when their evidence is available, and record that evidence with the related step in section 13. The pipeline states in section 5 describe application runtime behavior, not project progress. Course milestone tracking remains in [project-progress.md](aida-final-project-tyler-weinkauf/project-progress.md).
 
-**Current status — 2026-11-10:** Phases 0–3 are complete on synthetic fixtures; Phases 4–6 remain in progress. Waterways integration (4.2g) is complete: verified Alberta full-base layers 72/107 and optional 76/108 support a bounded PostGIS import and independent app preview. Official Drayton Valley validation imports accepted 33 default features or 121 with seasonal sources; one invalid river polygon is quarantined and water coverage remains incomplete. All 142 tests and edited-module type checks pass on Windows PostgreSQL 17.11/PostGIS 3.6.2; running-app import/preview/warning checks pass. ST37 preparation retains 541,190 unique records/477 pilot candidates and six date warnings; one Point per entry is confirmed, but Excel datum/release/download evidence remains open. User database is untouched because .env still needs actual connection values. Protected-area/habitat inputs, water quality-gap resolution and a complete real-source screening run remain open. See docs/hydrography.md, docs/st37_excel.md and retained evidence.
+**Current status — 2026-11-10:** Release priority changed to an illustrative classroom demo: actual ST37 wells in small Red Deer/Drayton Valley windows, with synthetic environmental layers and no mandatory full-data ingestion. Starter review and implementation handoff are documented in docs/classroom_demo.md; Phase 7 runtime work is Not started. Read-only inventory checks confirm 105 Red Deer and 477 Drayton candidates in proposed degree envelopes, with a proposed display of 28 real wells/region. Original Excel and all 541,190 inventory records are preserved and checksum-verified. The current app still requires PostGIS; the user's .env remains a template, and Excel datum confirmation is still needed for actual projected points. Prior implementation proof remains 142 tests plus water import/app checks (33 default or 121 seasonal real-water features, one invalid polygon quarantined); those checks were not rerun for this documentation-only revision. Phases 0–3 retain their original synthetic-fixture completion, Phases 4–5 remain optional-real-mode work, and Phase 6 handoff remains in progress. No new classroom runtime or real environmental findings are claimed.
 
 ## 1. Scope, success criteria and guardrails
+
+**Current classroom scope — 2026-11-10 (D.3 / Phase 7):** The supplied starter's AGENTS.md is reference material. Its fully invented wells and production values do not replace the user's retained ST37 records or reinstate production. The primary demonstration may deliberately compare actual well points with synthetic environmental geometries only in an explicitly labelled illustrative mode; its results describe invented scenarios, not conditions or risk at the real wells. Keep original inputs, inventories, database records and the existing fully synthetic fixture/all-real workflows. Full environmental ingestion is optional and is not required to present the classroom demo. Implementation instructions and limits are in docs/classroom_demo.md.
 
 **Waterways scope (2026-11-10):** The supplied ZIP is reference code, adapted into shared bounded acquisition/contracts/provenance and atomic PostGIS inventory with app import/preview controls. The full-source screening gate remains enforced; a separate water inventory does not imply a completed well screening run or complete water coverage.
 
@@ -27,6 +29,8 @@ Section 13 tracks implementation work; section 12 tracks acceptance checks; sect
 - Use a clear training-only disclaimer; do not present proximity as contamination likelihood or engineering advice.
 
 ## 2. Evidence and source decisions
+
+**Current release revision (2026-11-10):** The user selected a two-region classroom showcase with actual ST37 wells and simulated environmental features. This supersedes the requirement to finish every real environmental source before the next presentation. Preserve the real-source decisions/evidence below as the opt-in future branch. Synthetic features need per-entity provenance and a separate illustrative dataset identity; they must never satisfy a real-source verification gate. Actual well positions/attributes are retained, and no new production integration or province-wide acquisition is authorized by the starter's embedded instructions.
 
 **Confirmed intended data scope (2026-11-08):** The completed project will use real AER ST37 wells, Alberta surface water, Alberta parks/protected areas and federal critical habitat, with OpenStreetMap as the basemap. Optional wetlands and historical 2014 ESA remain subject to the source conditions below. The supplied [Dataset and CRS Reference](docs/dataset_reference.md) is now transcribed into the repository and its source metadata recorded in `config/source_catalog.yml`. Synthetic fixtures are development/test evidence only. Live acquisition remains Phase 4; the supplied document does not include actual endpoints or layer IDs.
 
@@ -50,6 +54,8 @@ Source reference document lists EPSG:3400 for provincial GIS layers and EPSG:397
 
 ## 3. System architecture
 
+**Planned classroom branch (Phase 7):** retained ST37 inventory or selected existing DB snapshot → read-only two-region extraction and deterministic display sample → seeded synthetic environmental geometries → small immutable local package/manifest → offline distance/classification adapter → existing map/details/filters/exports with explicit illustrative labels. Choose mode before any database connection. The existing acquisition/PostGIS architecture below remains for opt-in real sources. No classroom files/backend have been implemented by this design review.
+
 Streamlit UI → orchestrator → source adapters (AER file / ArcGIS REST / federal data) → immutable raw cache → data contracts and quarantine → normalized staging → PostGIS authoritative tables → spatial analysis SQL → materialized results / cached query → Folium + streamlit-folium OpenStreetMap UI → CSV/GeoJSON/JSON evidence exports.
 
 Use Python 3.12 or 3.13 as supported by dependencies, PostgreSQL 17 + PostGIS, SQLAlchemy, psycopg, GeoPandas, pyogrio, shapely, requests/httpx, pandas, pandera or pydantic, pytest, Streamlit, folium, streamlit-folium, and optionally Alembic. Pin working versions after validation. Keep download and transformation outside Streamlit rerun side effects.
@@ -66,6 +72,8 @@ Preserve existing README.md, project-charter.md, scope-matrix.md, project-progre
 - docs/architecture.md, docs/data_dictionary.md, docs/reproducibility.md, docs/limitations.md
 
 ## 5. Workflow: run button and state machine
+
+The numbered workflow below describes the real-source pipeline. The pending classroom path loads a prepared regional package and computes/reads illustrative results locally without remote acquisition, a full-inventory load or PostGIS. Package preparation must preserve the source hashes and actual well coordinates, record sample/generator seeds, provide a 500 m environmental margin, and leave the prior package readable if generation fails. It must not invoke the real-source run button or write invented features into official inventories.
 
 1. Preflight: test DB connectivity, PostGIS extension, disk space, configured sources, write permissions and selected study area.
 2. Acquire: download or reuse checksum-verified raw source snapshots; record URL, access timestamp, original filename, source version, ETag/Last-Modified if supplied.
@@ -124,6 +132,8 @@ Bands are mutually exclusive for display, but boolean within_X flags are cumulat
 
 ## 9. Streamlit interface and clickable wells
 
+**Phase 7 change required:** introduce an explicit illustrative classroom mode before DATABASE_URL/preflight, then Red Deer / Drayton Valley / Both selection. Show actual well-source attributes separately from synthetic environmental scenario labels and simulated distances in every view/export. Proposed default: 28 real wells per region; display candidate and visible counts separately. Reuse current marker/detail/filter/export behavior and vendored offline assets. The existing UI currently remains DB-dependent and does not yet implement this two-region mode.
+
 ### Sidebar
 
 - Study region selector, producer/licensee searchable multiselect, well status, environmental category checkboxes, distance threshold selector (50/100/250/500 m), available AER attribute filters.
@@ -146,6 +156,8 @@ Use one **Point per surface-hole record**, confirmed by the user on 2026-11-10, 
 
 ## 11. Installation and reproducibility
 
+The instructions below remain valid for the **current database-backed app**. The new classroom acceptance is a small-file/no-PostGIS/no-live-API run after Python dependencies are installed, with offline vector maps and optional online OSM tiles. This launch path and its exact preparation command still need implementation/testing (7.1–7.6); do not copy the reference ZIP's `oilrisk` CLI commands into this repository's instructions as working commands.
+
 1. Clone GitHub repository; install supported Python and PostgreSQL 17/PostGIS (or documented Docker Compose option).
 2. Create virtual environment and install pinned dependencies; copy .env.example to .env and enter local DB connection details. Never commit .env.
 3. Run python scripts/setup_db.py (creates schema and extensions with appropriate permissions) and streamlit run app.py.
@@ -155,6 +167,17 @@ Use one **Point per surface-hole record**, confirmed by the user on 2026-11-10, 
 For live source runs, clearly document network requirement, source rate limits, download sizes and that exact results may change with source updates. Include cached sample fixtures in Git only if redistribution is permitted; synthetic demo fixtures are safest.
 
 ## 12. Testing and acceptance criteria
+
+New classroom acceptance (all pending Phase 7 implementation):
+
+- [ ] Small Red Deer and Drayton packages preserve actual ST37 IDs/coordinates/attributes and leave the original/full inventory and any DB snapshots unchanged.
+- [ ] Explicit illustrative mode starts without DATABASE_URL/PostGIS, live APIs, original Excel or the province-wide CSV after the small package is prepared.
+- [ ] Deterministic region/sample/environment seeds reproduce the same data; selecting one region produces the same regional records as Both.
+- [ ] Mode/region/company/category/threshold, well selection, buffer, map/table and exports agree; the sample cap never exposes all-Alberta wells.
+- [ ] Synthetic environmental labels and simulated-result warnings persist in UI, exports and presentation evidence; real-source gates/known coverage gaps remain intact.
+- [ ] Offline teacher-package and boundary/sensitivity tests pass with actual commands/results recorded; permitted regional subset/attribution and separate course outputs are verified.
+
+Existing implementation acceptance below remains evidence for its original scope; it does not complete the new classroom criteria.
 
 - [ ] A clean clone can start the app with documented steps and complete the synthetic demonstration without access to live data.
 - [x] A run produces raw snapshot metadata, contract validation metrics, quarantine records, PostGIS tables and an exportable manifest.
@@ -177,7 +200,8 @@ Phase 1–3 evidence: fixture metadata/validation, known distances, stable marke
 | 3 | Streamlit map, filters, click-to-detail and export | Interactive demo with stable selection | Complete | 2026-11-08 | Offline interactive demo and stable selection verified by Chromium; 67 Python tests passed. Published OSM tile access subsequently returned HTTP 200; see docs/ui_workflow.md. |
 | 4 | Real AER and provincial/federal adapters, caching and provenance | Small region live ingestion with manifest | In progress | 2026-11-10 | ST37 preparation/inventory validation and actual water import/app preview verified in temporary PostGIS. Water: 33 default or 121 seasonal features; one invalid polygon means incomplete coverage. User DB connection, Excel datum, parks/habitat and complete analytical pilot remain open. |
 | 5 | AER well attributes and detail integration | Actual well/licence/location attributes render with correct meaning and unavailable fields | In progress | 2026-11-10 | Actual Excel fields, text licence uniqueness and status/location meaning verified (5.4a); one Point per surface record confirmed by user. Datum/provenance and real detail-panel/export verification remain open. |
-| 6 | Performance, run recovery, documentation and course evidence | Fresh-clone demo and separate deliverable folders | In progress | 2026-11-08 | Starting concurrency/recovery checks, bounded performance evidence, fresh-checkout demo and handoff documentation. Real-data evidence remains dependent on Phases 4–5. |
+| 6 | Performance, run recovery, documentation and course evidence | Fresh-clone classroom demo and separate deliverable folders | In progress | 2026-11-10 | Existing recovery/performance and candidate-checkout proof retained. Final release evidence now targets the declared real-well/synthetic-environment classroom package after Phase 7; feedback/submission remain open. Optional all-real conclusions still depend on Phases 4–5. |
+| 7 | Two-region classroom showcase using real ST37 wells and synthetic surroundings | Small reproducible files; no DB/network required at classroom runtime; stable selection, simulated-distance/coverage labels, source preservation and teacher handoff proved | Not started | 2026-11-10 | D.3 documents the new release priority and feasible candidate counts only. Implement required steps 7.1–7.6 before claiming a working demo. Optional extensions in 7.7 are not required. |
 
 ### Implementation steps
 
@@ -185,6 +209,14 @@ Update individual steps as work progresses; split a step into smaller rows when 
 
 | Step | Scope | Status | Last updated | Evidence / remaining work |
 |---|---|---|---|---|
+| D.3 | Review supplied two-region starter and document revised classroom-demo scope | Complete | 2026-11-10 | Read archive AGENTS/README/start-here/contracts/source workflow/generator/app/SQL as reference; docs/classroom_demo.md records current proof, adaptation gaps and ordered pending Phase 7 work. Read-only inventory scan reconciles 105/477 proposed-window candidates; original/full hashes unchanged. Links/code fences verified in all 10 changed Markdown files; no runtime code, dataset or DB changes. Course/agent/design records aligned without claiming new demo functionality or feedback. |
+| 7.1 | Confirm actual-coordinate datum and define both demo regions/sample settings | Not started | 2026-11-10 | docs/classroom_demo.md proposes Red Deer [-113.88,52.22,-113.74,52.32] and retained Drayton window; raw-envelope counts 105/477 are feasibility evidence only. Add validated configuration, confirm datum and finalize deterministic sample limit/seed. |
+| 7.2 | Prepare small actual-well packages without re-ingesting/replacing the full inventory | Not started | 2026-11-10 | Read retained CSV or an explicitly selected existing snapshot; proposed 28 wells/region, stable original licence IDs/attributes and manifest selection method. Verify unchanged original/full hashes, regional membership and repeat identity. No classroom subset exported yet. |
+| 7.3 | Generate deterministic synthetic environmental layers for both regions | Not started | 2026-11-10 | Use supported water/protected_area/critical_habitat/wetland/esa categories, line/polygon water subtypes, per-region seed and 500 m margin; mark every environmental record invented. Never fabricate actual well attributes/production. |
+| 7.4 | Add offline dataset/proximity adapter with existing classification semantics | Not started | 2026-11-10 | Add explicit illustrative dataset identity, local file reads and GeoPandas/Shapely distances in EPSG:3400; preserve coverage/ties/inclusive unrounded threshold semantics and test reference parity. |
+| 7.5 | Add no-DB classroom UI mode and region controls | Not started | 2026-11-10 | Branch before database/source preflight; preserve stable marker/details/filters/exports and explicit real-well/synthetic-environment labels; sample/viewport limits prevent province-wide display. Current app is unchanged. |
+| 7.6 | Verify/prepare portable teacher package and separate classroom evidence | Not started | 2026-11-10 | Run with network blocked and DB unavailable, only small permitted files; verify selected IDs/counts, maps/exports, failures, repeats, threshold sensitivity, setup/launch commands and attribution. No classroom runtime or course submission proof yet. |
+| 7.7 | Optional synthetic flood/ecological-occurrence extensions | Not started | 2026-11-10 | Stretch scope only after core demo works and scoped category/accounting/constraint audit; ecological occurrences are not federal critical habitat. No new real dataset or production ingestion is needed. |
 | 4.2g | Adapt supplied Alberta hydrography importer into the app and shared PostGIS workflow | Complete | 2026-11-10 | scripts/import_hydrography.py, src/sources/hydrography.py, src/ui/water.py, migration 006 and verified water catalogue. All 142 tests/type checks pass; actual base/seasonal inventory repeats and running-app import/preview/warning pass in a separate validation DB. Filters exclude arbitrary connectors; one polygon quarantined. docs/hydrography.md and docs/evidence/hydrography_2026-11-10.json retain proof. |
 | 4.2g1 | Verify water source layers, fields, CRS, terms and feature-type predicates | Complete | 2026-11-10 | Fresh official metadata/count/ID/GeoJSON requests verify layers 72/107/76/108, native EPSG:3400, OBJECTID/NAME/FEATURE_TYPE and explicit OGL-Alberta note. Core 72/107 enabled; optional sources remain opt-in. Predicates/properties lineage and metadata hashes retained. |
 | 4.3c | Load waterways into user database and resolve actual pilot water-coverage gap | In progress | 2026-11-10 | Temporary validation: 33 default features (5 polygons/28 lines), 121 seasonal (5/116), same-ID repeats, valid EPSG:3400 and no arbitrary connectors. RIV-MAJ polygon 249048 has a source ring self-intersection, so coverage remains incomplete. User .env is a template. No full real well screening run claimed. |
@@ -233,7 +265,7 @@ Update individual steps as work progresses; split a step into smaller rows when 
 | 6.2 | Complete methodology, provenance, limitations and course evidence | In progress | 2026-11-08 | Current implementation/recovery/limitations docs and separate course indexes updated (6.2a). Actual-source provenance, final results/interpretation and submission evidence remain open (6.2b). |
 | 6.3 | Verify fresh-clone demo, handoff and separate course packages | In progress | 2026-11-08 | Isolated candidate clone, new venv, new DB and offline demo/browser checks passed (6.3a). Exact final Git commit/user platform verification and final course packages remain open (6.3b). |
 | 6.2a | Update implementation/recovery documentation and separate course evidence indexes | Complete | 2026-11-08 | docs/limitations.md, release_verification.md, retained code/evidence hashes and AIDA-1145/AIDA-2362 EVIDENCE.md link current methods, checks and remaining actual-data deliverables. |
-| 6.2b | Complete actual-data provenance, interpretation and final course evidence | Not started | 2026-11-08 | Requires verified source inputs/results from Phases 4–5; no final findings or course submission claimed. |
+| 6.2b | Complete declared classroom provenance, illustrative interpretation and final course evidence | Not started | 2026-11-10 | After Phase 7, document actual regional ST37 lineage and synthetic environmental assumptions/results separately; final presentation/feedback/submission remain open. Optional all-real findings still depend on Phases 4–5 and must not be inferred from the demo. |
 | 6.3a | Verify isolated candidate checkout with fresh dependencies and offline demo | Complete | 2026-11-08 | Local clone of 98d2904 plus candidate overlay; new Python 3.12 venv with 67 pinned packages, new DB, 118 tests, repeated setup/demo CLI and both offline Chromium checks passed. Test DB/app cleaned up; durable summary in docs/evidence/release_verification_2026-11-08.json. |
 | 6.3c | Document local-project setup and post-download completion checklist | Complete | 2026-11-08 | docs/download_inputs.md includes local software/database/.env setup, private catalogue inspection/mapping, chained extract preparation, PostGIS ingest, app catalogue/study alignment, real-data QA/reruns/exports/tests and course handoff checkboxes. Instructions checked against current CLI/config; actual local deployment and real-data acceptance are still open. |
 | 6.3b | Verify final committed checkout/user platform and prepare final course packages | Not started | 2026-11-08 | Candidate remains uncommitted in this pass; repeat checkout smoke at final commit, check intended platform, finish permitted output/screenshot/presentation/review packages and current D2L requirements. |
@@ -242,6 +274,8 @@ Update individual steps as work progresses; split a step into smaller rows when 
 
 | Date | Step / phase | Update |
 |---|---|---|
+| 2026-11-10 | D.3 / release scope revision | User supplied two-region starter and requested actual retained ST37 wells with synthetic environmental surroundings instead of mandatory full ingestion. Read archive AGENTS/README/config/source workflow and compared runtime/schema gaps. Read-only CSV scan finds 105 Red Deer/477 Drayton candidates in working degree envelopes; source/inventory checksums unchanged. Recorded proposed 28-per-region display, explicit illustrative provenance/no-production rule, offline backend gap and ordered pending Phase 7 work. No application or source data changed. |
+| 2026-11-10 | D.3 complete; Phase 7 Not started | Completed classroom handoff and aligned AGENTS, README, inventory, charter, scope matrix, course progress and both evidence indexes. Verified local Markdown links/fences and source/inventory checksums; only Markdown changed. New region packages, seeded environmental layers, offline backend/UI and teacher acceptance remain unimplemented. Prior 142-test proof is retained, not represented as a test of this new classroom mode. |
 | 2026-11-10 | 4.2g started | User supplied hydrography importer ZIP and requested waterways in the app. Treat package documents as reference, preserve project scope and existing credentials, and verify official metadata before enabling sources. Implement a bounded app-compatible import/preview rather than assuming standalone tables appear on the current map. |
 | 2026-11-10 | 4.2g/4.2g1 complete; 4.3c open | Adapted layer/ID-batch logic into shared contracts/cache, raw properties, code filtering, atomic water snapshots, CLI and app controls. Fresh official regional requests load 33 default or 121 seasonal features in a separate validation DB; one invalid river polygon is quarantined with incomplete coverage. All 142 tests/type checks and running-app import/preview/warning pass. Repeats preserve IDs/counts; no well screening publication. User DB credentials and coverage-gap resolution remain open. |
 | 2026-11-10 | 4.2e / 5.4 started | Read maintained design and course progress; inspected actual ST37 workbook sheet/11 headers and leading-zero text licence IDs. PostgreSQL 17 service is running; no project database URL is configured. Started full-file profiling and a reproducible Excel-to-staging/pilot workflow while requesting the database connection. Added an ignore rule for the supplied raw workbook without moving it. |
@@ -275,13 +309,21 @@ Prioritize a small, demonstrable end-to-end vertical slice before importing all 
 
 ## 14. Course evidence and final handoff
 
+**Classroom-release revision:** AIDA 1145 should show preservation of the full actual-well input, reproducible small regional selection, synthetic-feature contracts, provenance and validation. AIDA 2362 should demonstrate the illustrative distance/buffer workflow, baseline vs changed setting and matching map/table exports with explicit invented-environment labels. These prove software/method behavior, not actual environmental conditions at the named wells. Full official environmental ingestion is not required for this release; final packages, feedback and submissions still need their own evidence. See docs/classroom_demo.md and the dated charter/scope-matrix updates.
+
 AIDA 1145: contracts, source inventory and permissions, raw/cleaned schema, extraction/transform/load code, quarantine, run manifest, SQL tables, test results and reproducibility report. AIDA 2362: CRS evidence, spatial methodology, threshold sensitivity table, map screenshots/exports, company comparison, limitations and an interpretation report. Preserve approved research questions and update project-charter.md and scope-matrix.md. Instructor repository notes indicate distinct D2L packages and a December 7, 2026 deadline; verify exact D2L requirements. User confirms OpenStreetMap replaces QGIS for this implementation.
 
 ## 15. Codex kickoff instruction (paste with this document)
 
+The paragraph below is the original kickoff preserved for reference. It is not the next-task scope: Phases 0–3 already have completion evidence. For current work follow AGENTS.md, docs/classroom_demo.md and pending Phase 7 steps; do not restart the original implementation or execute the starter ZIP's province-wide/production instructions.
+
 You are implementing the attached Alberta Oil Well Environmental Screening design in my existing GitHub repository. First inspect README.md, project-charter.md, scope-matrix.md and both course READMEs. Do not delete or restructure existing course evidence. Implement Phase 0 and Phase 1 only first. Write complete commented code, beginner-friendly setup steps for Windows, .env.example, SQL migrations, synthetic fixtures, and pytest tests. Do not invent dataset field names or URLs; use source_catalog.yml placeholders where not verified and report the missing details. Preserve the ability to run a demo without internet. After Phase 1, show files changed, exact commands to run, test results, and what you need from me before Phase 2. Never commit secrets or large source datasets.
 
 ## 16. Open decisions and verification checklist
+
+- [x] Prioritize a small Red Deer/Drayton Valley classroom showcase with actual retained ST37 wells and synthetic environmental scenarios; keep full inventory and opt-in real pipeline — user direction 2026-11-10.
+- [ ] Finalize/implement Red Deer region bounds, deterministic sample cap (proposed 28/region), region seed and small-package limits; planning counts do not prove datum-aware extraction.
+- [ ] Verify no-DB/no-network classroom runtime and separate illustrative provenance/labels in UI, calculations, exports and teacher package.
 
 - [x] Choose first Alberta study region and geographic boundary; make it configurable.
 - [ ] Confirm current AER distribution format, field mapping, CRS, file size and permitted use. Excel format/11 fields/38,596,313 bytes and educational terms checked 2026-11-10; geographic datum and product release/download provenance remain open (5.4b).

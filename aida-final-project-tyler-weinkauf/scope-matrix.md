@@ -18,6 +18,17 @@ Use one row for each course. For an approved course, start with your proposal an
 
 ## Feedback and changes
 
+### Current classroom-release scope — 10 November 2026
+
+This dated refinement changes the next-release delivery target in the original scope rows above: preserve real ST37 wells but use synthetic environmental scenarios for a small Red Deer/Drayton showcase. Full official environmental ingestion remains an optional later branch. See [classroom implementation handoff](../docs/classroom_demo.md). The new runtime has not been built by this documentation review.
+
+| Course | Current bounded question / inputs | Required classroom evidence still to produce |
+|---|---|---|
+| AIDA 1145 | How can the retained, validated ST37 inventory produce a small reproducible two-region well sample, with explicitly generated environmental fixtures and separate real/synthetic lineage? | Source preservation/checksums, datum-verified regional selection, deterministic sample/generator contracts, rejection/accounting checks, small outputs/manifests and a clean repeat without re-ingesting the full inventory. |
+| AIDA 2362 | How does an illustrative proximity/buffer workflow behave for actual regional well positions against invented sensitivity features at 50/100/250/500 m? | Metre-based geometry/coverage checks, baseline vs changed-setting IDs/counts, map and exact table/export equivalence, clear actual-well/simulated-environment labels and a teacher-laptop offline run. No real environmental conclusions. |
+
+The full inventory is not deleted or replaced by the display sample. Licensee and licence-status meaning are preserved; fake producer/production values are excluded. Ecological occurrences are not substituted for critical habitat, and simulated ESA is not legal protection. Existing real-water gaps remain documented in the optional real pipeline. Course feedback, final package and D2L statuses still require their own evidence.
+
 Use this table to note guidance you receive and the step you take in response. Continue with planning and small feasibility checks using data you are allowed to use. Add any feedback you receive and the action you take.
 
 | Date | Course | Feedback received | What I will do next |

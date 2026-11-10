@@ -1,5 +1,7 @@
 # AIDA 2362 — GIS evidence index
 
+**Classroom-release priority, 10 November 2026:** [two-region handoff](../../../docs/classroom_demo.md) proposes actual regional ST37 well points against explicitly synthetic environmental scenarios around Red Deer/Drayton Valley. Demonstrate metre-based distance/buffer mechanics, changed-setting sensitivity and matching map/table exports without claiming actual environmental conditions at real wells. This pass reviews scope/documents implementation gaps only; datum-aware packages, synthetic layers, offline UI/analysis and teacher-package verification are Not started in Phase 7. Existing GIS proof below is retained; instructor feedback/submission and new classroom acceptance still require evidence.
+
 **Current scope revision:** Petrinex/monthly production is excluded. AER well locations/attributes and environmental layers remain required; retained production evidence below is historical/optional and does not require a download. See [download checklist](../../../docs/download_inputs.md).
 
 Candidate handoff index, 8 November 2026. The original [assignment brief](README.md) is preserved. The implementation follows the user-selected Streamlit/OpenStreetMap design. Verify the instructor's current tool/submission criteria; no approval or submission is claimed here.

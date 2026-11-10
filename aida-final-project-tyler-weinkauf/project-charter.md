@@ -10,3 +10,9 @@
 - **Proposal status:** See the proposal status table in `README.md`.
 - **Plan updates:** [Describe how you refined the plan and what changed.] - The approved proposal is being refined into a bounded training project using real, permitted Alberta oil and gas and environmental data where available. The project will use a fictional environmental reclamation company as the intended decision-maker and will clearly state that the resulting prioritization is an educational GIS/data exercise rather than a professional environmental risk assessment. Specific datasets, study area, environmental variables, and analysis thresholds will be finalized after data availability and permission are confirmed.
 - **Target finish:** End of Week 15.
+
+## Classroom-release revision — 10 November 2026
+
+The next demonstrable release is a small Red Deer/Drayton Valley training scenario, preserving actual ST37 surface-hole points/attributes and placing explicitly synthetic environmental features around a reproducible regional sample. The complete well inventory and existing ingestion tools remain retained; neither province-wide environmental ingestion nor database credentials on the teacher's laptop are required for the intended classroom runtime. That runtime is still to be implemented.
+
+The user-provided starter is a design reference. Its fully invented wells/production do not replace actual ST37 records, and production remains outside scope. Simulated proximity results demonstrate software and GIS methods; they are not environmental findings or actual prioritization advice about the real licensees/wells. Final bounds/sample settings, coordinate-datum evidence, small-file preparation, seeded features, offline UI/analysis and teacher-package verification are listed in [the classroom handoff](../docs/classroom_demo.md) and DESIGN Phase 7. This refinement records project direction, not new instructor approval or submission evidence.

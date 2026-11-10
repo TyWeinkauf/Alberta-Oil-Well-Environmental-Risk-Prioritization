@@ -4,7 +4,9 @@ Educational training project for **AIDA 1145 (Data Engineering)** and **AIDA 236
 
 The existing course workspace is preserved in [aida-final-project-tyler-weinkauf/](aida-final-project-tyler-weinkauf/README.md). See [DESIGN.md](DESIGN.md#13-phased-codex-implementation-plan) for scope and live progress tracking.
 
-The completed application will use **real AER wells, Alberta surface water, Alberta parks/protected areas and federal critical habitat**, with OpenStreetMap as the basemap. Alberta wetlands are an optional additional factor; the 2014 ESA layer is an optional historical comparison. The [user-supplied dataset reference](docs/dataset_reference.md) records these sources and their CRS/licensing cautions. Synthetic fixtures verify the implementation before live ingestion; they are not the final project dataset. Petrinex/monthly production has been removed from the current scope; AER supplies well location and descriptive attributes.
+**Current release direction — 10 November 2026:** prioritize a small **Red Deer / Drayton Valley classroom demo with actual ST37 wells and clearly synthetic environmental features**. Preserve the complete well inventory and existing real-data tools; full-Alberta environmental ingestion is optional future work. The [classroom-demo review and ordered handoff](docs/classroom_demo.md) records what works, what needs adjustment and what remains unimplemented. The new credential-free regional mode is planned, not yet available; the current app still requires PostGIS.
+
+The retained all-real pipeline targets AER wells, Alberta surface water, protected areas and federal critical habitat, with optional wetlands/historical ESA and OpenStreetMap display. It remains separate from simulated classroom results. The [dataset reference](docs/dataset_reference.md) records intended real sources and licensing cautions. Petrinex/monthly production remains outside scope.
 
 ## What works now
 

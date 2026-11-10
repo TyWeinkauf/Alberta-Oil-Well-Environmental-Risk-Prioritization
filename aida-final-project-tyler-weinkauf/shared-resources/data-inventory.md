@@ -2,6 +2,23 @@
 
 Record each shared input, its source, permission, retrieval/version, and limits before using it in more than one course.
 
+## Current classroom display scope — 10 November 2026
+
+The user now prioritizes a small **real-ST37-well / synthetic-environment** showcase near Red Deer and Drayton Valley. The full actual well inventory, original workbook, previous outputs and any user database records are retained. This is a display/derived-package scope change; it does not replace actual wells with the reference ZIP's fictional wells or re-ingest all Alberta data. [Implementation handoff](../../docs/classroom_demo.md).
+
+| Item | Verified today / remaining work |
+|---|---|
+| Retained well input | All 541,190 actual surface-hole records remain in the local inventory; original workbook and inventory SHA-256 match their preparation report. No source/data mutation or database operation in this review. |
+| Red Deer working window | `[-113.88,52.22,-113.74,52.32]` in raw longitude/latitude: 105 distinct licence records, zero retained date-warning rows. Proposed boundary, not yet datum-verified extraction. |
+| Drayton working window | Existing `[-115.08,53.20,-114.94,53.30]`: 477 distinct licence records, zero retained date-warning rows. Preserve existing pilot lineage. |
+| Proposed browser sample | 28 actual wells/region, 56 with Both; deterministic ID/seed selection before generating simulated outcomes. All 582 regional candidates and all province-wide inventory records remain retained. Final display settings/package are not implemented. |
+| Synthetic environmental input | Planned seeded water lines/polygons, wetlands, protected-area, critical-habitat and ESA scenarios; explicit synthetic provenance/labels. Flood/ecology are optional extensions requiring category review, not new live-input requirements. No such classroom features generated in this pass. |
+| Coordinate/provenance limits | Excel geographic datum still needs confirmation before actual point projection/distance computation. Candidate counts above are numeric-envelope feasibility checks. Actual IDs/licensee/licence status/legal location stay source-backed; no invented UWI/operator/production. |
+| Reference sample | oilwell_environment_codex_starter.zip AGENTS.md/docs/code read as reference. Its claimed 56 wells are synthetic and do not become this project's well input. Its data, schema, commands and API claims were not imported/executed. |
+| Current release state | Documentation/review only. Current app still requires DB configuration; new credential-free file-backed mode, regional extraction, synthetic layers, offline analysis and teacher package remain Not started in Phase 7. Prior real-data tools/evidence below remain optional and separate. |
+
+Actual well-source permission/attribution must accompany any small classroom subset. Keep source originals/full CSV/database dumps out of the package; synthetic environmental features do not establish actual real-source coverage. The known invalid real-water polygon remains quarantined in the independent all-real workflow.
+
 ## Actual Alberta water service — 10 November 2026
 
 Official [Base Water Feature service](https://geospatial.alberta.ca/titan/rest/services/environment/base_water_feature/MapServer) metadata, counts, IDs and GeoJSON were verified in this local environment. Earlier cloud-access failures below are historical. The supplied `alberta_hydro_postgis_import.zip` is reference code, not a data source or instruction to replace project settings.
