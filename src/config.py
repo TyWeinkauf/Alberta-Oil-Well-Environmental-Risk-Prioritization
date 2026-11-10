@@ -35,6 +35,9 @@ class Source(StrictModel):
     license_note: str | None = None
     native_crs: str | None = None
     layer_id: int | None = None
+    arcgis_where: str = Field(default='1=1', min_length=1)
+    arcgis_batch_size: int = Field(default=200, ge=1, le=500)
+    arcgis_preserve_properties: bool = False
     field_mapping: dict[str, str] = Field(default_factory=dict)
     category: Literal['water','protected_area','critical_habitat','wetland','esa'] | None = None
     file_layer: str | None = None

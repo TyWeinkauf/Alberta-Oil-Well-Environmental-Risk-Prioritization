@@ -39,6 +39,8 @@ Keep the ZIP intact for inspection. Actual layer names, geometry, CRS, unique ke
 
 ## Environmental websites and which format to choose
 
+**Verified water API update, 10 November 2026:** the app now has a working [bounded waterways import and preview](hydrography.md) for full-base layers 72/107, with optional seasonal layers 76/108. A separate vector download is not required for this route. Actual Drayton Valley validation accepted 33 default or 121 seasonal features; one invalid river polygon is quarantined and coverage remains incomplete. Configure your database connection before using Waterways → Import waterways. The remaining download-format notes below still apply to other inputs and manual-file routes.
+
 Metadata checked 8 November 2026; [verification receipt](evidence/download_checklist_2026-11-08.json). The first version needs **water features, parks/protected areas and federal critical habitat**. The following links are collected here so a local user can obtain the inputs without following the development chat. The catalogue resources were rechecked through publisher APIs; actual file contents, service-layer schemas, CRS and pilot coverage remain unverified. Access from your computer may differ from this cloud environment.
 
 | Input | Website to start with | File type / access route to choose |

@@ -1,5 +1,5 @@
-# Official entries remain disabled until publisher metadata/terms can be checked.
-# Generic adapters exist; actual URLs, CRS and mappings must not be invented.
+# Verified water sources are ready for a bounded import. Other official entries
+# remain disabled until their metadata/terms/CRS and mappings are checked.
 sources:
   - key: aer_wells
     kind: file
@@ -14,20 +14,80 @@ sources:
     native_crs: null
     layer_id: null
     field_mapping: {}
-  - key: alberta_water
+  # Official metadata/fields/CRS/educational licence checked 2026-11-10.
+  # Full-base 20K layers; explicit codes exclude arbitrary network connectors.
+  - key: alberta_water_lakes_rivers
     kind: arcgis
     category: water
     publisher: Government of Alberta
     reference_crs: EPSG:3400
     reference_license: Open Government Licence - Alberta (as described in the supplied reference).
     reference_document: docs/dataset_reference.md
+    enabled: true
+    url: https://geospatial.alberta.ca/titan/rest/services/environment/base_water_feature/MapServer
+    verified: true
+    license_note: Open Government Licence - Alberta, as explicitly stated in the layer metadata checked 2026-11-10; Government of Alberta attribution retained.
+    license_url: https://open.alberta.ca/licence
+    metadata_url: https://geospatial.alberta.ca/titan/rest/services/environment/base_water_feature/MapServer/72
+    native_crs: EPSG:3400
+    layer_id: 72
+    arcgis_where: "FEATURE_TYPE IN ('LAKE-PER','RIV-MAJ','RESERVOIR','CANAL-MAJ','OXBOW-PER')"
+    arcgis_preserve_properties: true
+    field_mapping: {source_feature_id: OBJECTID, name: NAME, feature_type_code: FEATURE_TYPE}
+    coverage_note: Full provincial base waterbody layer queried for study area plus 500 m. Selected perennial lakes/rivers, reservoirs, canals and oxbows; excludes icefields, quarries and dugouts. Scale 1:20,000 does not establish survey accuracy.
+  - key: alberta_water_streams
+    kind: arcgis
+    category: water
+    publisher: Government of Alberta
+    reference_document: docs/hydrography.md
+    enabled: true
+    url: https://geospatial.alberta.ca/titan/rest/services/environment/base_water_feature/MapServer
+    verified: true
+    license_note: Open Government Licence - Alberta, explicitly stated in layer metadata checked 2026-11-10; Government of Alberta attribution retained.
+    license_url: https://open.alberta.ca/licence
+    metadata_url: https://geospatial.alberta.ca/titan/rest/services/environment/base_water_feature/MapServer/107
+    native_crs: EPSG:3400
+    layer_id: 107
+    arcgis_where: "FEATURE_TYPE IN ('STR-PER','CANAL','OXBOW-PER','DITCH')"
+    arcgis_preserve_properties: true
+    field_mapping: {source_feature_id: OBJECTID, name: NAME, feature_type_code: FEATURE_TYPE}
+    coverage_note: Full provincial base single-line network queried for study area plus 500 m. Selected perennial streams, canals, oxbows and ditches; excludes arbitrary flow connectors. Not an update-only layer or proof of positional accuracy.
+  - key: alberta_water_intermittent_lakes
+    kind: arcgis
+    category: water
+    priority: optional
+    publisher: Government of Alberta
+    reference_document: docs/hydrography.md
     enabled: false
-    url: null
-    verified: false
-    license_note: null
-    native_crs: null
-    layer_id: null
-    field_mapping: {}
+    verified: true
+    url: https://geospatial.alberta.ca/titan/rest/services/environment/base_water_feature/MapServer
+    license_note: Open Government Licence - Alberta, explicitly stated in layer metadata checked 2026-11-10; Government of Alberta attribution retained.
+    license_url: https://open.alberta.ca/licence
+    metadata_url: https://geospatial.alberta.ca/titan/rest/services/environment/base_water_feature/MapServer/76
+    native_crs: EPSG:3400
+    layer_id: 76
+    arcgis_where: "FEATURE_TYPE IN ('LAKE-RECUR','OXBOW-RECUR')"
+    arcgis_preserve_properties: true
+    field_mapping: {source_feature_id: OBJECTID, name: NAME, feature_type_code: FEATURE_TYPE}
+    coverage_note: Optional seasonal waterbody polygons; selected recurring lakes and oxbows from provincial base, with study area plus 500 m coverage.
+  - key: alberta_water_intermittent_streams
+    kind: arcgis
+    category: water
+    priority: optional
+    publisher: Government of Alberta
+    reference_document: docs/hydrography.md
+    enabled: false
+    verified: true
+    url: https://geospatial.alberta.ca/titan/rest/services/environment/base_water_feature/MapServer
+    license_note: Open Government Licence - Alberta, explicitly stated in layer metadata checked 2026-11-10; Government of Alberta attribution retained.
+    license_url: https://open.alberta.ca/licence
+    metadata_url: https://geospatial.alberta.ca/titan/rest/services/environment/base_water_feature/MapServer/108
+    native_crs: EPSG:3400
+    layer_id: 108
+    arcgis_where: "FEATURE_TYPE IN ('STR-RECUR','STR-INDEF','OXBOW-RECUR','AQUEDUCT','SPILLWAY')"
+    arcgis_preserve_properties: true
+    field_mapping: {source_feature_id: OBJECTID, name: NAME, feature_type_code: FEATURE_TYPE}
+    coverage_note: Optional intermittent/indefinite streams, recurring oxbows, aqueducts and spillways; arbitrary manual/DEM flow connectors excluded. Study area plus 500 m.
   - key: alberta_protected_areas
     kind: arcgis
     category: protected_area

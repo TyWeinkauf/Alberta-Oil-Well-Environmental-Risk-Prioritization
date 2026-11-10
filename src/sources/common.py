@@ -28,6 +28,8 @@ def mapped_record(source: Source, properties: dict, geometry: dict, *, environme
     if isinstance(identifier,int) and not isinstance(identifier,bool):
         record[required]=str(identifier)
     record['geometry']=geometry
+    if source.kind == 'arcgis' and source.arcgis_preserve_properties:
+        record['_source_properties'] = properties
     if environmental:
         if not source.category:
             raise ValueError(f'{source.key}: environmental category must be configured')

@@ -83,7 +83,7 @@ def test_guard_commit_error_does_not_return_a_locked_session_to_the_pool(test_en
     # A distinct pool proves that the lock was released rather than reacquired recursively.
     peer=create_engine(test_engine.url)
     try:
-        assert len(migrate(peer))==5
+        assert len(migrate(peer))==6
     finally:
         peer.dispose()
 

@@ -1,5 +1,7 @@
 # AIDA 1145 — Data engineering evidence index
 
+Waterways update, 10 November 2026: [official water acquisition and app integration](../../../docs/hydrography.md) now demonstrate bounded ID-batch queries, explicit feature classes, raw-property/checksum lineage, atomic PostGIS inventories, quarantine, repeat imports and app preview. Actual temporary-DB imports accept 33 default or 121 seasonal features and quarantine one invalid river polygon. All 142 tests/type checks and running-app checks pass. User database setup, water coverage-gap resolution and complete real-source screening remain open; no course submission/feedback completion is claimed.
+
 **Current scope revision:** Petrinex/monthly production is excluded. AER well locations/attributes and environmental layers remain required; retained production evidence below is historical/optional and does not require a download. See [download checklist](../../../docs/download_inputs.md).
 
 Candidate handoff index, 8 November 2026. The original [assignment brief](README.md) is preserved. This index identifies implemented work; it does not claim instructor approval, a D2L submission or verified real-data results.

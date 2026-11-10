@@ -1,0 +1,1113 @@
+{
+  "adaptation": "Shared bounded acquisition/contracts/provenance, atomic inventory snapshot, app import/preview. No standalone environment.* mirror or province-wide import executed.",
+  "arbitrary_flow_connectors_imported": 0,
+  "date": "2026-11-10",
+  "full_pipeline_remaining_requirements": [
+    "aer_wells: source location, licence, CRS and field mapping must be verified/enabled",
+    "alberta_protected_areas: source location, licence, CRS and field mapping must be verified/enabled",
+    "federal_critical_habitat: source location, licence, CRS and field mapping must be verified/enabled",
+    "Core AER well source is not ready",
+    "Core water, protected-area and critical-habitat sources are not all ready"
+  ],
+  "geometry_checks": [
+    {
+      "geometry_type": "LINESTRING",
+      "records": 144,
+      "srid": 3400,
+      "valid": true
+    },
+    {
+      "geometry_type": "POLYGON",
+      "records": 10,
+      "srid": 3400,
+      "valid": true
+    }
+  ],
+  "input_archive": "alberta_hydro_postgis_import.zip",
+  "input_archive_sha256": "067c1e3f05b763cfbc16d335beedbd2774130bbbcd96185b832388ae2039e22b",
+  "inventory_validation": [
+    {
+      "coverage_status": "incomplete",
+      "feature_count": 33,
+      "import_id": "29145801-1c8c-54fa-b48a-73fc469a3440",
+      "quarantined_count": 1,
+      "sources": [
+        {
+          "inspection": {
+            "batch_size": 200,
+            "count": 6,
+            "environmental_margin_m": 500,
+            "fields": [
+              "FEATURE_TYPE",
+              "GDB.BF_HYDRO_POLYGON.AREA",
+              "NAME",
+              "OBJECTID",
+              "SBFLAG",
+              "SHAPE",
+              "SHAPE.STArea()",
+              "SHAPE.STLength()"
+            ],
+            "last_edit_date": null,
+            "object_id_field": "OBJECTID",
+            "query_bounds_3400": [
+              494158.1517776941,
+              5891660.504287464,
+              504506.38638563256,
+              5903783.680197261
+            ],
+            "where": "FEATURE_TYPE IN ('LAKE-PER','RIV-MAJ','RESERVOIR','CANAL-MAJ','OXBOW-PER')"
+          },
+          "key": "alberta_water_lakes_rivers",
+          "native_crs": "EPSG:3400",
+          "responses": [
+            {
+              "checksum_sha256": "4f156332cd05e0ea447ec2fcfe8f93108bfda84bab46b3ff0980b7ab68ea87c9",
+              "params": {
+                "f": "json"
+              },
+              "retrieved_at": "2026-11-10T15:30:32.576086+00:00",
+              "size_bytes": 16265,
+              "url": "https://geospatial.alberta.ca/titan/rest/services/environment/base_water_feature/MapServer/72"
+            },
+            {
+              "checksum_sha256": "1fb6f6be8607ab15c04198cba240a52c2ae4524e5d0d79068813f1972f29054c",
+              "params": {
+                "f": "json",
+                "geometry": "{\"xmin\":494158.1517776941,\"ymin\":5891660.504287464,\"xmax\":504506.38638563256,\"ymax\":5903783.680197261,\"spatialReference\":{\"wkid\":3400}}",
+                "geometryType": "esriGeometryEnvelope",
+                "inSR": 3400,
+                "returnCountOnly": "true",
+                "spatialRel": "esriSpatialRelIntersects",
+                "where": "FEATURE_TYPE IN ('LAKE-PER','RIV-MAJ','RESERVOIR','CANAL-MAJ','OXBOW-PER')"
+              },
+              "retrieved_at": "2026-11-10T15:30:33.002696+00:00",
+              "size_bytes": 11,
+              "url": "https://geospatial.alberta.ca/titan/rest/services/environment/base_water_feature/MapServer/72/query"
+            },
+            {
+              "checksum_sha256": "fbc7418a254d1fb519c7d4388c212aa517ca37599d3a7b3ccaa26e8ead460d5d",
+              "params": {
+                "f": "json",
+                "geometry": "{\"xmin\":494158.1517776941,\"ymin\":5891660.504287464,\"xmax\":504506.38638563256,\"ymax\":5903783.680197261,\"spatialReference\":{\"wkid\":3400}}",
+                "geometryType": "esriGeometryEnvelope",
+                "inSR": 3400,
+                "returnIdsOnly": "true",
+                "spatialRel": "esriSpatialRelIntersects",
+                "where": "FEATURE_TYPE IN ('LAKE-PER','RIV-MAJ','RESERVOIR','CANAL-MAJ','OXBOW-PER')"
+              },
+              "retrieved_at": "2026-11-10T15:30:33.170132+00:00",
+              "size_bytes": 88,
+              "url": "https://geospatial.alberta.ca/titan/rest/services/environment/base_water_feature/MapServer/72/query"
+            },
+            {
+              "checksum_sha256": "67da82beb5f5dc0eeb09eb950b4941f4d7b1ba3017ba5f0727655133fc4d6203",
+              "params": {
+                "f": "geojson",
+                "objectIds": "100338,102060,104612,205288,249048,254046",
+                "outFields": "*",
+                "outSR": 4326,
+                "returnGeometry": "true",
+                "returnM": "false",
+                "returnZ": "false",
+                "where": "FEATURE_TYPE IN ('LAKE-PER','RIV-MAJ','RESERVOIR','CANAL-MAJ','OXBOW-PER')"
+              },
+              "retrieved_at": "2026-11-10T15:30:33.921196+00:00",
+              "size_bytes": 2344454,
+              "url": "https://geospatial.alberta.ca/titan/rest/services/environment/base_water_feature/MapServer/72/query"
+            }
+          ],
+          "url": "https://geospatial.alberta.ca/titan/rest/services/environment/base_water_feature/MapServer"
+        },
+        {
+          "inspection": {
+            "batch_size": 200,
+            "count": 28,
+            "environmental_margin_m": 500,
+            "fields": [
+              "CAPTURE_DATE",
+              "FEATURE_CODE",
+              "FEATURE_TYPE",
+              "NAME",
+              "OBJECTID",
+              "PS_FLOW",
+              "SHAPE",
+              "SHAPE.STLength()",
+              "SOURCE"
+            ],
+            "last_edit_date": null,
+            "object_id_field": "OBJECTID",
+            "query_bounds_3400": [
+              494158.1517776941,
+              5891660.504287464,
+              504506.38638563256,
+              5903783.680197261
+            ],
+            "where": "FEATURE_TYPE IN ('STR-PER','CANAL','OXBOW-PER','DITCH')"
+          },
+          "key": "alberta_water_streams",
+          "native_crs": "EPSG:3400",
+          "responses": [
+            {
+              "checksum_sha256": "5d05d1a95ff2bfb2a1eb7882b5b72edffa9f80ba37644d3f3b54b930d1b35943",
+              "params": {
+                "f": "json"
+              },
+              "retrieved_at": "2026-11-10T15:30:34.337305+00:00",
+              "size_bytes": 7708,
+              "url": "https://geospatial.alberta.ca/titan/rest/services/environment/base_water_feature/MapServer/107"
+            },
+            {
+              "checksum_sha256": "48270895c6bf4f32f711afaaa3b45131564a9c92240e6ed2400fa43e2c414d7c",
+              "params": {
+                "f": "json",
+                "geometry": "{\"xmin\":494158.1517776941,\"ymin\":5891660.504287464,\"xmax\":504506.38638563256,\"ymax\":5903783.680197261,\"spatialReference\":{\"wkid\":3400}}",
+                "geometryType": "esriGeometryEnvelope",
+                "inSR": 3400,
+                "returnCountOnly": "true",
+                "spatialRel": "esriSpatialRelIntersects",
+                "where": "FEATURE_TYPE IN ('STR-PER','CANAL','OXBOW-PER','DITCH')"
+              },
+              "retrieved_at": "2026-11-10T15:30:34.507439+00:00",
+              "size_bytes": 12,
+              "url": "https://geospatial.alberta.ca/titan/rest/services/environment/base_water_feature/MapServer/107/query"
+            },
+            {
+              "checksum_sha256": "a81fd47e9a8f664cc5fb16a6072e961f14309e074b112b4e9f77f11987d2a8cf",
+              "params": {
+                "f": "json",
+                "geometry": "{\"xmin\":494158.1517776941,\"ymin\":5891660.504287464,\"xmax\":504506.38638563256,\"ymax\":5903783.680197261,\"spatialReference\":{\"wkid\":3400}}",
+                "geometryType": "esriGeometryEnvelope",
+                "inSR": 3400,
+                "returnIdsOnly": "true",
+                "spatialRel": "esriSpatialRelIntersects",
+                "where": "FEATURE_TYPE IN ('STR-PER','CANAL','OXBOW-PER','DITCH')"
+              },
+              "retrieved_at": "2026-11-10T15:30:34.663726+00:00",
+              "size_bytes": 237,
+              "url": "https://geospatial.alberta.ca/titan/rest/services/environment/base_water_feature/MapServer/107/query"
+            },
+            {
+              "checksum_sha256": "05438bd4e78c18192f033d374843fa5a746d64ef99c360537ec814de57be42ed",
+              "params": {
+                "f": "geojson",
+                "objectIds": "57858,57882,57893,57923,58827,165484,165566,165669,273248,273285,287219,287224,343052,343987,443858,443866,443926,444012,631125,631172,631249,631288,732892,732903,732919,734118,817811,817821",
+                "outFields": "*",
+                "outSR": 4326,
+                "returnGeometry": "true",
+                "returnM": "false",
+                "returnZ": "false",
+                "where": "FEATURE_TYPE IN ('STR-PER','CANAL','OXBOW-PER','DITCH')"
+              },
+              "retrieved_at": "2026-11-10T15:30:34.819501+00:00",
+              "size_bytes": 46863,
+              "url": "https://geospatial.alberta.ca/titan/rest/services/environment/base_water_feature/MapServer/107/query"
+            }
+          ],
+          "url": "https://geospatial.alberta.ca/titan/rest/services/environment/base_water_feature/MapServer"
+        }
+      ],
+      "validation": {
+        "alberta_water_lakes_rivers": {
+          "accepted": 5,
+          "reason_counts": {
+            "invalid_geometry": 1
+          },
+          "rejected": 1
+        },
+        "alberta_water_streams": {
+          "accepted": 28,
+          "reason_counts": {},
+          "rejected": 0
+        }
+      }
+    },
+    {
+      "coverage_status": "incomplete",
+      "feature_count": 121,
+      "import_id": "fd02c6b0-4dd4-54ef-a2eb-3c7ae418f8a9",
+      "quarantined_count": 1,
+      "sources": [
+        {
+          "inspection": {
+            "batch_size": 200,
+            "count": 0,
+            "environmental_margin_m": 500,
+            "fields": [
+              "FEATURE_CODE",
+              "FEATURE_TYPE",
+              "GDB.BF_HYDRO_POLYGON.AREA",
+              "NAME",
+              "OBJECTID",
+              "SBFLAG",
+              "SHAPE",
+              "SHAPE.STArea()",
+              "SHAPE.STLength()"
+            ],
+            "last_edit_date": null,
+            "object_id_field": "OBJECTID",
+            "query_bounds_3400": [
+              494158.1517776941,
+              5891660.504287464,
+              504506.38638563256,
+              5903783.680197261
+            ],
+            "where": "FEATURE_TYPE IN ('LAKE-RECUR','OXBOW-RECUR')"
+          },
+          "key": "alberta_water_intermittent_lakes",
+          "native_crs": "EPSG:3400",
+          "responses": [
+            {
+              "checksum_sha256": "02fcc3310deaed60c0b96daee0544c8468596d6dcc8ea1fdfa70c05828d32a5b",
+              "params": {
+                "f": "json"
+              },
+              "retrieved_at": "2026-11-10T15:33:02.005869+00:00",
+              "size_bytes": 10883,
+              "url": "https://geospatial.alberta.ca/titan/rest/services/environment/base_water_feature/MapServer/76"
+            },
+            {
+              "checksum_sha256": "618de7d9f46f3f697d827a1b6d84974760d5deda62e4e592adaa3c646602a94c",
+              "params": {
+                "f": "json",
+                "geometry": "{\"xmin\":494158.1517776941,\"ymin\":5891660.504287464,\"xmax\":504506.38638563256,\"ymax\":5903783.680197261,\"spatialReference\":{\"wkid\":3400}}",
+                "geometryType": "esriGeometryEnvelope",
+                "inSR": 3400,
+                "returnCountOnly": "true",
+                "spatialRel": "esriSpatialRelIntersects",
+                "where": "FEATURE_TYPE IN ('LAKE-RECUR','OXBOW-RECUR')"
+              },
+              "retrieved_at": "2026-11-10T15:33:02.243338+00:00",
+              "size_bytes": 11,
+              "url": "https://geospatial.alberta.ca/titan/rest/services/environment/base_water_feature/MapServer/76/query"
+            },
+            {
+              "checksum_sha256": "667410564a013e24d2b824ed7ea5c2613b8f5a6ea02633399a491988c5e3a512",
+              "params": {
+                "f": "json",
+                "geometry": "{\"xmin\":494158.1517776941,\"ymin\":5891660.504287464,\"xmax\":504506.38638563256,\"ymax\":5903783.680197261,\"spatialReference\":{\"wkid\":3400}}",
+                "geometryType": "esriGeometryEnvelope",
+                "inSR": 3400,
+                "returnIdsOnly": "true",
+                "spatialRel": "esriSpatialRelIntersects",
+                "where": "FEATURE_TYPE IN ('LAKE-RECUR','OXBOW-RECUR')"
+              },
+              "retrieved_at": "2026-11-10T15:33:02.327654+00:00",
+              "size_bytes": 49,
+              "url": "https://geospatial.alberta.ca/titan/rest/services/environment/base_water_feature/MapServer/76/query"
+            }
+          ],
+          "url": "https://geospatial.alberta.ca/titan/rest/services/environment/base_water_feature/MapServer"
+        },
+        {
+          "inspection": {
+            "batch_size": 200,
+            "count": 88,
+            "environmental_margin_m": 500,
+            "fields": [
+              "CAPTURE_DATE",
+              "FEATURE_CODE",
+              "FEATURE_TYPE",
+              "NAME",
+              "OBJECTID",
+              "PS_FLOW",
+              "SHAPE",
+              "SHAPE.STLength()",
+              "SOURCE"
+            ],
+            "last_edit_date": null,
+            "object_id_field": "OBJECTID",
+            "query_bounds_3400": [
+              494158.1517776941,
+              5891660.504287464,
+              504506.38638563256,
+              5903783.680197261
+            ],
+            "where": "FEATURE_TYPE IN ('STR-RECUR','STR-INDEF','OXBOW-RECUR','AQUEDUCT','SPILLWAY')"
+          },
+          "key": "alberta_water_intermittent_streams",
+          "native_crs": "EPSG:3400",
+          "responses": [
+            {
+              "checksum_sha256": "999c61ba86a9e69056c2de56f577c7534b48559e94dc1ff46d34834530db31ac",
+              "params": {
+                "f": "json"
+              },
+              "retrieved_at": "2026-11-10T15:33:02.406585+00:00",
+              "size_bytes": 8669,
+              "url": "https://geospatial.alberta.ca/titan/rest/services/environment/base_water_feature/MapServer/108"
+            },
+            {
+              "checksum_sha256": "31148bc4ce5218af7ea7c2ec564bb291a8749749e260ab390b881919292f3757",
+              "params": {
+                "f": "json",
+                "geometry": "{\"xmin\":494158.1517776941,\"ymin\":5891660.504287464,\"xmax\":504506.38638563256,\"ymax\":5903783.680197261,\"spatialReference\":{\"wkid\":3400}}",
+                "geometryType": "esriGeometryEnvelope",
+                "inSR": 3400,
+                "returnCountOnly": "true",
+                "spatialRel": "esriSpatialRelIntersects",
+                "where": "FEATURE_TYPE IN ('STR-RECUR','STR-INDEF','OXBOW-RECUR','AQUEDUCT','SPILLWAY')"
+              },
+              "retrieved_at": "2026-11-10T15:33:02.618937+00:00",
+              "size_bytes": 12,
+              "url": "https://geospatial.alberta.ca/titan/rest/services/environment/base_water_feature/MapServer/108/query"
+            },
+            {
+              "checksum_sha256": "af11c30db0d8fc5bf2d5268a6e2a6a58dc1cf20803b1b04f1caf952d340427f2",
+              "params": {
+                "f": "json",
+                "geometry": "{\"xmin\":494158.1517776941,\"ymin\":5891660.504287464,\"xmax\":504506.38638563256,\"ymax\":5903783.680197261,\"spatialReference\":{\"wkid\":3400}}",
+                "geometryType": "esriGeometryEnvelope",
+                "inSR": 3400,
+                "returnIdsOnly": "true",
+                "spatialRel": "esriSpatialRelIntersects",
+                "where": "FEATURE_TYPE IN ('STR-RECUR','STR-INDEF','OXBOW-RECUR','AQUEDUCT','SPILLWAY')"
+              },
+              "retrieved_at": "2026-11-10T15:33:02.788726+00:00",
+              "size_bytes": 654,
+              "url": "https://geospatial.alberta.ca/titan/rest/services/environment/base_water_feature/MapServer/108/query"
+            },
+            {
+              "checksum_sha256": "0e7f0aaf1ed683e56cf64eace481fd114e2027521e3ecbf50bf129b80def5a6b",
+              "params": {
+                "f": "geojson",
+                "objectIds": "57860,57920,57993,58823,58854,58860,58887,58907,165469,165490,165530,165536,165548,165560,165572,165670,165675,165677,165682,165686,165691,165708,165716,165720,166551,166559,273203,273253,273289,273290,273355,287179,287189,287215,287217,287228,287250,343042,343100,343103,343131,343132,343144,344015,344049,443831,443836,443851,443869,443873,443896,443901,443902,443914,443918,443969,443981,443982,444008,444019,444052,444858,444866,444869,444876,444878,444885,630001,630019,630046,631176,631204,631247,631317,631318,732963,733029,734105,734163,800590,800605,800618,800663,817780,817782,817784,817820,817824",
+                "outFields": "*",
+                "outSR": 4326,
+                "returnGeometry": "true",
+                "returnM": "false",
+                "returnZ": "false",
+                "where": "FEATURE_TYPE IN ('STR-RECUR','STR-INDEF','OXBOW-RECUR','AQUEDUCT','SPILLWAY')"
+              },
+              "retrieved_at": "2026-11-10T15:33:02.897784+00:00",
+              "size_bytes": 131229,
+              "url": "https://geospatial.alberta.ca/titan/rest/services/environment/base_water_feature/MapServer/108/query"
+            }
+          ],
+          "url": "https://geospatial.alberta.ca/titan/rest/services/environment/base_water_feature/MapServer"
+        },
+        {
+          "inspection": {
+            "batch_size": 200,
+            "count": 6,
+            "environmental_margin_m": 500,
+            "fields": [
+              "FEATURE_TYPE",
+              "GDB.BF_HYDRO_POLYGON.AREA",
+              "NAME",
+              "OBJECTID",
+              "SBFLAG",
+              "SHAPE",
+              "SHAPE.STArea()",
+              "SHAPE.STLength()"
+            ],
+            "last_edit_date": null,
+            "object_id_field": "OBJECTID",
+            "query_bounds_3400": [
+              494158.1517776941,
+              5891660.504287464,
+              504506.38638563256,
+              5903783.680197261
+            ],
+            "where": "FEATURE_TYPE IN ('LAKE-PER','RIV-MAJ','RESERVOIR','CANAL-MAJ','OXBOW-PER')"
+          },
+          "key": "alberta_water_lakes_rivers",
+          "native_crs": "EPSG:3400",
+          "responses": [
+            {
+              "checksum_sha256": "4f156332cd05e0ea447ec2fcfe8f93108bfda84bab46b3ff0980b7ab68ea87c9",
+              "params": {
+                "f": "json"
+              },
+              "retrieved_at": "2026-11-10T15:30:32.576086+00:00",
+              "size_bytes": 16265,
+              "url": "https://geospatial.alberta.ca/titan/rest/services/environment/base_water_feature/MapServer/72"
+            },
+            {
+              "checksum_sha256": "1fb6f6be8607ab15c04198cba240a52c2ae4524e5d0d79068813f1972f29054c",
+              "params": {
+                "f": "json",
+                "geometry": "{\"xmin\":494158.1517776941,\"ymin\":5891660.504287464,\"xmax\":504506.38638563256,\"ymax\":5903783.680197261,\"spatialReference\":{\"wkid\":3400}}",
+                "geometryType": "esriGeometryEnvelope",
+                "inSR": 3400,
+                "returnCountOnly": "true",
+                "spatialRel": "esriSpatialRelIntersects",
+                "where": "FEATURE_TYPE IN ('LAKE-PER','RIV-MAJ','RESERVOIR','CANAL-MAJ','OXBOW-PER')"
+              },
+              "retrieved_at": "2026-11-10T15:30:33.002696+00:00",
+              "size_bytes": 11,
+              "url": "https://geospatial.alberta.ca/titan/rest/services/environment/base_water_feature/MapServer/72/query"
+            },
+            {
+              "checksum_sha256": "fbc7418a254d1fb519c7d4388c212aa517ca37599d3a7b3ccaa26e8ead460d5d",
+              "params": {
+                "f": "json",
+                "geometry": "{\"xmin\":494158.1517776941,\"ymin\":5891660.504287464,\"xmax\":504506.38638563256,\"ymax\":5903783.680197261,\"spatialReference\":{\"wkid\":3400}}",
+                "geometryType": "esriGeometryEnvelope",
+                "inSR": 3400,
+                "returnIdsOnly": "true",
+                "spatialRel": "esriSpatialRelIntersects",
+                "where": "FEATURE_TYPE IN ('LAKE-PER','RIV-MAJ','RESERVOIR','CANAL-MAJ','OXBOW-PER')"
+              },
+              "retrieved_at": "2026-11-10T15:30:33.170132+00:00",
+              "size_bytes": 88,
+              "url": "https://geospatial.alberta.ca/titan/rest/services/environment/base_water_feature/MapServer/72/query"
+            },
+            {
+              "checksum_sha256": "67da82beb5f5dc0eeb09eb950b4941f4d7b1ba3017ba5f0727655133fc4d6203",
+              "params": {
+                "f": "geojson",
+                "objectIds": "100338,102060,104612,205288,249048,254046",
+                "outFields": "*",
+                "outSR": 4326,
+                "returnGeometry": "true",
+                "returnM": "false",
+                "returnZ": "false",
+                "where": "FEATURE_TYPE IN ('LAKE-PER','RIV-MAJ','RESERVOIR','CANAL-MAJ','OXBOW-PER')"
+              },
+              "retrieved_at": "2026-11-10T15:30:33.921196+00:00",
+              "size_bytes": 2344454,
+              "url": "https://geospatial.alberta.ca/titan/rest/services/environment/base_water_feature/MapServer/72/query"
+            }
+          ],
+          "url": "https://geospatial.alberta.ca/titan/rest/services/environment/base_water_feature/MapServer"
+        },
+        {
+          "inspection": {
+            "batch_size": 200,
+            "count": 28,
+            "environmental_margin_m": 500,
+            "fields": [
+              "CAPTURE_DATE",
+              "FEATURE_CODE",
+              "FEATURE_TYPE",
+              "NAME",
+              "OBJECTID",
+              "PS_FLOW",
+              "SHAPE",
+              "SHAPE.STLength()",
+              "SOURCE"
+            ],
+            "last_edit_date": null,
+            "object_id_field": "OBJECTID",
+            "query_bounds_3400": [
+              494158.1517776941,
+              5891660.504287464,
+              504506.38638563256,
+              5903783.680197261
+            ],
+            "where": "FEATURE_TYPE IN ('STR-PER','CANAL','OXBOW-PER','DITCH')"
+          },
+          "key": "alberta_water_streams",
+          "native_crs": "EPSG:3400",
+          "responses": [
+            {
+              "checksum_sha256": "5d05d1a95ff2bfb2a1eb7882b5b72edffa9f80ba37644d3f3b54b930d1b35943",
+              "params": {
+                "f": "json"
+              },
+              "retrieved_at": "2026-11-10T15:30:34.337305+00:00",
+              "size_bytes": 7708,
+              "url": "https://geospatial.alberta.ca/titan/rest/services/environment/base_water_feature/MapServer/107"
+            },
+            {
+              "checksum_sha256": "48270895c6bf4f32f711afaaa3b45131564a9c92240e6ed2400fa43e2c414d7c",
+              "params": {
+                "f": "json",
+                "geometry": "{\"xmin\":494158.1517776941,\"ymin\":5891660.504287464,\"xmax\":504506.38638563256,\"ymax\":5903783.680197261,\"spatialReference\":{\"wkid\":3400}}",
+                "geometryType": "esriGeometryEnvelope",
+                "inSR": 3400,
+                "returnCountOnly": "true",
+                "spatialRel": "esriSpatialRelIntersects",
+                "where": "FEATURE_TYPE IN ('STR-PER','CANAL','OXBOW-PER','DITCH')"
+              },
+              "retrieved_at": "2026-11-10T15:30:34.507439+00:00",
+              "size_bytes": 12,
+              "url": "https://geospatial.alberta.ca/titan/rest/services/environment/base_water_feature/MapServer/107/query"
+            },
+            {
+              "checksum_sha256": "a81fd47e9a8f664cc5fb16a6072e961f14309e074b112b4e9f77f11987d2a8cf",
+              "params": {
+                "f": "json",
+                "geometry": "{\"xmin\":494158.1517776941,\"ymin\":5891660.504287464,\"xmax\":504506.38638563256,\"ymax\":5903783.680197261,\"spatialReference\":{\"wkid\":3400}}",
+                "geometryType": "esriGeometryEnvelope",
+                "inSR": 3400,
+                "returnIdsOnly": "true",
+                "spatialRel": "esriSpatialRelIntersects",
+                "where": "FEATURE_TYPE IN ('STR-PER','CANAL','OXBOW-PER','DITCH')"
+              },
+              "retrieved_at": "2026-11-10T15:30:34.663726+00:00",
+              "size_bytes": 237,
+              "url": "https://geospatial.alberta.ca/titan/rest/services/environment/base_water_feature/MapServer/107/query"
+            },
+            {
+              "checksum_sha256": "05438bd4e78c18192f033d374843fa5a746d64ef99c360537ec814de57be42ed",
+              "params": {
+                "f": "geojson",
+                "objectIds": "57858,57882,57893,57923,58827,165484,165566,165669,273248,273285,287219,287224,343052,343987,443858,443866,443926,444012,631125,631172,631249,631288,732892,732903,732919,734118,817811,817821",
+                "outFields": "*",
+                "outSR": 4326,
+                "returnGeometry": "true",
+                "returnM": "false",
+                "returnZ": "false",
+                "where": "FEATURE_TYPE IN ('STR-PER','CANAL','OXBOW-PER','DITCH')"
+              },
+              "retrieved_at": "2026-11-10T15:30:34.819501+00:00",
+              "size_bytes": 46863,
+              "url": "https://geospatial.alberta.ca/titan/rest/services/environment/base_water_feature/MapServer/107/query"
+            }
+          ],
+          "url": "https://geospatial.alberta.ca/titan/rest/services/environment/base_water_feature/MapServer"
+        }
+      ],
+      "validation": {
+        "alberta_water_intermittent_lakes": {
+          "accepted": 0,
+          "reason_counts": {},
+          "rejected": 0
+        },
+        "alberta_water_intermittent_streams": {
+          "accepted": 88,
+          "reason_counts": {},
+          "rejected": 0
+        },
+        "alberta_water_lakes_rivers": {
+          "accepted": 5,
+          "reason_counts": {
+            "invalid_geometry": 1
+          },
+          "rejected": 1
+        },
+        "alberta_water_streams": {
+          "accepted": 28,
+          "reason_counts": {},
+          "rejected": 0
+        }
+      }
+    }
+  ],
+  "limitations": [
+    "User DATABASE_URL still requires actual values",
+    "One quarantined polygon prevents complete water coverage; no real well screening result is claimed",
+    "Layer scale/feature classes do not establish survey accuracy or contamination risk",
+    "Wells, protected areas and habitat still require their own verification"
+  ],
+  "official_layer_metadata": {
+    "layers": [
+      {
+        "count_sha256": "77225c1b889e1a23d33f5e7724a89deba869a0b481aff9fe90736b56532d0542",
+        "definitionExpression": null,
+        "displayField": "NAME",
+        "extent": {
+          "spatialReference": {
+            "falseM": -100000,
+            "falseX": -5118700,
+            "falseY": -9994100,
+            "falseZ": -100000,
+            "latestWkid": 3400,
+            "mTolerance": 0.001,
+            "mUnits": 10000,
+            "wkid": 102184,
+            "xyTolerance": 0.001,
+            "xyUnits": 450625831.9779165,
+            "zTolerance": 0.001,
+            "zUnits": 10000
+          },
+          "xmax": 865065.0213000001,
+          "xmin": 171416.78230000008,
+          "ymax": 6659210.3355,
+          "ymin": 5425413.237400001
+        },
+        "fields": [
+          {
+            "alias": "Feature Type",
+            "domain": null,
+            "length": 30,
+            "name": "FEATURE_TYPE",
+            "type": "esriFieldTypeString"
+          },
+          {
+            "alias": "Name",
+            "domain": null,
+            "length": 80,
+            "name": "NAME",
+            "type": "esriFieldTypeString"
+          },
+          {
+            "alias": "Sand Bar",
+            "domain": null,
+            "length": 1,
+            "name": "SBFLAG",
+            "type": "esriFieldTypeString"
+          },
+          {
+            "alias": "Object ID",
+            "domain": null,
+            "name": "OBJECTID",
+            "type": "esriFieldTypeOID"
+          },
+          {
+            "alias": "Shape",
+            "domain": null,
+            "name": "SHAPE",
+            "type": "esriFieldTypeGeometry"
+          },
+          {
+            "alias": "SHAPE.STArea()",
+            "domain": null,
+            "name": "SHAPE.STArea()",
+            "type": "esriFieldTypeDouble"
+          },
+          {
+            "alias": "SHAPE.STLength()",
+            "domain": null,
+            "name": "SHAPE.STLength()",
+            "type": "esriFieldTypeDouble"
+          },
+          {
+            "alias": "GDB.BF_HYDRO_POLYGON.AREA",
+            "domain": null,
+            "name": "GDB.BF_HYDRO_POLYGON.AREA",
+            "type": "esriFieldTypeDouble"
+          }
+        ],
+        "geometryType": "esriGeometryPolygon",
+        "id": 72,
+        "maxRecordCount": 1000,
+        "metadata_sha256": "6a5f4fca317c2092705d2be49303c558b3280bf18ca3f0590c81f78bdac43681",
+        "name": "Lake/River (20K)",
+        "objectIdField": null,
+        "pilot_count_response": {
+          "count": 9
+        },
+        "renderer_codes": [
+          "LAKE-PER",
+          "RIV-MAJ",
+          "RESERVOIR",
+          "ICEFIELD",
+          "CANAL-MAJ",
+          "OXBOW-PER",
+          "QUARRY",
+          "DUGOUT"
+        ],
+        "sourceSpatialReference": {
+          "falseM": 0,
+          "falseX": -5118700,
+          "falseY": -9994100,
+          "falseZ": 0,
+          "latestWkid": 3400,
+          "mTolerance": 2,
+          "mUnits": 1,
+          "wkid": 102184,
+          "xyTolerance": 0.001,
+          "xyUnits": 10000,
+          "zTolerance": 2,
+          "zUnits": 1
+        },
+        "supportedQueryFormats": "JSON, geoJSON, PBF"
+      },
+      {
+        "count_sha256": "48270895c6bf4f32f711afaaa3b45131564a9c92240e6ed2400fa43e2c414d7c",
+        "definitionExpression": null,
+        "displayField": "NAME",
+        "extent": {
+          "spatialReference": {
+            "falseM": -100000,
+            "falseX": -5118700,
+            "falseY": -9994100,
+            "falseZ": -100000,
+            "latestWkid": 3400,
+            "mTolerance": 0.001,
+            "mUnits": 10000,
+            "wkid": 102184,
+            "xyTolerance": 0.001,
+            "xyUnits": 450625831.9779165,
+            "zTolerance": 0.001,
+            "zUnits": 10000
+          },
+          "xmax": 865415.3300000001,
+          "xmin": 170939.44790000003,
+          "ymax": 6659097.9024,
+          "ymin": 5425294.0737
+        },
+        "fields": [
+          {
+            "alias": "Feature Type",
+            "domain": null,
+            "length": 30,
+            "name": "FEATURE_TYPE",
+            "type": "esriFieldTypeString"
+          },
+          {
+            "alias": "Name",
+            "domain": null,
+            "length": 80,
+            "name": "NAME",
+            "type": "esriFieldTypeString"
+          },
+          {
+            "alias": "Source",
+            "domain": null,
+            "length": 6,
+            "name": "SOURCE",
+            "type": "esriFieldTypeString"
+          },
+          {
+            "alias": "Capture Date",
+            "domain": null,
+            "length": 8,
+            "name": "CAPTURE_DATE",
+            "type": "esriFieldTypeDate"
+          },
+          {
+            "alias": "Primary or Secondary Flow",
+            "domain": null,
+            "length": 1,
+            "name": "PS_FLOW",
+            "type": "esriFieldTypeString"
+          },
+          {
+            "alias": "Feature Code",
+            "domain": null,
+            "length": 10,
+            "name": "FEATURE_CODE",
+            "type": "esriFieldTypeString"
+          },
+          {
+            "alias": "Object ID",
+            "domain": null,
+            "name": "OBJECTID",
+            "type": "esriFieldTypeOID"
+          },
+          {
+            "alias": "Shape",
+            "domain": null,
+            "name": "SHAPE",
+            "type": "esriFieldTypeGeometry"
+          },
+          {
+            "alias": "SHAPE.STLength()",
+            "domain": null,
+            "name": "SHAPE.STLength()",
+            "type": "esriFieldTypeDouble"
+          }
+        ],
+        "geometryType": "esriGeometryPolyline",
+        "id": 107,
+        "maxRecordCount": 1000,
+        "metadata_sha256": "9dde5efeb8f1e79d0fa98b69b5eadf93a1f19fac6cb5fd75f4de2a028f70fe06",
+        "name": "Stream (20K)",
+        "objectIdField": null,
+        "pilot_count_response": {
+          "count": 28
+        },
+        "renderer_codes": [
+          "STR-PER",
+          "CANAL",
+          "OXBOW-PER",
+          "DITCH"
+        ],
+        "sourceSpatialReference": {
+          "falseM": 0,
+          "falseX": -5118700,
+          "falseY": -9994100,
+          "falseZ": 0,
+          "latestWkid": 3400,
+          "mTolerance": 2,
+          "mUnits": 1,
+          "wkid": 102184,
+          "xyTolerance": 0.001,
+          "xyUnits": 10000,
+          "zTolerance": 2,
+          "zUnits": 1
+        },
+        "supportedQueryFormats": "JSON, geoJSON, PBF"
+      },
+      {
+        "count_sha256": "618de7d9f46f3f697d827a1b6d84974760d5deda62e4e592adaa3c646602a94c",
+        "definitionExpression": null,
+        "displayField": "NAME",
+        "extent": {
+          "spatialReference": {
+            "falseM": -100000,
+            "falseX": -5118700,
+            "falseY": -9994100,
+            "falseZ": -100000,
+            "latestWkid": 3400,
+            "mTolerance": 0.001,
+            "mUnits": 10000,
+            "wkid": 102184,
+            "xyTolerance": 0.001,
+            "xyUnits": 450625831.9779165,
+            "zTolerance": 0.001,
+            "zUnits": 10000
+          },
+          "xmax": 865065.0213000001,
+          "xmin": 171416.78230000008,
+          "ymax": 6659210.3355,
+          "ymin": 5425413.237400001
+        },
+        "fields": [
+          {
+            "alias": "Feature Type",
+            "domain": null,
+            "length": 30,
+            "name": "FEATURE_TYPE",
+            "type": "esriFieldTypeString"
+          },
+          {
+            "alias": "Name",
+            "domain": null,
+            "length": 80,
+            "name": "NAME",
+            "type": "esriFieldTypeString"
+          },
+          {
+            "alias": "Sand Bar",
+            "domain": null,
+            "length": 1,
+            "name": "SBFLAG",
+            "type": "esriFieldTypeString"
+          },
+          {
+            "alias": "Feature Code",
+            "domain": null,
+            "length": 10,
+            "name": "FEATURE_CODE",
+            "type": "esriFieldTypeString"
+          },
+          {
+            "alias": "Object ID",
+            "domain": null,
+            "name": "OBJECTID",
+            "type": "esriFieldTypeOID"
+          },
+          {
+            "alias": "Shape",
+            "domain": null,
+            "name": "SHAPE",
+            "type": "esriFieldTypeGeometry"
+          },
+          {
+            "alias": "SHAPE.STArea()",
+            "domain": null,
+            "name": "SHAPE.STArea()",
+            "type": "esriFieldTypeDouble"
+          },
+          {
+            "alias": "SHAPE.STLength()",
+            "domain": null,
+            "name": "SHAPE.STLength()",
+            "type": "esriFieldTypeDouble"
+          },
+          {
+            "alias": "GDB.BF_HYDRO_POLYGON.AREA",
+            "domain": null,
+            "name": "GDB.BF_HYDRO_POLYGON.AREA",
+            "type": "esriFieldTypeDouble"
+          }
+        ],
+        "geometryType": "esriGeometryPolygon",
+        "id": 76,
+        "maxRecordCount": 1000,
+        "metadata_sha256": "2e063d691a5c829c8ef0b4891e6446eae95465c4f36d2a31ad0b471badeba245",
+        "name": "Intermittent Lake (20K)",
+        "objectIdField": null,
+        "pilot_count_response": {
+          "count": 0
+        },
+        "renderer_codes": [
+          "LAKE-RECUR",
+          "OXBOW-RECUR"
+        ],
+        "sourceSpatialReference": {
+          "falseM": 0,
+          "falseX": -5118700,
+          "falseY": -9994100,
+          "falseZ": 0,
+          "latestWkid": 3400,
+          "mTolerance": 2,
+          "mUnits": 1,
+          "wkid": 102184,
+          "xyTolerance": 0.001,
+          "xyUnits": 10000,
+          "zTolerance": 2,
+          "zUnits": 1
+        },
+        "supportedQueryFormats": "JSON, geoJSON, PBF"
+      },
+      {
+        "count_sha256": "17e5c8050d534e241b4b103b2a62c678231536949d2ef1e75e8d15adf9052208",
+        "definitionExpression": null,
+        "displayField": "NAME",
+        "extent": {
+          "spatialReference": {
+            "falseM": -100000,
+            "falseX": -5118700,
+            "falseY": -9994100,
+            "falseZ": -100000,
+            "latestWkid": 3400,
+            "mTolerance": 0.001,
+            "mUnits": 10000,
+            "wkid": 102184,
+            "xyTolerance": 0.001,
+            "xyUnits": 450625831.9779165,
+            "zTolerance": 0.001,
+            "zUnits": 10000
+          },
+          "xmax": 865415.3300000001,
+          "xmin": 170939.44790000003,
+          "ymax": 6659097.9024,
+          "ymin": 5425294.0737
+        },
+        "fields": [
+          {
+            "alias": "Feature Type",
+            "domain": null,
+            "length": 30,
+            "name": "FEATURE_TYPE",
+            "type": "esriFieldTypeString"
+          },
+          {
+            "alias": "Name",
+            "domain": null,
+            "length": 80,
+            "name": "NAME",
+            "type": "esriFieldTypeString"
+          },
+          {
+            "alias": "Source",
+            "domain": null,
+            "length": 6,
+            "name": "SOURCE",
+            "type": "esriFieldTypeString"
+          },
+          {
+            "alias": "Capture Date",
+            "domain": null,
+            "length": 8,
+            "name": "CAPTURE_DATE",
+            "type": "esriFieldTypeDate"
+          },
+          {
+            "alias": "Primary or Secondary Flow",
+            "domain": null,
+            "length": 1,
+            "name": "PS_FLOW",
+            "type": "esriFieldTypeString"
+          },
+          {
+            "alias": "Feature Code",
+            "domain": null,
+            "length": 10,
+            "name": "FEATURE_CODE",
+            "type": "esriFieldTypeString"
+          },
+          {
+            "alias": "Object ID",
+            "domain": null,
+            "name": "OBJECTID",
+            "type": "esriFieldTypeOID"
+          },
+          {
+            "alias": "Shape",
+            "domain": null,
+            "name": "SHAPE",
+            "type": "esriFieldTypeGeometry"
+          },
+          {
+            "alias": "SHAPE.STLength()",
+            "domain": null,
+            "name": "SHAPE.STLength()",
+            "type": "esriFieldTypeDouble"
+          }
+        ],
+        "geometryType": "esriGeometryPolyline",
+        "id": 108,
+        "maxRecordCount": 1000,
+        "metadata_sha256": "999c61ba86a9e69056c2de56f577c7534b48559e94dc1ff46d34834530db31ac",
+        "name": "Intermittent Stream / Aqueduct / Spillway",
+        "objectIdField": null,
+        "pilot_count_response": {
+          "count": 97
+        },
+        "renderer_codes": [
+          "STR-RECUR",
+          "STR-INDEF",
+          "FLOW-ARB-MANUAL",
+          "FLOW-ARB-DEM",
+          "OXBOW-RECUR",
+          "AQUEDUCT",
+          "SPILLWAY"
+        ],
+        "sourceSpatialReference": {
+          "falseM": 0,
+          "falseX": -5118700,
+          "falseY": -9994100,
+          "falseZ": 0,
+          "latestWkid": 3400,
+          "mTolerance": 2,
+          "mUnits": 1,
+          "wkid": 102184,
+          "xyTolerance": 0.001,
+          "xyUnits": 10000,
+          "zTolerance": 2,
+          "zUnits": 1
+        },
+        "supportedQueryFormats": "JSON, geoJSON, PBF"
+      }
+    ],
+    "query_bounds_3400": [
+      494158.1517776941,
+      5891660.504287464,
+      504506.38638563256,
+      5903783.680197261
+    ],
+    "study_area": {
+      "analysis_crs": "EPSG:3400",
+      "bbox_wgs84": [
+        -115.08,
+        53.2,
+        -114.94,
+        53.3
+      ],
+      "mode": "live",
+      "name": "drayton_valley_pilot",
+      "thresholds_m": [
+        50.0,
+        100.0,
+        250.0,
+        500.0
+      ]
+    }
+  },
+  "published_environmental_features": 0,
+  "quarantine_detail": {
+    "feature_type": "RIV-MAJ",
+    "object_id": "249048",
+    "reason": "Ring self-intersection in source polygon; quarantined without repair. Both inventories report incomplete water coverage.",
+    "source_key": "alberta_water_lakes_rivers"
+  },
+  "repeat_imports": "Base repeated through running app and seasonal repeated through CLI; same IDs/counts reused.",
+  "running_app": {
+    "base_inventory_selected_after_newer_seasonal_snapshot": true,
+    "iframe_rendered": true,
+    "import_trigger": true,
+    "incomplete_coverage_warning": true,
+    "preview_rows": 33,
+    "status": "passed"
+  },
+  "screening_runs_published": 0,
+  "temporary_cleanup": "Both task-created water validation databases removed; task validation app and separate PostgreSQL server stopped. Existing PostgreSQL service/user database untouched.",
+  "tests": {
+    "errors": "0",
+    "failures": "0",
+    "skipped": "0",
+    "tests": "142",
+    "time": "69.916"
+  },
+  "type_check": "ty check app.py src/ui/water.py src/sources/hydrography.py src/sources/arcgis.py src/sources/common.py src/config.py scripts/import_hydrography.py: all checks passed",
+  "user_database_imported": false,
+  "validation_database": "Separate temporary localhost PostgreSQL 17.11 / PostGIS 3.6.2",
+  "water_readiness": [],
+  "well_records": 0
+}

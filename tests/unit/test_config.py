@@ -4,8 +4,10 @@ from pydantic import ValidationError
 from src.config import Source, StudyArea, config_hash, load_source_catalog, load_study_area
 
 
-def test_default_sources_are_disabled_and_config_is_stable():
-    assert all(not source.enabled and not source.verified for source in load_source_catalog().sources)
+def test_only_verified_water_sources_are_enabled_and_config_is_stable():
+    enabled = [source for source in load_source_catalog().sources if source.enabled]
+    assert {source.layer_id for source in enabled} == {72, 107}
+    assert all(source.verified and source.category == 'water' for source in enabled)
     assert all(source.role!='production' for source in load_source_catalog().sources)
     area = load_study_area()
     assert area.thresholds_m == [50, 100, 250, 500]
@@ -28,12 +30,12 @@ def test_discovered_endpoint_cannot_enable_an_uninspected_source():
 def test_reference_records_real_data_intent_without_claiming_verified_acquisition():
     sources = {s.key:s for s in load_source_catalog().sources}
     assert sources['aer_wells'].reference_crs is None
-    assert sources['alberta_water'].reference_crs == 'EPSG:3400'
+    assert sources['alberta_water_lakes_rivers'].reference_crs == 'EPSG:3400'
     assert sources['federal_critical_habitat'].reference_crs == 'EPSG:3978'
     assert sources['openstreetmap'].role == 'basemap'
     assert sources['alberta_wetlands'].priority == sources['alberta_esa_2014'].priority == 'optional'
     assert all(s.reference_document for key,s in sources.items() if key != 'petrinex_production')
-    assert all(not s.verified and not s.enabled for s in sources.values())
+    assert all(not s.verified and not s.enabled for s in sources.values() if s.category != 'water')
 
 
 @pytest.mark.parametrize('change', [

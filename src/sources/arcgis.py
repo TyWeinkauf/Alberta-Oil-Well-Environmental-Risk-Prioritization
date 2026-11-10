@@ -37,10 +37,10 @@ def acquire_arcgis(source: Source, area: StudyArea, cache: HttpCache, *, refresh
     spatial_reference=(metadata.get('extent') or {}).get('spatialReference') or metadata.get('sourceSpatialReference') or {}
     wkid=spatial_reference.get('latestWkid') or spatial_reference.get('wkid')
     actual_crs=spatial_reference.get('wkt') or (f'EPSG:{wkid}' if wkid else None)
-    verify_crs(actual_crs,source)
+    native_crs=verify_crs(actual_crs,source).to_string()
     environmental=source.category is not None
     left,bottom,right,top=query_bounds(area,environmental=environmental)
-    common={'where':'1=1','geometryType':'esriGeometryEnvelope','inSR':3400,
+    common={'where':source.arcgis_where,'geometryType':'esriGeometryEnvelope','inSR':3400,
             'geometry':json.dumps({'xmin':left,'ymin':bottom,'xmax':right,'ymax':top,'spatialReference':{'wkid':3400}},separators=(',',':')),
             'spatialRel':'esriSpatialRelIntersects'}
     raw.append(cache.get(layer+'/query',{**common,'f':'json','returnCountOnly':'true'},refresh=refresh))
@@ -55,14 +55,14 @@ def acquire_arcgis(source: Source, area: StudyArea, cache: HttpCache, *, refresh
         raise ValueError('ArcGIS object ID response is incomplete or changed during acquisition')
     if any(not isinstance(i,int) or isinstance(i,bool) for i in ids) or len(set(ids))!=len(ids):
         raise ValueError('ArcGIS object ID response contains duplicate or invalid IDs')
-    batch_size=min(int(metadata.get('maxRecordCount',1000)),500)
+    batch_size=min(int(metadata.get('maxRecordCount',1000)),source.arcgis_batch_size)
     if batch_size<1:
         raise ValueError('ArcGIS maximum record count is invalid')
     records=[]
     for offset in range(0,len(ids),batch_size):
         batch=sorted(ids)[offset:offset+batch_size]
-        params={'f':'geojson','where':'1=1','objectIds':','.join(map(str,batch)),
-                'outFields':','.join(sorted(set(source.field_mapping.values())|{oid})),
+        params={'f':'geojson','where':source.arcgis_where,'objectIds':','.join(map(str,batch)),
+                'outFields':'*' if source.arcgis_preserve_properties else ','.join(sorted(set(source.field_mapping.values())|{oid})),
                 'outSR':4326,'returnGeometry':'true','returnZ':'false','returnM':'false'}
         raw.append(cache.get(layer+'/query',params,refresh=refresh));page=_json(raw[-1])
         declared_crs=(page.get('crs') or {}).get('properties',{}).get('name')
@@ -76,8 +76,9 @@ def acquire_arcgis(source: Source, area: StudyArea, cache: HttpCache, *, refresh
             raise ValueError('ArcGIS geometry page has missing, duplicate or unexpected records')
         records.extend(mapped_record(source,f['properties'],f.get('geometry'),environmental=environmental)
                        for f in sorted(features,key=lambda f:f['properties'][oid]))
-    return Acquisition(source,records,'EPSG:4326',actual_crs,raw,
+    return Acquisition(source,records,'EPSG:4326',native_crs,raw,
                        {'count':expected,'object_id_field':oid,'fields':sorted(fields),
                         'last_edit_date':(metadata.get('editingInfo') or {}).get('lastEditDate'),
+                        'where':source.arcgis_where,'batch_size':batch_size,
                         'query_bounds_3400':[left,bottom,right,top],
                         'environmental_margin_m':500 if environmental else 0})

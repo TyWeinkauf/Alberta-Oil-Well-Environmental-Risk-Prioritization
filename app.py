@@ -16,6 +16,7 @@ from src.db.workflow import WorkflowBusy
 from src.ui.data import list_analyzed_runs, load_dashboard, pipeline_attempts
 from src.ui.map import build_map
 from src.ui.model import filtered_wells, map_selection
+from src.ui.water import show_waterways
 from src.sources.pipeline import live_requirements, run_live
 from src.production.store import load_demo_production, production_requirements, refresh_production
 from src.production.view import production_view
@@ -91,6 +92,7 @@ def main():
                 st.session_state.busy = False
             st.session_state.actions.append({'time_utc':datetime.now(timezone.utc).isoformat(),
                                             'action':action,'outcome':outcome,'stages':' → '.join(stages)})
+    show_waterways(engine, catalog)
     try:
         runs = list_analyzed_runs(engine)
     except Exception:

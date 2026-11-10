@@ -8,6 +8,8 @@ The completed application will use **real AER wells, Alberta surface water, Albe
 
 ## What works now
 
+**Waterways update, 10 November 2026:** open **Waterways → Import waterways** in the app sidebar, then **Preview imported waterways**. Verified official waterbody polygons/stream lines are imported for the study area plus 500 m; seasonal sources are optional. Actual validation: 33 default or 121 seasonal features, one invalid polygon quarantined, all 142 tests/type checks and running-app checks pass. Your database needs actual `.env` values. See [waterways setup and quality details](docs/hydrography.md).
+
 **Local-data update, 10 November 2026:** the supplied ST37 surface-hole Excel has been profiled: 541,190 unique licence records and 477 Drayton Valley candidates, with leading zeros preserved and date anomalies flagged. [Excel preparation and inventory staging](docs/st37_excel.md) provides repeatable commands and the actual schema. The new importer stages all well attributes separately from complete screening results; the user database connection and product-specific geographic datum evidence are still required. The supplied original and `.env` remain private/ignored.
 
 Phases 0–3 provide validated configuration, transactional PostGIS migrations, an offline synthetic seed, quarantine reasons, raw-snapshot checksums, spatial analysis and a Streamlit map with persistent well selection, filters, matching exports, data quality and session history. The demo contains **2 accepted wells, 2 accepted environmental features and 6 quarantined records**. Repeating it uses the same run and does not duplicate rows.

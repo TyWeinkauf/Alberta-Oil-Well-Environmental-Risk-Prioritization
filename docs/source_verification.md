@@ -1,6 +1,6 @@
 # Real-source verification and acquisition status
 
-**Phase 4 is in progress, not complete.** Acquisition infrastructure is implemented and tested against explicitly synthetic local HTTP/GIS fixtures. No official AER, Alberta environmental or federal habitat dataset has been downloaded or represented as verified.
+**Phase 4 is in progress, not complete. Update 2026-11-10:** actual ST37 Excel preparation and official Alberta water acquisition are now verified separately. Water layer metadata/fields/CRS/terms and default/seasonal pilot import/preview pass; one invalid polygon makes coverage incomplete. User database connection, AER datum/provenance, parks/habitat and the full analytical run remain open. See [water evidence](hydrography.md) and [ST37 evidence](st37_excel.md). Older cloud-access observations below are historical; they do not supersede this successful water-service check.
 
 ## Access scope
 

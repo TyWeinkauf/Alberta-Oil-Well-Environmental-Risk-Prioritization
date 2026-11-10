@@ -2,6 +2,26 @@
 
 Record each shared input, its source, permission, retrieval/version, and limits before using it in more than one course.
 
+## Actual Alberta water service — 10 November 2026
+
+Official [Base Water Feature service](https://geospatial.alberta.ca/titan/rest/services/environment/base_water_feature/MapServer) metadata, counts, IDs and GeoJSON were verified in this local environment. Earlier cloud-access failures below are historical. The supplied `alberta_hydro_postgis_import.zip` is reference code, not a data source or instruction to replace project settings.
+
+| Field | Recorded value |
+|---|---|
+| Publisher / permission | Government of Alberta; layer descriptions explicitly state [Open Government Licence – Alberta](https://open.alberta.ca/licence), checked 2026-11-10; attribution retained. |
+| Default sources | Layer 72 Lake/River (20K), polygon; layer 107 Stream (20K), line. Full-base sources rather than update-only layers. |
+| Optional sources | Layer 76 recurring waterbody polygons; layer 108 intermittent/indefinite streams, recurring oxbows, aqueducts/spillways. Opt-in through app/CLI. |
+| CRS / geometry | Metadata native EPSG:3400 (ESRI 102184/latestWkid 3400). GeoJSON requested as EPSG:4326, contracts validate/project actual lines/polygons into EPSG:3400. Water geometry is not replaced with points or centroids. |
+| Scope / types | Configured Drayton Valley pilot plus projected 500 m margin; explicit feature-code predicates exclude arbitrary manual/DEM connectors and omit icefields/quarry/dugout polygons from default selection. See [exact code selection](../../docs/hydrography.md). |
+| IDs / attributes | Source key plus OBJECTID scopes each feature; IDs are not assumed permanent across publisher releases. NAME may be missing; FEATURE_TYPE and all returned publisher properties are preserved. |
+| Actual validation result | Default: 33 accepted (5 polygons/28 lines), 1 rejected. With seasonal sources: 121 accepted (5/116), 1 rejected. Repeats reuse IDs/counts without duplicates; all stored geometry valid EPSG:3400; no arbitrary connectors imported. |
+| Quality gap | Layer-72 RIV-MAJ polygon OBJECTID 249048 has a source ring self-intersection. It is quarantined without repair; water coverage remains incomplete, including possible river proximity. |
+| Lineage / updates | Raw request bytes/checksums, retrieval timestamps, layer metadata, query bounds/predicates, original properties and selected-record bundles under ignored ../../data/cache/http and ../../data/raw/hydrography; manifests under ../../outputs/waterways. Source updates/deletions produce a new atomic snapshot after refresh; older inventories remain auditable. |
+| PostGIS / app | screening.water_imports and screening.water_features, migration 006; app Waterways import/preview and CLI scripts/import_hydrography.py. Separate inventory does not publish well screening or mix real water with synthetic wells. |
+| Proof / remaining work | All 142 tests, type checks and running-app import/preview/warning checks pass. Actual imports were in a separate temporary validation DB; user .env still needs real connection values. Resolve coverage gap and finish AER/parks/habitat before full real-source screening. |
+
+See [waterways workflow](../../docs/hydrography.md) and [aggregate verification evidence](../../docs/evidence/hydrography_2026-11-10.json). Dataset scale/complete API paging does not establish survey accuracy, regulatory setbacks, contamination likelihood or course submission/feedback status.
+
 ## Actual ST37 surface-hole input — 10 November 2026
 
 This entry supersedes older statements below that no official well file has been acquired. Historical synthetic/cloud evidence remains labelled separately. The user confirmed **one Point per surface-hole entry**, built from source longitude (X) and latitude (Y).
