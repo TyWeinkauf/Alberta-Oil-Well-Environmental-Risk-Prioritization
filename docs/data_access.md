@@ -9,6 +9,7 @@ Sources inaccessible to ChatGPT/Codex may be accessible through APIs or download
 | Publisher API | Configured ArcGIS REST adapter with inspected layer metadata, bounded queries and completeness checks. Other API protocols need a specific adapter. |
 | Direct download URL | HTTP cache plus GIS-file readers. Production CSV/ZIP remains optional legacy code. |
 | User-downloaded local files | Explicit `local_path` for GIS files or coordinate-mapped well CSV. No network request is made for a local entry, even when its publisher URL is recorded. |
+| ST37 surface-hole Excel | `scripts/prepare_st37.py` profiles the original and prepares inventory/pilot CSVs. `scripts/import_st37.py` stages well attributes separately from screening publication; geometry requires explicit datum evidence. See [Excel workflow](st37_excel.md). |
 
 All routes require verified source terms, field mappings and coverage/attribution evidence before enabling entries. Official compatibility is still unverified. Local files use the same validation, quarantine, atomic load as remote inputs. Failed imports preserve earlier results.
 

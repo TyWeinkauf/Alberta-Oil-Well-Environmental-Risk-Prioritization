@@ -12,3 +12,5 @@ htmlcov/
 # User-downloaded datasets, private import catalogues, caches and quarantine.
 /data/
 /outputs/
+# Publisher workbook retained locally in the existing course folder.
+/aida-final-project-tyler-weinkauf/courses/AIDA-1145/data/ST37_SH.xlsx

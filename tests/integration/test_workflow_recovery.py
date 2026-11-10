@@ -3,6 +3,7 @@ import os
 import subprocess
 import sys
 import threading
+import time
 from concurrent.futures import ThreadPoolExecutor
 
 import pytest
@@ -82,7 +83,7 @@ def test_guard_commit_error_does_not_return_a_locked_session_to_the_pool(test_en
     # A distinct pool proves that the lock was released rather than reacquired recursively.
     peer=create_engine(test_engine.url)
     try:
-        assert len(migrate(peer))==4
+        assert len(migrate(peer))==5
     finally:
         peer.dispose()
 
@@ -117,7 +118,17 @@ with engine.connect() as conn:
             load_demo_production(test_engine,run,**kwargs)
         assert production_view(test_engine,run)['batch']['batch_id']==first['batch_id']
         child.kill();child.wait(timeout=5)
-        second=load_demo_production(test_engine,run,**kwargs)
+        # Client process exit and server socket-close detection are asynchronous,
+        # particularly on Windows. Require recovery within a bounded interval.
+        deadline=time.monotonic()+5
+        while True:
+            try:
+                second=load_demo_production(test_engine,run,**kwargs)
+                break
+            except WorkflowBusy:
+                if time.monotonic()>=deadline:
+                    raise
+                threading.Event().wait(0.01)
         assert first==second
         with test_engine.connect() as conn:
             attempt=conn.execute(text('SELECT status,error_code,finished_at FROM screening.pipeline_attempts')).one()

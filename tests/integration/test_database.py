@@ -20,7 +20,7 @@ def seed(engine, tmp_path, fixture_path=None):
 
 
 def test_migrations_are_repeatable_and_detect_edited_history(test_engine, tmp_path):
-    assert migrate(test_engine) == ['001_initial.sql','002_spatial_coverage.sql','003_live_attempts.sql','004_production_batches.sql']
+    assert migrate(test_engine) == ['001_initial.sql','002_spatial_coverage.sql','003_live_attempts.sql','004_production_batches.sql','005_st37_inventory.sql']
     assert migrate(test_engine) == []
     with test_engine.connect() as conn:
         tables = conn.execute(text("SELECT tablename FROM pg_tables WHERE schemaname='screening'")).scalars().all()

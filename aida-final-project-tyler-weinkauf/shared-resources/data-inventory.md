@@ -2,6 +2,28 @@
 
 Record each shared input, its source, permission, retrieval/version, and limits before using it in more than one course.
 
+## Actual ST37 surface-hole input — 10 November 2026
+
+This entry supersedes older statements below that no official well file has been acquired. Historical synthetic/cloud evidence remains labelled separately. The user confirmed **one Point per surface-hole entry**, built from source longitude (X) and latitude (Y).
+
+| Field | Recorded value |
+|---|---|
+| Local original | `../courses/AIDA-1145/data/ST37_SH.xlsx`, retained in place and explicitly ignored by Git |
+| Publisher / resource | Alberta Energy Regulator, [ST37: List of Wells in Alberta](https://www.aer.ca/providing-information/data-and-reports/statistical-reports/st37); worksheet `ST37_Surface_Holes` |
+| Source size / SHA-256 | 38,596,313 bytes; `5b7139f06817b3458689bb82a3219c963165e3e671373e493222d948bb08e4f4` |
+| Permission / attribution | [AER copyright terms](https://www.aer.ca/copyright-and-disclaimer), checked 2026-11-10: educational/noncommercial use subject to accuracy, AER attribution and no implied endorsement, unless otherwise indicated. Not assumed OGL; no commercial-redistribution permission claimed. Source bytes are not committed. |
+| Record grain / key | 541,190 source surface-hole rows, 541,190 unique nonblank text licence numbers, no duplicate IDs; preserve leading zeros. A surface hole is not a production-string event or a bottom-hole location. |
+| Actual fields | `Well_Licence_Number`, `Licensee`, `Licence_Status`, `Licence_Status_Date`, `Ground_Elevation`, `Spud_Date`, `Most_Recent_Final_Drill_Date`, `Energy_Devlpmt_Category_Type`, `SH_Actual_Latitude`, `SH_Actual_Longitude`, `Licence_Surface_Location_Label` |
+| Attribute meaning | Licensee is not automatically operator/producer; licence status is not operational status; legal-location text is preserved. No UWI or verified operator is supplied. |
+| Quality / missingness | Zero structural rejects. Six records have date-review warnings (future date/possible 1900-01-01 placeholders). Missing: 14,808 elevations, 59,053 spud dates, 59,297 final-drill dates. Both `Re-Entered` and `Re-entered` source spellings are retained. |
+| Coordinates / intended geometry | Point per entry. Longitude range −120.009424 to −110.005051; latitude 48.997462 to 59.998135. Excel geographic datum is unconfirmed; coordinate numbers are retained, and staged geometry is null until documented CRS declaration. Final analytical points must be projected to EPSG:3400. |
+| Bounded input | 477 candidates in the configured Drayton Valley coordinate envelope; `pilot.csv` is 65,626 bytes. Datum-aware geographic inclusion and environmental coverage remain to verify. |
+| Retrieval / release | Supplied by the user on 2026-11-10; original publisher download timestamp and release date were not supplied. Filesystem times are not substituted. |
+| Lineage / outputs | Read-only Excel extraction, original SHA-256 before/after, immutable output checksums, original row numbers, full raw attributes, quarantine/warnings and report under ignored `../../data/raw/st37/7b77926624ee1c2c7fb554d8426eab5ac5b1c6a17d7226fce6429cd2b3c1d8f4/`. |
+| PostGIS proof / remaining work | Full 541,190-row inventory loaded/repeated in a separate temporary validation database; same ID/counts, six warning rows, first/middle/last raw values match. No screening run published. **User database not loaded**; private `.env` awaits actual values. Datum/provenance/environmental sources remain open. |
+
+See [actual schema and commands](../../docs/st37_excel.md) and [retained aggregate evidence](../../docs/evidence/st37_excel_2026-11-10.json). All 136 Python tests pass on Windows PostgreSQL 17.11/PostGIS 3.6.2. These are implementation/source-inventory results, not course submission or instructor feedback evidence.
+
 ## Synthetic development input — 8 November 2026
 
 | Field | Recorded value |

@@ -1,0 +1,4 @@
+# Preserve publisher bytes checked by vendor/manifest.json on every platform.
+vendor/** -text
+# Applied migration checksums must match across Windows and Linux checkouts.
+sql/migrations/*.sql text eol=lf

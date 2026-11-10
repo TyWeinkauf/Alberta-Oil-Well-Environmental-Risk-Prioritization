@@ -8,6 +8,8 @@ The completed application will use **real AER wells, Alberta surface water, Albe
 
 ## What works now
 
+**Local-data update, 10 November 2026:** the supplied ST37 surface-hole Excel has been profiled: 541,190 unique licence records and 477 Drayton Valley candidates, with leading zeros preserved and date anomalies flagged. [Excel preparation and inventory staging](docs/st37_excel.md) provides repeatable commands and the actual schema. The new importer stages all well attributes separately from complete screening results; the user database connection and product-specific geographic datum evidence are still required. The supplied original and `.env` remain private/ignored.
+
 Phases 0–3 provide validated configuration, transactional PostGIS migrations, an offline synthetic seed, quarantine reasons, raw-snapshot checksums, spatial analysis and a Streamlit map with persistent well selection, filters, matching exports, data quality and session history. The demo contains **2 accepted wells, 2 accepted environmental features and 6 quarantined records**. Repeating it uses the same run and does not duplicate rows.
 
 The Phase 4 acquisition framework is implemented and tested with simulated sources, but official endpoint/schema/licence verification and an actual regional run are **in progress**; official service/download hosts still need access. Optional legacy production code remains in the repository, but Petrinex access is no longer a project milestone. Demo ingestion remains **seeded** and its spatial report is **analyzed**; a fully acquired and validated live run will use **succeeded**. The UI labels demo versus real-source mode explicitly.
@@ -31,7 +33,7 @@ The cloud database uses a local Unix socket and exposes no TCP port. Do not repl
 
 ## Windows setup (PowerShell)
 
-These steps target **Python 3.12, PostgreSQL 17 and PostGIS 3.5**. The implementation has been tested on Linux; the Windows instructions have not been executed on a Windows machine.
+These steps target **Python 3.12 and PostgreSQL 17 with PostGIS**. The importer and all 136 unit/database tests passed on Windows PostgreSQL 17.11/PostGIS 3.6.2 on 10 November 2026 using a project virtual environment based on the bundled Python runtime. The standard Python-installer/launcher instructions below and a final user-database/app handoff still need verification.
 
 1. Install Python 3.12 with the Windows Python launcher. Install PostgreSQL 17 and its matching PostGIS extension using the PostgreSQL installer/Stack Builder. Keep the PostgreSQL password you choose in your local password manager.
 2. Open pgAdmin, connect to your local PostgreSQL server and create a database named `alberta_risk` (right-click **Databases → Create → Database**). The setup script enables PostGIS; use a local database role permitted to create the extension and schema. A database administrator can enable PostGIS first if needed.

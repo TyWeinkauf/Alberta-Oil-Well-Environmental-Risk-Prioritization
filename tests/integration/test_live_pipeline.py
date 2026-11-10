@@ -1,6 +1,7 @@
 import json
 import threading
 import zipfile
+from datetime import datetime
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import parse_qs, urlsplit
 
@@ -81,7 +82,9 @@ def test_live_protocol_load_is_atomic_idempotent_and_auditable(test_engine,local
     dashboard=load_dashboard(test_engine,first['run_id'])
     assert dashboard['study_area']['mode']=='live' and len(dashboard['sources'])==4
     raw_retrieval={source['source_key']:max(r['retrieved_at'] for r in source['raw_responses']) for source in first['sources']}
-    assert all(source['retrieved_at']==raw_retrieval[source['source_key']] for source in dashboard['sources'])
+    # timestamptz renders in the session timezone; compare instants, not offsets.
+    assert all(datetime.fromisoformat(source['retrieved_at']) ==
+               datetime.fromisoformat(raw_retrieval[source['source_key']]) for source in dashboard['sources'])
     assert next(r for r in dashboard['proximity'] if r['category']=='protected_area')['distance_m']==0
     assert first['coverage']['critical_habitat']['status']=='complete'
     assert first['coverage']['wetland']['status']=='unavailable'

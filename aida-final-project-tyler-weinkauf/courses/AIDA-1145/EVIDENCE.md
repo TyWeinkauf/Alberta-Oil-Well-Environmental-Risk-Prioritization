@@ -4,6 +4,8 @@
 
 Candidate handoff index, 8 November 2026. The original [assignment brief](README.md) is preserved. This index identifies implemented work; it does not claim instructor approval, a D2L submission or verified real-data results.
 
+Update, 10 November 2026: [actual ST37 Excel evidence](../../../docs/st37_excel.md) and the [shared inventory](../../shared-resources/data-inventory.md) now document 541,190 unique licence records, 477 pilot candidates, six date-warning records and checked educational-use terms. The full inventory import/repeat was verified in a separate temporary PostGIS database, and all 136 tests pass on Windows. The user's database connection, product geographic datum/release/download metadata, environmental inputs and complete real screening results remain open. This advances implementation evidence without claiming a course submission or feedback outcome.
+
 The intended user is the fictional reclamation screening team in the [charter](../../project-charter.md). The bounded engineering question is how permitted well/environmental inputs can become a reproducible, validated analysis-ready dataset. The [scope matrix](../../scope-matrix.md) separates this from the GIS question.
 
 | Deliverable | Existing implementation/evidence | Remaining evidence |

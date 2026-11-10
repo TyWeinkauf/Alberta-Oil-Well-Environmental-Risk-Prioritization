@@ -1,0 +1,178 @@
+{
+  "accepted_rows": 541190,
+  "artifacts": {
+    "inventory": {
+      "bytes": 86097446,
+      "sha256": "acee23f2655e8036aa9bc6d34d45c153328b534602e3f05ed1307d7417c3251e"
+    },
+    "pilot": {
+      "bytes": 65626,
+      "sha256": "48ad11b490a1bf3b1ebcf7c4b1a03500744b02f4fa56447b37dfe89bb310583f"
+    },
+    "quarantine": {
+      "bytes": 266,
+      "sha256": "13ebcf1c81a66beda328c88f85df1718729661596a61eb28c70a0cb7fefd672b"
+    },
+    "warnings": {
+      "bytes": 1460,
+      "sha256": "9b944be06c226b260f5d8e7d60a7bbda763766f38d3beb0f862bab59b7fb9b91"
+    }
+  },
+  "coordinate_crs": null,
+  "coordinate_extent": [
+    -120.009424,
+    48.997462,
+    -110.005051,
+    59.998135
+  ],
+  "date": "2026-11-10",
+  "date_ranges": {
+    "Licence_Status_Date": [
+      "1900-01-01",
+      "2030-04-04"
+    ],
+    "Most_Recent_Final_Drill_Date": [
+      "1883-01-01",
+      "2026-10-31"
+    ],
+    "Spud_Date": [
+      "1883-01-01",
+      "2026-10-31"
+    ]
+  },
+  "distinct_licensees": 3509,
+  "distinct_nonblank_licences": 541190,
+  "duplicate_licence_count": 0,
+  "field_mapping": {
+    "licensee_name": "Licensee",
+    "lsd_text": "Licence_Surface_Location_Label",
+    "source_well_id": "Well_Licence_Number",
+    "status": "Licence_Status"
+  },
+  "geometry_contract": "One Point per surface-hole entry, X=SH_Actual_Longitude, Y=SH_Actual_Latitude. User confirmed 2026-11-10; geographic datum still unconfirmed.",
+  "identity": "7b77926624ee1c2c7fb554d8426eab5ac5b1c6a17d7226fce6429cd2b3c1d8f4",
+  "inventory_validation": {
+    "database_bytes": 438376115,
+    "database_checks": {
+      "distinct_licences": 541190,
+      "geometries": 0,
+      "records": 541190,
+      "warning_rows": 6
+    },
+    "first_import": {
+      "accepted": 541190,
+      "coordinate_crs": null,
+      "elapsed_seconds": 93.004,
+      "geometries": 0,
+      "import_id": "81de4cac-81a8-59e7-9ba0-cb62c618b3a5",
+      "invalid_geometries": 0,
+      "quarantined": 0,
+      "records": 541190,
+      "reused": false,
+      "screening_run_published": false,
+      "user_database_imported": false,
+      "validation_only": true
+    },
+    "first_middle_last_source_rows_match": true,
+    "repeat_import": {
+      "accepted": 541190,
+      "coordinate_crs": null,
+      "elapsed_seconds": 0.648,
+      "geometries": 0,
+      "import_id": "81de4cac-81a8-59e7-9ba0-cb62c618b3a5",
+      "invalid_geometries": 0,
+      "quarantined": 0,
+      "records": 541190,
+      "reused": true,
+      "screening_run_published": false
+    },
+    "screening_runs": 0
+  },
+  "licence_status_counts": {
+    "Abandoned": 96884,
+    "Amended": 34158,
+    "Cancelled": 54550,
+    "Issued": 138767,
+    "Re-Entered": 2703,
+    "Re-entered": 2,
+    "RecCertified": 113796,
+    "RecExempt": 36802,
+    "Suspension": 63528
+  },
+  "limitations": [
+    "Excel has no embedded coordinate CRS. Supply publisher datum evidence before projecting geometry.",
+    "Licence status is not operational well status; UWI and operator are not supplied.",
+    "Download timestamp and release date were not supplied; filesystem times are not publisher provenance.",
+    "Inventory staging does not publish environmental proximity results."
+  ],
+  "missing_values": {
+    "Ground_Elevation": 14808,
+    "Most_Recent_Final_Drill_Date": 59297,
+    "Spud_Date": 59053
+  },
+  "pilot_rows": 477,
+  "publisher_sources_checked": [
+    "https://www.aer.ca/providing-information/data-and-reports/statistical-reports/st37",
+    "https://www.aer.ca/prd/documents/sts/st37/ST37_ReferenceGuide.pdf",
+    "https://www.aer.ca/copyright-and-disclaimer",
+    "https://dds.aer.ca/eas.net/webhelp/schedule_4_well_detail.htm"
+  ],
+  "quality_as_of": "2026-11-10",
+  "quarantine_reason_counts": {},
+  "quarantined_rows": 0,
+  "remaining": [
+    "Replace DATABASE_URL template with actual user connection values",
+    "Confirm Excel geographic datum before creating projected point geometry",
+    "Record actual publisher release date and original download timestamp when available",
+    "Acquire/verify environmental sources and run the bounded four-source analytical pipeline",
+    "Validate real well details/exports and final course/platform handoff"
+  ],
+  "runtime": {
+    "platform": "Windows-11-10.0.26300-SP0",
+    "postgis": "3.6.2",
+    "postgresql": "17.11",
+    "python": "3.12.14",
+    "venv": "Project .venv based on bundled Python with system site packages; pinned project requirements installed"
+  },
+  "source": {
+    "bytes": 38596313,
+    "downloaded_at": null,
+    "fields": [
+      "Well_Licence_Number",
+      "Licensee",
+      "Licence_Status",
+      "Licence_Status_Date",
+      "Ground_Elevation",
+      "Spud_Date",
+      "Most_Recent_Final_Drill_Date",
+      "Energy_Devlpmt_Category_Type",
+      "SH_Actual_Latitude",
+      "SH_Actual_Longitude",
+      "Licence_Surface_Location_Label"
+    ],
+    "metadata_url": "https://www.aer.ca/providing-information/data-and-reports/statistical-reports/st37",
+    "publisher": "Alberta Energy Regulator",
+    "release_date": null,
+    "repository_relative_path": "aida-final-project-tyler-weinkauf/courses/AIDA-1145/data/ST37_SH.xlsx",
+    "sha256": "5b7139f06817b3458689bb82a3219c963165e3e671373e493222d948bb08e4f4",
+    "worksheet": "ST37_Surface_Holes"
+  },
+  "source_rows": 541190,
+  "temporary_database_cleanup": "Both task-created validation databases dropped after proof; separate localhost:55439 server stopped. Existing PostgreSQL service and user database untouched.",
+  "tests": {
+    "command": "python -m pytest -q --junitxml=outputs/st37-all-results.xml (TEST_DATABASE_URL points to isolated validation database)",
+    "errors": "0",
+    "failures": "0",
+    "skipped": "0",
+    "tests": "136",
+    "time": "86.421"
+  },
+  "user_database_imported": false,
+  "version": 2,
+  "warning_reason_counts": {
+    "future_date:Licence_Status_Date": 1,
+    "possible_placeholder_date:Licence_Status_Date": 5,
+    "possible_placeholder_date:Most_Recent_Final_Drill_Date": 1
+  },
+  "warning_rows": 6
+}
