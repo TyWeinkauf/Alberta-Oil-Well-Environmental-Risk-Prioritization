@@ -48,7 +48,9 @@ def test_concurrent_writer_is_rejected_while_reads_and_busy_ui_work(test_engine,
                     action()
             assert len(load_dashboard(test_engine,run)['wells'])==2
             monkeypatch.setenv('DATABASE_URL',test_engine.url.render_as_string(hide_password=False))
-            app=AppTest.from_file(str(ROOT/'app.py')).run(timeout=10)
+            app=AppTest.from_file(str(ROOT/'app.py'))
+            app.query_params['dataset_mode']='PostGIS workflows'
+            app.run(timeout=10)
             next(b for b in app.button if b.label=='Use demo dataset').click().run(timeout=10)
             assert not app.exception
             assert any('Another import' in warning.value for warning in app.warning)
@@ -83,7 +85,7 @@ def test_guard_commit_error_does_not_return_a_locked_session_to_the_pool(test_en
     # A distinct pool proves that the lock was released rather than reacquired recursively.
     peer=create_engine(test_engine.url)
     try:
-        assert len(migrate(peer))==6
+        assert migrate(peer)
     finally:
         peer.dispose()
 

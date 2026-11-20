@@ -34,7 +34,9 @@ def test_streamlit_workflow_filter_selection_and_rerender_do_not_reload(test_eng
     import src.orchestrator
     original=src.orchestrator.seed_demo
     monkeypatch.setattr(src.orchestrator,'seed_demo',lambda engine:original(engine,raw_root=tmp_path/'raw',output_root=tmp_path/'runs'))
-    app=AppTest.from_file(str(ROOT/'app.py')).run(timeout=30)
+    app=AppTest.from_file(str(ROOT/'app.py'))
+    app.query_params['dataset_mode']='PostGIS workflows'
+    app.run(timeout=30)
     assert not app.exception
     app.button[0].click().run(timeout=30)
     assert not app.exception

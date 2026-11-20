@@ -1,9 +1,11 @@
 """ArcGIS service inspection and ID-batched acquisition with complete-page checks."""
 import json
+from collections.abc import Iterator
+from dataclasses import dataclass
 
 from src.config import Source, StudyArea
 from src.sources.common import Acquisition, mapped_record, query_bounds, verify_crs
-from src.sources.http import HttpCache
+from src.sources.http import HttpCache, Snapshot
 from pyproj import CRS
 
 
@@ -14,8 +16,18 @@ def _json(snapshot):
     return value
 
 
-def acquire_arcgis(source: Source, area: StudyArea, cache: HttpCache, *, refresh: bool=False,
-                   max_records: int=10000) -> Acquisition:
+@dataclass
+class ArcGISPages:
+    native_crs: str
+    inspection: dict
+    responses: list[Snapshot]
+    object_ids: list[int]
+    pages: Iterator[tuple[Snapshot, list[dict]]]
+
+
+def open_arcgis_pages(source: Source, area: StudyArea | None, cache: HttpCache, *, refresh: bool = False,
+                      max_records: int = 10000) -> ArcGISPages:
+    """Reconcile the complete ID inventory, then yield one verified geometry page at a time."""
     if not source.url or source.layer_id is None:
         raise ValueError(f'{source.key}: verified service URL/layer ID required')
     base=str(source.url).rstrip('/')
@@ -39,14 +51,18 @@ def acquire_arcgis(source: Source, area: StudyArea, cache: HttpCache, *, refresh
     actual_crs=spatial_reference.get('wkt') or (f'EPSG:{wkid}' if wkid else None)
     native_crs=verify_crs(actual_crs,source).to_string()
     environmental=source.category is not None
-    left,bottom,right,top=query_bounds(area,environmental=environmental)
-    common={'where':source.arcgis_where,'geometryType':'esriGeometryEnvelope','inSR':3400,
-            'geometry':json.dumps({'xmin':left,'ymin':bottom,'xmax':right,'ymax':top,'spatialReference':{'wkid':3400}},separators=(',',':')),
-            'spatialRel':'esriSpatialRelIntersects'}
+    bounds = query_bounds(area, environmental=environmental) if area is not None else None
+    common = {'where': source.arcgis_where}
+    if bounds is not None:
+        envelope = dict(zip(('xmin', 'ymin', 'xmax', 'ymax'), bounds))
+        envelope['spatialReference'] = {'wkid': 3400}
+        common.update(geometryType='esriGeometryEnvelope', inSR=3400,
+                      geometry=json.dumps(envelope, separators=(',', ':')),
+                      spatialRel='esriSpatialRelIntersects')
     raw.append(cache.get(layer+'/query',{**common,'f':'json','returnCountOnly':'true'},refresh=refresh))
     expected=_json(raw[-1]).get('count')
     if not isinstance(expected,int) or isinstance(expected,bool) or not 0<=expected<=max_records:
-        raise ValueError('ArcGIS count missing/invalid or study area exceeds record limit; choose a smaller area')
+        raise ValueError(f'ArcGIS count missing/invalid or exceeds record limit ({max_records:,}); reported count: {expected}')
     raw.append(cache.get(layer+'/query',{**common,'f':'json','returnIdsOnly':'true'},refresh=refresh))
     id_response=_json(raw[-1]);ids=id_response.get('objectIds')
     if ids is None and expected==0 and 'objectIds' in id_response:
@@ -58,27 +74,44 @@ def acquire_arcgis(source: Source, area: StudyArea, cache: HttpCache, *, refresh
     batch_size=min(int(metadata.get('maxRecordCount',1000)),source.arcgis_batch_size)
     if batch_size<1:
         raise ValueError('ArcGIS maximum record count is invalid')
-    records=[]
-    for offset in range(0,len(ids),batch_size):
-        batch=sorted(ids)[offset:offset+batch_size]
-        params={'f':'geojson','where':source.arcgis_where,'objectIds':','.join(map(str,batch)),
-                'outFields':'*' if source.arcgis_preserve_properties else ','.join(sorted(set(source.field_mapping.values())|{oid})),
-                'outSR':4326,'returnGeometry':'true','returnZ':'false','returnM':'false'}
-        raw.append(cache.get(layer+'/query',params,refresh=refresh));page=_json(raw[-1])
-        declared_crs=(page.get('crs') or {}).get('properties',{}).get('name')
-        if declared_crs and not CRS.from_user_input(declared_crs).equals(CRS.from_epsg(4326),ignore_axis_order=True):
-            raise ValueError('ArcGIS GeoJSON response CRS conflicts with the requested WGS84 output')
-        features=page.get('features')
-        if page.get('type')!='FeatureCollection' or not isinstance(features,list) or page.get('exceededTransferLimit'):
-            raise ValueError('ArcGIS geometry page is not a complete GeoJSON FeatureCollection')
-        observed=[f.get('properties',{}).get(oid) for f in features]
-        if len(observed)!=len(batch) or set(observed)!=set(batch):
-            raise ValueError('ArcGIS geometry page has missing, duplicate or unexpected records')
-        records.extend(mapped_record(source,f['properties'],f.get('geometry'),environmental=environmental)
-                       for f in sorted(features,key=lambda f:f['properties'][oid]))
-    return Acquisition(source,records,'EPSG:4326',native_crs,raw,
-                       {'count':expected,'object_id_field':oid,'fields':sorted(fields),
-                        'last_edit_date':(metadata.get('editingInfo') or {}).get('lastEditDate'),
-                        'where':source.arcgis_where,'batch_size':batch_size,
-                        'query_bounds_3400':[left,bottom,right,top],
-                        'environmental_margin_m':500 if environmental else 0})
+    ids.sort()
+    out_fields = '*' if source.arcgis_preserve_properties else ','.join(sorted(set(source.field_mapping.values()) | {oid}))
+
+    def pages():
+        for offset in range(0, len(ids), batch_size):
+            batch = ids[offset:offset + batch_size]
+            params = {'f': 'geojson', 'where': source.arcgis_where, 'objectIds': ','.join(map(str, batch)),
+                      'outFields': out_fields, 'outSR': 4326, 'returnGeometry': 'true',
+                      'returnZ': 'false', 'returnM': 'false'}
+            snapshot = cache.get(layer + '/query', params, refresh=refresh)
+            page = _json(snapshot)
+            declared_crs = (page.get('crs') or {}).get('properties', {}).get('name')
+            if declared_crs and not CRS.from_user_input(declared_crs).equals(CRS.from_epsg(4326), ignore_axis_order=True):
+                raise ValueError('ArcGIS GeoJSON response CRS conflicts with the requested WGS84 output')
+            features = page.get('features')
+            if page.get('type') != 'FeatureCollection' or not isinstance(features, list) or page.get('exceededTransferLimit'):
+                raise ValueError('ArcGIS geometry page is not a complete GeoJSON FeatureCollection')
+            observed = [feature.get('properties', {}).get(oid) for feature in features]
+            if (any(not isinstance(value, int) or isinstance(value, bool) for value in observed)
+                    or len(observed) != len(batch) or set(observed) != set(batch)):
+                raise ValueError('ArcGIS geometry page has missing, duplicate or unexpected records')
+            yield snapshot, [mapped_record(source, feature['properties'], feature.get('geometry'),
+                                           environmental=environmental)
+                             for feature in sorted(features, key=lambda item: item['properties'][oid])]
+
+    inspection = {'count': expected, 'object_id_field': oid, 'fields': sorted(fields),
+                  'last_edit_date': (metadata.get('editingInfo') or {}).get('lastEditDate'),
+                  'where': source.arcgis_where, 'batch_size': batch_size,
+                  'query_bounds_3400': list(bounds) if bounds is not None else None,
+                  'environmental_margin_m': 500 if environmental and bounds is not None else 0}
+    return ArcGISPages(native_crs, inspection, raw, ids, pages())
+
+
+def acquire_arcgis(source: Source, area: StudyArea, cache: HttpCache, *, refresh: bool=False,
+                   max_records: int=10000) -> Acquisition:
+    reader = open_arcgis_pages(source, area, cache, refresh=refresh, max_records=max_records)
+    records = []
+    for snapshot, page in reader.pages:
+        reader.responses.append(snapshot)
+        records.extend(page)
+    return Acquisition(source, records, 'EPSG:4326', reader.native_crs, reader.responses, reader.inspection)

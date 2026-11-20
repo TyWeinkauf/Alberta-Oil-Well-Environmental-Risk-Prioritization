@@ -4,15 +4,17 @@ Educational training project for **AIDA 1145 (Data Engineering)** and **AIDA 236
 
 The existing course workspace is preserved in [aida-final-project-tyler-weinkauf/](aida-final-project-tyler-weinkauf/README.md). See [DESIGN.md](DESIGN.md#13-phased-codex-implementation-plan) for scope and live progress tracking.
 
-**Current release direction — 10 November 2026:** prioritize a small **Red Deer / Drayton Valley classroom demo with actual ST37 wells and clearly synthetic environmental features**. Preserve the complete well inventory and existing real-data tools; full-Alberta environmental ingestion is optional future work. The [classroom-demo review and ordered handoff](docs/classroom_demo.md) records what works, what needs adjustment and what remains unimplemented. The new credential-free regional mode is planned, not yet available; the current app still requires PostGIS.
+**Classroom preview — 20 November 2026.** The default Streamlit mode reads a small local package of actual AER ST37 records. Choose Red Deer, Drayton Valley or Both, then filter, inspect and export the selected wells. The retained package has 28 wells per region and runs without a database connection. The illustrative map and simulated distances for these wells require verification of the workbook datum. [Classroom launch and preparation](docs/classroom_demo.md#launch-the-classroom-mode)
 
 The retained all-real pipeline targets AER wells, Alberta surface water, protected areas and federal critical habitat, with optional wetlands/historical ESA and OpenStreetMap display. It remains separate from simulated classroom results. The [dataset reference](docs/dataset_reference.md) records intended real sources and licensing cautions. Petrinex/monthly production remains outside scope.
 
 ## What works now
 
+**Alberta hydrography and ST37 — 20 November 2026.** In Streamlit, open **PostGIS workflows → Waterways → Alberta waterbodies, streams and ST37**. The three import buttons loaded 541,190 ST37 records, 127,189 valid layer-72 polygons and 143,568 valid layer-107 lines. PostGIS retains 38 polygon and two stream geometry rejects. Actual-well comparisons require verified workbook datum evidence. [Ordered completion checklist](DESIGN.md#remaining-work-in-order) · [Import and comparison](docs/hydrography.md#province-wide-layer-72-and-st37-comparison)
+
 **Waterways update, 10 November 2026:** open **Waterways → Import waterways** in the app sidebar, then **Preview imported waterways**. Verified official waterbody polygons/stream lines are imported for the study area plus 500 m; seasonal sources are optional. Actual validation: 33 default or 121 seasonal features, one invalid polygon quarantined, all 142 tests/type checks and running-app checks pass. Your database needs actual `.env` values. See [waterways setup and quality details](docs/hydrography.md).
 
-**Local-data update, 10 November 2026:** the supplied ST37 surface-hole Excel has been profiled: 541,190 unique licence records and 477 Drayton Valley candidates, with leading zeros preserved and date anomalies flagged. [Excel preparation and inventory staging](docs/st37_excel.md) provides repeatable commands and the actual schema. The new importer stages all well attributes separately from complete screening results; the user database connection and product-specific geographic datum evidence are still required. The supplied original and `.env` remain private/ignored.
+The retained ST37 workbook contains 541,190 distinct licences, with leading zeros preserved and six date-warning records. The app can reuse its audited preparation when staging it. [Excel preparation and inventory staging](docs/st37_excel.md)
 
 Phases 0–3 provide validated configuration, transactional PostGIS migrations, an offline synthetic seed, quarantine reasons, raw-snapshot checksums, spatial analysis and a Streamlit map with persistent well selection, filters, matching exports, data quality and session history. The demo contains **2 accepted wells, 2 accepted environmental features and 6 quarantined records**. Repeating it uses the same run and does not duplicate rows.
 
@@ -20,16 +22,13 @@ The Phase 4 acquisition framework is implemented and tested with simulated sourc
 
 ## Managed cloud quick start
 
+For the database-backed workflows, select **PostGIS workflows** in the app sidebar after launch.
+
 Use the existing checkout; cloud tasks are already isolated. From its root:
 
 ```bash
 source /workspace/alberta-environment/activate.sh
 bash /workspace/alberta-environment/start-db.sh
-python scripts/setup_db.py
-python scripts/demo_seed.py
-python scripts/demo_seed.py  # Same run ID and row counts
-python scripts/analyze_demo.py  # Default: synthetic water screening, 500 m threshold
-pytest -q tests/unit
 streamlit run app.py --server.address 127.0.0.1 --server.port 8501 --server.headless true --browser.gatherUsageStats false
 ```
 
@@ -46,34 +45,24 @@ These steps target **Python 3.12 and PostgreSQL 17 with PostGIS**. The importer 
 ```powershell
 py -3.12 -m venv .venv
 .\.venv\Scripts\python.exe -m pip install -r requirements.txt
-Copy-Item .env.example .env
+if (-not (Test-Path .env)) { Copy-Item .env.example .env }
 notepad .env
 ```
 
 4. In `.env`, replace `CHANGE_ME` with the password for your **local** PostgreSQL role. Match the role, database and port to your installation. URL-encode special password characters (for example, `@` becomes `%40`). Keep `.env` private; it is ignored by Git. An already-set `DATABASE_URL` environment variable takes precedence over `.env`.
-5. Run the migration and demo:
+5. Launch Streamlit:
 
 ```powershell
-.\.venv\Scripts\python.exe scripts\setup_db.py
-.\.venv\Scripts\python.exe scripts\demo_seed.py
-.\.venv\Scripts\python.exe scripts\demo_seed.py
-.\.venv\Scripts\python.exe scripts\analyze_demo.py
-.\.venv\Scripts\python.exe -m pytest -q tests\unit
 .\.venv\Scripts\python.exe -m streamlit run app.py
 ```
 
-Setup applies pending migrations (`001_initial.sql`, `002_spatial_coverage.sql`, `003_live_attempts.sql`, `004_production_batches.sql`); subsequent setup reports `none (already current)`. The spatial seed prints a stable run ID and counts of 2 wells, 2 environmental features and 6 quarantine records. Its production count applies only to that spatial snapshot; production batches are imported and reported separately. Proximity rows start at 0; analysis stores 10 (one per well/category) and unchanged reseeding preserves them. Read `outputs/runs/<run_id>/manifest.json`, `validation.json` and `analysis.json`. No source download or basemap request is needed.
+The app applies pending migrations when you click an import or **Use demo dataset**. The synthetic database fixture has a stable run ID, 2 accepted wells, 2 environmental features and 6 spatial quarantine records. The app shows its stored results and can export selection evidence. Run reports are recorded under `outputs/runs/<run_id>/`.
 
-The default analysis selects water: the wells are 50 m and 150 m from the synthetic stream. Its threshold sensitivity report changes matches from 2 at 500 m to 1 at 50 m. For another selection:
-
-```bash
-python scripts/analyze_demo.py --threshold 50
-python scripts/analyze_demo.py --categories water protected_area
-```
+The default analysis selects water. The wells are 50 m and 150 m from the synthetic stream. In the sidebar, set the distance threshold from 500 m to 50 m to change the count from 2 to 1.
 
 The protected-area demo layer is incomplete because one polygon was quarantined. Selecting it makes the exact overall band unknown; that is different from no nearby feature. See [spatial methodology](docs/spatial_methodology.md) for coverage, cumulative flags and category selection rules. The clean boundary test fixture validates complete-category minima and exact distance boundaries.
 
-In the app, **Use demo dataset** performs setup, ingestion and analysis on an explicit click. Click a map marker or use **Inspect a well** for details; change company/status/category/threshold filters and download the matching CSV, GeoJSON, map HTML or manifest. The Data quality and Run history tabs show provenance, rejected inputs and workflow stages/outcomes. The live pipeline action is gated by verified/enabled catalogue entries and explicit coverage notes; it is currently disabled because official entries are unverified. No production controls are shown with the current default catalogue.
+In the app, choose **PostGIS workflows** and then **Use demo dataset** to run setup, ingestion and analysis for the synthetic database fixture. Click a map marker or use **Inspect a well** for details. Apply filters and download matching CSV, GeoJSON, map HTML or the manifest. Data quality and Run history show provenance, rejected inputs and workflow status. Live acquisition requires verified enabled catalogue entries and coverage notes.
 
 Offline geometry and map exports require no CDN: small Leaflet/jQuery assets are vendored with licenses. **Show OpenStreetMap basemap (online)** is optional and requires `tile.openstreetmap.org`. The tile domain is now allowed by the published cloud policy and a fresh tile request returned HTTP 200. Some actual analytical service/download hosts remain inaccessible from this cloud session; access may differ on your machine. Offline rendering and interaction remain available. See [UI workflow](docs/ui_workflow.md).
 
@@ -116,11 +105,11 @@ Raw data, caches, reports, virtual environments and credentials are ignored. Sma
 
 ## Phase 4 in progress: real-source acquisition
 
-The HTTP cache, ArcGIS ID-batch adapter, ZIP Shapefile/GPKG/FileGDB reader, 500 m environmental margin, atomic load/analysis, provenance manifests and persistent attempt history are implemented. **These mechanics are tested using local synthetic protocol servers; no official dataset has been acquired yet.**
+The HTTP cache, ArcGIS ID-batch adapter, GIS file reader, 500 m environmental margin and atomic PostGIS workflow are implemented. Official water endpoints and bounded imports have been verified, and the full multi-source pilot remains open.
 
 Published discovery permissions now allow provincial catalogue, ArcGIS portal and Petrinex documentation requests. Some actual service/download hosts still fail in this cloud session; these observations do not determine access from your own runtime. The program can acquire verified configured HTTP downloads and ArcGIS APIs. Import of user-downloaded GeoJSON/GIS, coordinate-mapped well CSV and production CSV/ZIP is implemented (steps 4.2c/5.2c). Use a verified custom catalogue through `--catalog` or `SOURCE_CATALOG_PATH`. See [data access routes](docs/data_access.md) for current support and remaining work.
 
-[Source verification status and commands](docs/source_verification.md) explain the remaining endpoint, licence, CRS and field-mapping checks. The configurable pilot is `config/study_area.live.yml` (Drayton Valley). `python scripts/run_live.py` intentionally fails preflight until all core source entries are verified/configured; it does not substitute synthetic records for missing real data.
+[Source verification status](docs/source_verification.md) explains the remaining endpoint, licence, CRS and field-mapping checks. The configurable pilot is `config/study_area.live.yml` (Drayton Valley). **Run full pipeline** becomes available when all core source entries are verified and configured.
 
 ## AER wells and environmental inputs — current scope
 
@@ -128,7 +117,7 @@ Petrinex and monthly production are excluded from the current project. The app f
 
 Every user must download permitted source files themselves. The entire `data/` directory is ignored by Git. Put originals under `data/raw/`, configure a private catalogue, and let the project pipeline create its normalized PostGIS tables and proximity results. Raw publisher datasets are not bundled on GitHub. See [the download checklist](docs/download_inputs.md), [ST37 guide review](docs/st37_reference.md) and [runtime input configuration](docs/data_access.md).
 
-The user's ST37 screenshot lists a 1.23 GB geodatabase ZIP. Use the new **regional preparation** route to inspect that original directly and create a bounded study-area package; the app keeps its ordinary 512 MiB/10,000-record defaults. The original download/hashing still costs disk/I/O, but it is not copied into the ingestion cache. The 170 MB Excel distribution is not a direct supported input. Actual ST37 schema/coverage and full-archive performance remain unverified.
+Use **Import ST37 wells** for the retained surface-hole Excel workbook. For an optional geodatabase ZIP, use regional preparation to inspect the original and create a bounded study-area package under the app's 512 MiB and 10,000-record defaults.
 
 Moving to a local project folder: the [download checklist](docs/download_inputs.md) now centralizes all publisher/service links, the exact listed download format where confirmed, and the remaining local setup, mapping, extraction, PostGIS and acceptance steps. Actual water/parks vector export availability is still to be confirmed; REST is a separate supported route.
 
@@ -139,8 +128,9 @@ Point the private catalogue's `local_path` at the original ZIP or `.gdb`, then i
 ```bash
 python scripts/prepare_extract.py --catalog data/raw/imports/catalog.yml --source aer_wells --inspect
 python scripts/prepare_extract.py --catalog data/raw/imports/catalog.yml --source aer_wells --study-area config/study_area.live.yml
-python scripts/run_live.py --catalog data/raw/extracts/prepared_catalogue.json --study-area config/study_area.live.yml
 ```
+
+Set `SOURCE_CATALOG_PATH` to the generated catalogue and click **Run full pipeline** in Streamlit when the required sources are ready.
 
 Preparation retains only the selected layer/fields and regional candidates, includes a 500 m margin for environmental sources, records original input checksums and refuses truncation or incompatible scope reuse. It preserves verification flags and other catalogue entries; all required sources must still be ready before ingestion. Read [regional extract instructions](docs/regional_extracts.md) for limits, original-file handling and configuration steps. The full suite now passes **128 tests**, including prepared-package PostGIS ingestion and failure retention. No actual ST37 release has been loaded.
 

@@ -34,15 +34,31 @@ def hydro_service():
                 features = [] if layer == 2 else [{'type': 'Feature', 'properties': {
                     'OBJECTID': 7, 'NAME': state['revision'], 'FEATURE_TYPE': feature_type, 'SOURCE': 'Synthetic raw attribute'},
                     'geometry': geometry if not (state['invalid_geometry'] and layer == 1) else None}]
+                if layer == 72:
+                    features = [{'type': 'Feature', 'properties': {
+                        'OBJECTID': key, 'NAME': state['revision'], 'FEATURE_TYPE': code, 'SOURCE': 'Synthetic raw attribute'},
+                        'geometry': geometry if key != 12 else None}
+                        for key, code in [(7, 'DUGOUT'), (10, 'LAKE-PER'), (12, 'RESERVOIR')]]
+                if layer == 107:
+                    features = [{'type': 'Feature', 'properties': {
+                        'OBJECTID': key, 'NAME': state['revision'], 'FEATURE_TYPE': code, 'SOURCE': 'Synthetic raw attribute'},
+                        'geometry': line} for key, code, line in [
+                            (7, 'CONNECTOR', {'type': 'LineString', 'coordinates': [[-115, 53.24], [-115, 53.26]]}),
+                            (10, 'STR-PER', {'type': 'LineString', 'coordinates': [[-114.9995, 53.24], [-114.9995, 53.26]]}),
+                            (12, 'DITCH', geometry),
+                        ]]
                 allowed = re.findall("'([^']+)'", query.get('where', [''])[0])
                 if allowed:
                     features = [feature for feature in features if feature['properties']['FEATURE_TYPE'] in allowed]
                 if query.get('returnCountOnly') == ['true']:
                     response = {'count': len(features)}
                 elif query.get('returnIdsOnly') == ['true']:
-                    response = {'objectIds': [7] if features else None}
+                    response = {'objectIds': [feature['properties']['OBJECTID'] for feature in features] or None}
                 else:
-                    if state['missing_page'] and layer == 1:
+                    if query.get('objectIds'):
+                        ids = {int(value) for value in query['objectIds'][0].split(',')}
+                        features = [feature for feature in features if feature['properties']['OBJECTID'] in ids]
+                    if state['missing_page'] and (layer == 1 or (layer == 72 and query.get('objectIds') == ['12'])):
                         features = []
                     response = {'type': 'FeatureCollection', 'features': features}
             encoded = json.dumps(response).encode()

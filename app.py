@@ -14,6 +14,7 @@ from src.exports.selection import FIELDS, csv_bytes, geojson_bytes, table_record
 from src.orchestrator import run_demo
 from src.db.workflow import WorkflowBusy
 from src.ui.data import list_analyzed_runs, load_dashboard, pipeline_attempts
+from src.ui.classroom import show_classroom
 from src.ui.map import build_map
 from src.ui.model import filtered_wells, map_selection
 from src.ui.water import show_waterways
@@ -43,7 +44,19 @@ def choose_well():
 def main():
     st.title('Alberta well screening')
     st.caption('Educational proximity screening — not an environmental risk assessment or an operational recommendation.')
-    st.caption('Use the demo for an offline check, or run verified real sources once the source catalogue is ready.')
+    mode = st.sidebar.selectbox('Dataset mode', ['Classroom demo', 'PostGIS workflows'],
+                                key='dataset_mode', bind='query-params')
+    if st.session_state.get('previous_dataset_mode') != mode:
+        st.session_state.previous_dataset_mode = mode
+        st.session_state.pop('classroom_scope' if mode == 'Classroom demo' else 'previous_run', None)
+    if mode == 'Classroom demo':
+        show_classroom()
+    else:
+        show_postgis()
+
+
+def show_postgis():
+    st.caption('Run the synthetic fixture or use verified real sources from the configured catalogue.')
     try:
         engine = connection_pool(database_url())
     except Exception:
@@ -96,10 +109,10 @@ def main():
     try:
         runs = list_analyzed_runs(engine)
     except Exception:
-        st.warning('No analyzed dataset is available. Use the demo button to initialize a configured database; check README.md if the service is unavailable.')
+        st.info('Choose an import or the synthetic fixture from the sidebar to initialize a configured database.')
         st.stop()
     if not runs:
-        st.info('Choose “Use demo dataset” to prepare the offline demonstration.')
+        st.info('Published screening runs will appear here. Use the sidebar to choose a workflow.')
         st.stop()
     run_lookup = {r['run_id']:r for r in runs}
     if st.session_state.get('run_choice') not in run_lookup:
@@ -182,7 +195,7 @@ def main():
         basemap = options[0].checkbox('Show OpenStreetMap basemap (online)',value=False)
         overlays = options[1].checkbox('Show environmental geometry',value=True)
         view = build_map(records,dashboard['features'],st.session_state.categories,basemap=basemap,overlays=overlays)
-        event = st_folium(view,key=f'screening-map-{run_id}',height=430,use_container_width=True,
+        event = st_folium(view,key=f'screening-map-{run_id}',height=430,width=None,
             returned_objects=['last_object_clicked_popup','last_object_clicked_count'])
         selected,event_key = map_selection(event,{r['well_pk'] for r in records},st.session_state.get('last_map_event'))
         st.session_state.last_map_event = event_key

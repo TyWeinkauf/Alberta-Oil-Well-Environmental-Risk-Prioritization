@@ -7,10 +7,10 @@ Sources inaccessible to ChatGPT/Codex may be accessible through APIs or download
 | Route | Implemented behavior |
 |---|---|
 | Publisher API | Configured ArcGIS REST adapter with inspected layer metadata, bounded queries and completeness checks. Other API protocols need a specific adapter. |
-| Verified Alberta waterways | Full-base waterbody/stream layers with opt-in seasonal sources and explicit code filters. Import/preview independently through the app or scripts/import_hydrography.py; [verification and limits](hydrography.md). |
+| Verified Alberta waterways | Use **Waterways** in Streamlit for the bounded regional inventory or the full layer-72 polygon import. [Verification and limits](hydrography.md) |
 | Direct download URL | HTTP cache plus GIS-file readers. Production CSV/ZIP remains optional legacy code. |
 | User-downloaded local files | Explicit `local_path` for GIS files or coordinate-mapped well CSV. No network request is made for a local entry, even when its publisher URL is recorded. |
-| ST37 surface-hole Excel | `scripts/prepare_st37.py` profiles the original and prepares inventory/pilot CSVs. `scripts/import_st37.py` stages well attributes separately from screening publication; geometry requires explicit datum evidence. See [Excel workflow](st37_excel.md). |
+| ST37 surface-hole Excel | Click **Import ST37 wells** to prepare and stage the retained workbook. Geometry requires documented coordinate evidence. [Excel workflow](st37_excel.md) |
 
 All routes require verified source terms, field mappings and coverage/attribution evidence before enabling entries. Official compatibility is still unverified. Local files use the same validation, quarantine, atomic load as remote inputs. Failed imports preserve earlier results.
 
@@ -30,18 +30,15 @@ Then mark the inspected entries `verified: true` and `enabled: true`. Keep unsup
 
 Single-file GeoJSON and GeoPackage are supported by the spatial reader. ZIP multi-file Shapefile/FileGDB datasets before import so geometry and CRS sidecars stay together. Environmental CSV without actual geometry is unsupported; point/centroid approximations are not substituted for feature boundaries. A local-file upload screen is not implemented; configure paths to files already on the runtime's filesystem.
 
-## Inspect and run
+## Inspect and load in Streamlit
 
-After activating the environment and configuring PostgreSQL/PostGIS:
+For a developer inspection of a local example file:
 
 ```bash
 python scripts/inspect_source.py file --path data/raw/imports/water.geojson
-python scripts/run_live.py --catalog data/raw/imports/catalog.yml
 ```
 
-These example filenames are inputs the user supplies, not bundled official data. The live command prints the resulting run ID. No Petrinex file or production refresh is required. Prepare the full ST37 original with [regional preparation](regional_extracts.md), then ingest its generated small-package catalogue; ordinary file/ZIP import caps remain unchanged.
-
-For the Streamlit workflow, set `SOURCE_CATALOG_PATH` in your local `.env` or process environment to the absolute catalogue path, restart the app, then use **Run full pipeline**. The CLI also honors that environment variable when `--catalog` is omitted. The checked-in official catalogue remains disabled by default.
+Set `SOURCE_CATALOG_PATH` in the local `.env` or process environment to the verified catalogue's absolute path. Open **PostGIS workflows** and click **Run full pipeline** when the core sources are ready. Use [regional preparation](regional_extracts.md) for optional large geodatabase inputs.
 
 ## Snapshot and provenance behavior
 

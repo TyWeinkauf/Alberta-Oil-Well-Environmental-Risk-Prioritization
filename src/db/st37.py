@@ -10,9 +10,12 @@ from psycopg.types.json import Jsonb
 from pyproj import CRS
 from sqlalchemy import text
 
+from src.config import ROOT, load_study_area
 from src.db.migrations import migrate
 from src.db.workflow import serialized_workflow
-from src.sources.st37 import FIELDS, finite_number, parse_date, verify_prepared
+from src.sources.st37 import FIELDS, finite_number, parse_date, read_prepared_st37, retained_st37_report, verify_prepared
+
+ST37_LICENSE_NOTE = 'AER ST37 surface-hole workbook for educational noncommercial use. AER source attribution retained.'
 
 
 def safe_date(value):
@@ -20,6 +23,30 @@ def safe_date(value):
         return parse_date(value)
     except ValueError:
         return None
+
+
+def documented_st37_crs(coordinate_crs, crs_evidence):
+    if bool(coordinate_crs) != bool(crs_evidence and crs_evidence.strip()):
+        raise ValueError('Coordinate CRS and publisher datum evidence must be supplied together')
+    if not coordinate_crs:
+        return None
+    crs = CRS.from_user_input(coordinate_crs)
+    srid = crs.to_epsg()
+    if not crs.is_geographic or not srid:
+        raise ValueError('ST37 latitude/longitude requires a documented geographic EPSG CRS')
+    return f'EPSG:{srid}'
+
+
+@serialized_workflow
+def import_st37_workbook(engine, workbook: Path, raw_root: Path, *,
+                         coordinate_crs=None, crs_evidence=None, progress=lambda _: None):
+    """Prepare or reuse the retained workbook and stage its complete inventory."""
+    coordinate_crs = documented_st37_crs(coordinate_crs, crs_evidence)
+    area = load_study_area(ROOT / 'config/study_area.live.yml')
+    report = retained_st37_report(workbook, area, raw_root, progress=progress)
+    progress('Staging the complete ST37 inventory in PostGIS')
+    return import_st37(engine, report, license_note=ST37_LICENSE_NOTE,
+                       coordinate_crs=coordinate_crs, crs_evidence=crs_evidence)
 
 
 @serialized_workflow
@@ -32,22 +59,15 @@ def import_st37(engine, report_path, *, license_note, coordinate_crs=None,
     """
     if not license_note or not license_note.strip():
         raise ValueError('Record the permitted use and AER attribution before importing')
-    if bool(coordinate_crs) != bool(crs_evidence and crs_evidence.strip()):
-        raise ValueError('Coordinate CRS and publisher datum evidence must be supplied together')
-    srid = None
-    if coordinate_crs:
-        crs = CRS.from_user_input(coordinate_crs)
-        srid = crs.to_epsg()
-        if not crs.is_geographic or not srid:
-            raise ValueError('ST37 latitude/longitude requires a documented geographic EPSG CRS')
-        coordinate_crs = f'EPSG:{srid}'
+    coordinate_crs = documented_st37_crs(coordinate_crs, crs_evidence)
+    srid = int(coordinate_crs.split(':')[1]) if coordinate_crs else None
     if downloaded_at:
         downloaded_at = datetime.fromisoformat(downloaded_at)
         if downloaded_at.utcoffset() is None:
             raise ValueError('Download timestamp requires a timezone offset')
     if release_date:
         release_date = date.fromisoformat(release_date)
-    report = json.loads(Path(report_path).read_text(encoding='utf-8'))
+    report = read_prepared_st37(report_path)
     verify_prepared(report)
     declaration = {'identity': report['identity'], 'inventory_checksum': report['artifacts']['inventory']['sha256'],
                    'license_note': license_note, 'coordinate_crs': coordinate_crs, 'crs_evidence': crs_evidence,

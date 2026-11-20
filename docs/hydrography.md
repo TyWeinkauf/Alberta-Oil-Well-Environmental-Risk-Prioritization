@@ -2,6 +2,46 @@
 
 The supplied `alberta_hydro_postgis_import.zip` was reviewed as reference code. Its original province-wide `environment.*` tables are not read by this app. The adaptation uses the project's SQLAlchemy connection, source catalogue, immutable HTTP cache, contracts, quarantine, database-wide lock and atomic inventory snapshots. Package README commands were treated as reference, and its `.env`, requirements and bytecode were not copied over project files.
 
+## Province-wide layer 72 and ST37 comparison
+
+The province-wide path requests every published record from **Lake/River (20K), layer 72** using `where=1=1`. It includes the icefield, quarry and dugout codes omitted from the regional defaults. The scope is the polygon layer the user specified. Streams and intermittent waterbodies have their own layers. [Official layer-72 metadata](https://geospatial.alberta.ca/titan/rest/services/environment/base_water_feature/MapServer/72)
+
+The 20 November 2026 live probe returned ten polygons from the user’s update-layer endpoint and wrote `data/raw/waterbodies_test.geojson` (96,572 bytes, SHA-256 `7cd179f6223fc9d2130fe7a25ce4cc9498b2f44d8f8724ad6c2139a07aa7d2f6`). The base layer reported **127,227 records**. Its ID list reconciled with that count and its first ten geometry records matched the requested IDs.
+
+Developer diagnostics for the publisher endpoints are available through `scripts/test_water_api.py`.
+
+```powershell
+.\.venv\Scripts\python.exe scripts\test_water_api.py
+.\.venv\Scripts\python.exe scripts\test_water_api.py --layer base --count-only
+.\.venv\Scripts\python.exe scripts\test_water_api.py --layer base --verify-paging
+```
+
+### Import and compare
+
+Configure the project's private `.env` with its actual `DATABASE_URL` and open **PostGIS workflows → Waterways → Alberta waterbodies, streams and ST37**.
+
+1. Click **Import Alberta waterbodies** to load the full polygon layer. The app reports progress, selects the imported snapshot and shows polygon and quarantine counts.
+2. Click **Import ST37 wells** to stage the retained workbook. Enter its documented geographic CRS and evidence in **Workbook coordinate evidence** when available. Leaving both fields blank stages the reported coordinates and well attributes. [ST37 staging](st37_excel.md#stage-well-information-before-environmental-analysis)
+3. Select the stored waterbody and ST37 snapshots and click **Run waterbody comparison**. The comparison becomes available when the selected ST37 snapshot has documented coordinates and both snapshots have accepted records. Read the threshold summary and look up a specific well by licence number.
+
+The import reads a publisher count and the corresponding complete ID list. It requests and validates a geometry page at a time, stages rows through PostgreSQL COPY, and verifies the ID list and available edit timestamp again before publication. Valid polygons and source properties go to `screening.water_features` in EPSG:3400. Rejected records and their source payloads go to `screening.water_feature_rejects`. Publication commits a single snapshot after all records are accounted for. An unchanged import reuses its ID. The source responses are traceable in the stored manifest and local HTTP cache. The comparison and app read from PostGIS. The default guard is 2 million records with 64 MiB per response and a 16 GiB cumulative transfer ceiling. The service may change records during a download. Count, ID and available edit metadata checks guard publication, and the manifest records the responses used.
+
+Results are stored in `screening.st37_waterbody_proximity` and tied to both immutable import IDs by `screening.waterbody_comparisons`. PostGIS uses `ST_DWithin` to find accepted polygons within 500 m and `ST_Distance` to measure the nearest qualifying geometry. A well inside a polygon has distance zero. The summary reports inclusive matches at 50, 100, 250 and 500 m. If coverage is incomplete, unmatched wells have unknown results. Snapshot selections and licence searches read stored data. Each button runs the corresponding write action.
+
+### Project database status
+
+Both live imports completed in the project database through Streamlit on **20 November 2026**. The layer-72 snapshot `9b833be4-ff85-5712-9b8a-7d34be2b761c` accounts for all **127,227** publisher records. PostGIS contains **127,189 valid polygons** and **38 quarantined records** with their invalid geometry payloads. The snapshot records incomplete coverage. The ST37 snapshot `73363997-10a0-5817-9546-57cdf2b2b1a5` contains **541,190 distinct licences** with the reported coordinates. The actual comparison awaits the workbook’s geographic datum.
+
+All **149 tests passed** with a disposable PostgreSQL 17/PostGIS database. The Streamlit checks cover the import and comparison buttons, the threshold summary, a leading-zero licence lookup, failed-refresh recovery, datum gating and read-only reruns.
+
+## Province-wide layer 107 streams
+
+In the same Streamlit panel, click **Import Alberta streams**. This loads every published line record from **Stream (20K), layer 107** into an independent PostGIS snapshot. The live publisher count and reconciled ID list contained **143,570 records** on 20 November 2026, and the first ten records matched their requested IDs. Alberta publishes this line layer in NAD83 / Alberta 10-TM Forest with the Open Government Licence – Alberta. [Official layer-107 metadata](https://geospatial.alberta.ca/titan/rest/services/environment/base_water_feature/MapServer/107)
+
+The live button import published snapshot `502120a2-a315-56ae-94ac-4d59ebc8963f`. PostGIS reconciled **143,568 LineStrings** and **two retained invalid geometry records** to the full publisher count. Coverage is labelled incomplete.
+
+To compare streams with wells, select the stream snapshot as the **Alberta hydrography snapshot** and click **Run stream comparison** after choosing a datum-verified ST37 snapshot. The comparison evaluates perennial stream, canal, oxbow and ditch codes (`STR-PER`, `CANAL`, `OXBOW-PER`, `DITCH`) at the same four thresholds. The live count for those codes also totalled 143,570. All publisher attributes and validated lines remain in the inventory.
+
 ## Verified sources and selection
 
 Official metadata and bounded queries were checked on **10 November 2026**. [Base Water Feature](https://geospatial.alberta.ca/titan/rest/services/environment/base_water_feature/MapServer) reports native EPSG:3400, GeoJSON support, and `OBJECTID`, `NAME`, `FEATURE_TYPE` fields. Layer metadata explicitly states the [Open Government Licence – Alberta](https://open.alberta.ca/licence). Metadata/response hashes, scopes and retrieval times are retained in [verification evidence](evidence/hydrography_2026-11-10.json).
@@ -15,7 +55,7 @@ Official metadata and bounded queries were checked on **10 November 2026**. [Bas
 
 These are full-base layers, rather than update-only hydrography. Explicit predicates exclude arbitrary manual/DEM flow connectors and omit icefields, quarry and dugout polygons from the default selection. Map renderer symbols are not assumed to filter query results. This is a documented screening choice; excluded water types may still matter. Layer scale does not establish survey accuracy or a regulatory setback.
 
-## App and command line
+## Regional imports in Streamlit
 
 Fill the project's ignored `.env` with actual PostgreSQL/PostGIS connection details, then run:
 
@@ -23,19 +63,13 @@ Fill the project's ignored `.env` with actual PostgreSQL/PostGIS connection deta
 .\.venv\Scripts\python.exe -m streamlit run app.py
 ```
 
-Open **Waterways → Import waterways** in the sidebar, then enable **Preview imported waterways**. The default imports `config/study_area.live.yml` (Drayton Valley) plus a projected **500 m margin**. **Include seasonal waterways** adds verified optional water sources; **Recheck water source updates** rechecks cached inputs. Preview shows actual lines/polygons, source IDs/codes and a downloadable manifest, with optional OpenStreetMap tiles. Geometry can render offline after acquisition using cached inputs and vendored map assets.
+Open **PostGIS workflows → Waterways → Import waterways**, then enable **Preview imported waterways**. The default imports `config/study_area.live.yml` (Drayton Valley) plus a projected **500 m margin**. **Include seasonal waterways** adds verified optional water sources. **Recheck water source updates** rechecks cached inputs. Preview shows actual lines and polygons, source codes and a downloadable manifest, with optional OpenStreetMap tiles.
 
 The control works before an analyzed well dataset exists. Imports occur only on button clicks; preview rerenders never re-import/download. The water preview is independent of synthetic well results. The normal **Run full pipeline** action uses the same water catalogue entries when the remaining core sources are ready. A private `SOURCE_CATALOG_PATH` takes precedence; copy verified water entries into it deliberately if using one.
 
 The preview retains the import selected by your last successful button action, including when switching back to an older cached base inventory after a seasonal import. The seasonal checkbox controls the independent inventory import. For seasonal sources in a full analytical run, explicitly enable those entries in your private source catalogue too.
 
-```powershell
-.\.venv\Scripts\python.exe scripts\import_hydrography.py
-.\.venv\Scripts\python.exe scripts\import_hydrography.py --include-seasonal
-.\.venv\Scripts\python.exe scripts\import_hydrography.py --include-seasonal --refresh
-```
-
-Options include `--catalog`, `--study-area` and `--max-records` (10,000/source by default, maximum 100,000). This command is bounded to the study area; it does not execute the ZIP's province-wide/sample-mirror workflow. Excess counts fail without truncation. No new runtime dependencies are needed.
+The regional import guards against excess counts and fails without truncation. It applies the configured study area and feature-type selection.
 
 ## Storage and failure behavior
 
@@ -58,4 +92,4 @@ Actual Drayton Valley imports were validated in a **separate temporary database*
 
 Repeats reuse the same IDs/counts. SQL verifies valid EPSG:3400 geometry, zero arbitrary flow connectors and zero published screening runs. Rejected layer-72 `OBJECTID=249048`, `RIV-MAJ` has a source ring self-intersection. It is quarantined without silent repair. Its absence is not evidence that no river is nearby; coverage stays incomplete until the gap is defensibly resolved.
 
-The user's database is unmodified because `.env` still contains connection placeholders. Full screening still needs AER datum/provenance and protected-area/habitat inputs. This work does not establish Alberta-wide completion, complete river coverage or final course findings. See the [data inventory](../aida-final-project-tyler-weinkauf/shared-resources/data-inventory.md) and [design tracker](../DESIGN.md).
+The project database holds the provincial inventories tracked above. The full multi-source screening workflow still needs the workbook datum and verified protected-area and habitat inputs. [Data inventory](../aida-final-project-tyler-weinkauf/shared-resources/data-inventory.md) · [Design tracker](../DESIGN.md#remaining-work-in-order)

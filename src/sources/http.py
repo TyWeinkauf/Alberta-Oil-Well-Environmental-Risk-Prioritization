@@ -80,9 +80,10 @@ class HttpCache:
             if size and self.transferred_bytes+int(size)>self.max_total_bytes:
                 raise ValueError('Acquisition exceeds the total transfer budget')
             digest = hashlib.sha256();count=0
-            with tempfile.NamedTemporaryFile(dir=self.root,delete=False) as handle:
-                temporary = Path(handle.name)
-                try:
+            handle = tempfile.NamedTemporaryFile(dir=self.root, delete=False)
+            temporary = Path(handle.name)
+            try:
+                with handle:
                     for chunk in response.iter_content(chunk_size=1024*1024):
                         count += len(chunk)
                         self.transferred_bytes += len(chunk)
@@ -91,9 +92,9 @@ class HttpCache:
                         if self.transferred_bytes>self.max_total_bytes:
                             raise ValueError('Acquisition exceeds the total transfer budget')
                         digest.update(chunk);handle.write(chunk)
-                except Exception:
-                    temporary.unlink(missing_ok=True)
-                    raise
+            except Exception:
+                temporary.unlink(missing_ok=True)
+                raise
             checksum = digest.hexdigest()
             destination = self.root/'blobs'/checksum/'payload'
             destination.parent.mkdir(parents=True,exist_ok=True)

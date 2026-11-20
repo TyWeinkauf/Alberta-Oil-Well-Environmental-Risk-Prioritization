@@ -116,12 +116,44 @@ def surface_rows(path):
         book.close()
 
 
+def read_prepared_st37(report_path: Path) -> dict:
+    """Read a preparation receipt, resolving its adjacent artifacts after a workspace move."""
+    report_path = Path(report_path).resolve()
+    report = json.loads(report_path.read_text(encoding='utf-8'))
+    for name in ('inventory', 'pilot', 'quarantine', 'warnings'):
+        sibling = report_path.with_name(f'{name}.csv')
+        if name in report['artifacts'] and sibling.is_file():
+            report['artifacts'][name]['path'] = str(sibling)
+    return report
+
+
 def verify_prepared(report):
     """Do not reuse or load changed/corrupt output bytes."""
     for entry in report['artifacts'].values():
         path = Path(entry['path'])
         if not path.is_file() or checksum(path) != entry['sha256']:
             raise ValueError('Prepared ST37 artifact is missing or corrupt; rebuild from the original')
+
+
+def retained_st37_report(workbook: Path, area, output_root: Path, *, progress=lambda _: None) -> Path:
+    """Reuse an intact matching receipt to avoid reprocessing the retained workbook."""
+    if not workbook.is_file():
+        raise ValueError('The retained ST37_SH.xlsx workbook is missing')
+    workbook_hash = checksum(workbook)
+    scope = area.model_dump(mode='json')
+    for report_path in sorted(output_root.glob('*/report.json')):
+        try:
+            report = read_prepared_st37(report_path)
+            if (report['version'] != VERSION or report['source']['sha256'] != workbook_hash
+                    or report['study_area'] != scope or report['identity'] != report_path.parent.name):
+                continue
+            verify_prepared(report)
+        except (OSError, ValueError, TypeError, KeyError):
+            continue
+        progress(f'Reusing a verified ST37 preparation with {report["source_rows"]:,} source rows')
+        return report_path
+    report = prepare_st37(workbook, area, output_root, progress=progress)
+    return output_root / report['identity'] / 'report.json'
 
 
 def prepare_st37(path, area, output_root, *, max_rows=1000000, max_pilot_records=10000,
@@ -140,7 +172,7 @@ def prepare_st37(path, area, output_root, *, max_rows=1000000, max_pilot_records
     identity = hashlib.sha256(json.dumps(identity_data, sort_keys=True).encode()).hexdigest()
     destination = output_root / identity
     if destination.exists():
-        report = json.loads((destination / 'report.json').read_text(encoding='utf-8'))
+        report = read_prepared_st37(destination / 'report.json')
         if report['identity'] != identity or report['source']['sha256'] != original_hash:
             raise ValueError('Prepared ST37 report identity is inconsistent')
         verify_prepared(report)

@@ -4,8 +4,14 @@ import html
 from functools import lru_cache
 
 import folium
+from branca.element import Element
 
 from src.config import ROOT
+
+SCENARIO_COLORS = {
+    'water': '#247ba0', 'wetland': '#087e66', 'protected_area': '#527629',
+    'critical_habitat': '#8849a7', 'esa': '#9b521e',
+}
 
 
 def popup_text(value: str) -> str:
@@ -19,7 +25,7 @@ def asset_uri(relative_path: str, mime: str) -> str:
 
 
 def build_map(records: list[dict], features: list[dict], categories: list[str], *, basemap: bool = False,
-              overlays: bool = True) -> folium.Map:
+              overlays: bool = True, notice: str | None = None) -> folium.Map:
     center = ([sum(r['latitude'] for r in records)/len(records),sum(r['longitude'] for r in records)/len(records)]
               if records else [53.5,-114])
     view = folium.Map(location=center,zoom_start=12,tiles=None,control_scale=True)
@@ -29,18 +35,29 @@ def build_map(records: list[dict], features: list[dict], categories: list[str], 
     view.default_css = [('leaflet_css',asset_uri('vendor/leaflet/leaflet.css','text/css'))]
     if basemap:
         folium.TileLayer('OpenStreetMap').add_to(view)
+    if notice:
+        view.get_root().html.add_child(Element(
+            '<aside style="position:absolute;z-index:999;left:48px;right:8px;top:8px;'
+            'padding:6px 9px;background:white;color:#222;font:12px sans-serif">'
+            f'{html.escape(notice)}</aside>'))
     if overlays:
         for feature in features:
             if feature['feature_type'] in categories:
+                illustrative = feature.get('provenance') == 'synthetic_environment'
+                color = SCENARIO_COLORS[feature['feature_type']] if illustrative else '#247ba0'
                 folium.GeoJson(feature['geometry'],name=feature['source_feature_id'],
-                    style_function=lambda _: {'color':'#247ba0','weight':2,'fillOpacity':0.12}).add_to(view)
+                    tooltip=popup_text(feature['name']) if illustrative else None,
+                    style_function=lambda _, feature_color=color: {
+                        'color':feature_color,'weight':2,'fillOpacity':0.12}).add_to(view)
     for row in records:
         identifier = popup_text(row['source_well_id'])
         company = popup_text(row['licensee_name'] or 'Not available from this source')
         # streamlit-folium returns innerText, so attributes/hidden text are lost.
         # A small visible reference survives the bridge without using coordinates.
         token = f'<small>Record reference: {row["well_pk"]}</small><br>'
-        popup = f'<section data-well-key="{row["well_pk"]}">{token}<strong>{identifier}</strong><br>{company}<br>View details below the map</section>'
+        source = '<br>Actual ST37 well · simulated surroundings' if notice else ''
+        popup = (f'<section data-well-key="{row["well_pk"]}">{token}<strong>{identifier}</strong>'
+                 f'<br>{company}{source}<br>View details below the map</section>')
         # Fixed palette from the shared classifier; no untrusted CSS is inserted.
         color = {'red':'#b91c1c','orange':'#c2410c','yellow':'#ca8a04','blue':'#1d4ed8','gray':'#64748b'}[row['color']]
         icon = folium.DivIcon(html=f'<span style="display:block;background:{color};width:18px;height:18px;'

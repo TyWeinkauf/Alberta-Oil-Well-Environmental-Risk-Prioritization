@@ -19,7 +19,9 @@ const os=require('node:os');
    return ['127.0.0.1','localhost'].includes(url.hostname)||!['http:','https:'].includes(url.protocol)?route.continue():route.abort();
   });
   const page=await context.newPage();debugPage=page;
-  await page.goto(process.env.APP_URL||'http://127.0.0.1:8501');
+  const appUrl=new URL(process.env.APP_URL||'http://127.0.0.1:8501');
+  appUrl.searchParams.set('dataset_mode','PostGIS workflows');
+  await page.goto(appUrl.href);
   const frame=page.frameLocator('iframe').first();
   async function until(check,label){
    const limit=Date.now()+15000;

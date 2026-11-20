@@ -18,6 +18,7 @@ from src.db.workflow import serialized_workflow
 from src.sources.arcgis import acquire_arcgis
 from src.sources.files import acquire_file
 from src.sources.http import HttpCache
+from src.sources.waterbodies import PROVINCE_SCOPES
 
 
 def water_sources(catalog, include_optional=False):
@@ -136,9 +137,13 @@ def latest_water_import(engine, import_id=None):
         if not conn.execute(text("SELECT to_regclass('screening.water_imports')")).scalar_one():
             return None
         if import_id is not None:
-            return conn.execute(text('SELECT manifest FROM screening.water_imports WHERE import_id=:id'),
-                                {'id': import_id}).scalar_one_or_none()
-        return conn.execute(text('SELECT manifest FROM screening.water_imports ORDER BY imported_at DESC,import_id DESC LIMIT 1')).scalar_one_or_none()
+            return conn.execute(text('''SELECT manifest FROM screening.water_imports
+                WHERE import_id=:id AND NOT COALESCE((manifest->>'scope')=ANY(:scopes),false)'''),
+                {'id': import_id, 'scopes': list(PROVINCE_SCOPES)}).scalar_one_or_none()
+        return conn.execute(text('''SELECT manifest FROM screening.water_imports
+            WHERE NOT COALESCE((manifest->>'scope')=ANY(:scopes),false)
+            ORDER BY imported_at DESC,import_id DESC LIMIT 1'''),
+            {'scopes': list(PROVINCE_SCOPES)}).scalar_one_or_none()
 
 
 def water_features(engine, import_id):

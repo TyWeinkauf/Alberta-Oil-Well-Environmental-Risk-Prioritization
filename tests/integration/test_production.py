@@ -109,7 +109,9 @@ def test_streamlit_demo_production_chart_and_unavailable_other_well(test_engine,
                   field_mapping={'source_record_id':'ROW_ID','period':'MONTH','product':'PRODUCT',
                                  'activity':'ACTIVITY','volume':'VOLUME','unit':'UNIT'})
     monkeypatch.setattr('src.config.load_source_catalog',lambda:SourceCatalog(sources=[source]))
-    app=AppTest.from_file(str(ROOT/'app.py')).run(timeout=30)
+    app=AppTest.from_file(str(ROOT/'app.py'))
+    app.query_params['dataset_mode']='PostGIS workflows'
+    app.run(timeout=30)
     with test_engine.connect() as conn:
         wells=conn.execute(text('SELECT well_pk FROM screening.wells ORDER BY source_well_id')).scalars().all()
     app.selectbox(key='detail_choice').select(wells[0]).run()

@@ -4,7 +4,9 @@ The workbook supplied on 10 November 2026 is the first actual well input inspect
 
 Phases 0–3 already work on synthetic fixtures. This work advances **Phase 4** (actual-source preparation/import) and **Phase 5** (AER attributes). A wells-only inventory does not satisfy the full four-source screening milestone. Water, protected areas and critical habitat still need verified inputs, coverage and an analytical run.
 
-The publisher [ST37 page](https://www.aer.ca/providing-information/data-and-reports/statistical-reports/st37), [June 2026 reference guide](https://www.aer.ca/prd/documents/sts/st37/ST37_ReferenceGuide.pdf) and [copyright terms](https://www.aer.ca/copyright-and-disclaimer) were checked on 10 November 2026. The page lists Excel and geodatabase distributions; the guide identifies the surface-hole fields. AER permits educational/noncommercial reproduction subject to accuracy, attribution, and no implied endorsement, unless otherwise indicated. This is not an Open Government Licence claim or permission for commercial redistribution. Keep the original workbook and generated data out of Git.
+The publisher [ST37 page](https://www.aer.ca/data-and-performance-reports/statistical-reports/st37), [June 2026 reference guide](https://www.aer.ca/prd/documents/sts/st37/ST37_ReferenceGuide.pdf) and [copyright terms](https://www.aer.ca/copyright-and-disclaimer) were checked on 10 November 2026. The page lists Excel and geodatabase distributions; the guide identifies the surface-hole fields. AER permits educational/noncommercial reproduction subject to accuracy, attribution, and no implied endorsement, unless otherwise indicated. This is not an Open Government Licence claim or permission for commercial redistribution. Keep the original workbook and generated data out of Git.
+
+**Publisher check, 20 November 2026.** The user supplied the current ST37 product page. It confirms monthly distribution and directs readers to the ZIP metadata. The linked guide lists the workbook's latitude and longitude fields under the projected surface-hole geodatabase layer. The page and guide leave the retained workbook's release month and native coordinate datum unresolved. The local network could not retrieve the Excel archive directory via a bounded range request. [AER ST37](https://www.aer.ca/data-and-performance-reports/statistical-reports/st37) · [ST37 reference guide, page 3](https://www.aer.ca/prd/documents/sts/st37/ST37_ReferenceGuide.pdf#page=3)
 
 ## Actual schema and meaning
 
@@ -52,7 +54,7 @@ The provisional pilot selection compares the source longitude/latitude numbers w
 
 ## Configure the application database
 
-The local `.env` contains a private template:
+The repository's `.env.example` provides the template for the private database connection:
 
 ```dotenv
 DATABASE_URL=postgresql+psycopg://postgres:CHANGE_ME@localhost:5432/alberta_risk
@@ -62,23 +64,21 @@ Replace the password, role, host, port and database as needed. URL-encode specia
 
 ## Stage well information before environmental analysis
 
-After filling `.env`, use the exact report path printed by preparation:
-
-```powershell
-.\.venv\Scripts\python.exe scripts\import_st37.py --report data/raw/st37/<identity>/report.json --license-note "AER ST37; educational noncommercial use under AER copyright terms checked 2026-11-10. AER attribution retained; no endorsement implied."
-```
+In Streamlit, open **PostGIS workflows → Waterways → Alberta waterbodies, streams and ST37**, then click **Import ST37 wells**. The app uses the retained `ST37_SH.xlsx` in the AIDA 1145 data folder. It reuses an intact matching preparation or prepares the workbook before staging the complete inventory.
 
 This creates migration `005_st37_inventory.sql` and transactionally loads all source rows into **`screening.st37_surface_holes`**, with provenance in **`screening.st37_imports`**. The new tables are separate from the published `screening.wells` dataset. The importer retains invalid rows with errors and leaves their geometry null. Date warnings are stored separately from rejection reasons. Without verified datum evidence **every geometry stays null**, while well attributes and original coordinate values are available for inspection.
 
-Once publisher metadata confirms the geographic datum, supply both `--coordinate-crs` and `--crs-evidence`. For example, **only when NAD83 is confirmed**, use `--coordinate-crs EPSG:4269 --crs-evidence "<publisher metadata citation>"`. The importer projects valid points to EPSG:3400 and checks their counts, SRID and validity. The declaration is stored in provenance; a changed CRS/permission/date declaration creates a distinct inventory snapshot. Filter queries by `import_id` when comparing snapshots.
+Once publisher metadata confirms the geographic datum, enter **Workbook coordinate CRS** and **Publisher datum evidence** under **Workbook coordinate evidence**, then click **Import ST37 wells** again. The importer projects valid points to EPSG:3400 and checks counts, SRID and validity. The new declaration creates a distinct inventory snapshot.
 
-Optional `--downloaded-at` takes the actual ISO timestamp with timezone, and `--release-date` takes a known publisher date. Leave unknown dates omitted. The tool never invents them.
+Publisher release and original download dates remain open until supported by source evidence.
 
-The import uses the existing database-wide workflow lock, streams rows with PostgreSQL COPY, validates prepared checksums before/after loading, verifies all counts before commit, and rolls back on failure. Repeating the same input/declaration reuses the same import ID without duplicating rows. Evidence is written under `outputs/st37/<import-id>/database_import.json`. It creates no `pipeline_runs` entry and computes no proximity bands.
+The import uses the database-wide workflow lock, streams rows with PostgreSQL COPY, validates checksums before and after loading, verifies counts before commit, and rolls back on failure. Repeating the same input and declaration reuses its import ID. The app lists imports by snapshot and keeps coordinate evidence with the selected data in PostGIS.
 
-For the full app, configure the bounded `pilot.csv` as a coordinate well CSV with the report's `field_mapping`, longitude/latitude field names, verified geographic CRS, attribution and real download/coverage evidence. Keep it disabled until verified. Add the three environmental categories and run the normal `scripts/run_live.py` with the same study-area configuration. The inventory tables alone are not an app publication or a substitute for missing environmental data.
+For the full multi-source screening workflow, configure the bounded `pilot.csv` as a coordinate well CSV with the report's `field_mapping`, longitude/latitude field names, verified geographic CRS, attribution and download and coverage evidence. After verifying the other required sources, click **Run full pipeline** in **PostGIS workflows**.
 
 ## Verification
+
+The project database now contains the actual ST37 inventory loaded by the **Import ST37 wells** button on 20 November 2026. Import `73363997-10a0-5817-9546-57cdf2b2b1a5` was checked in PostGIS for **541,190 rows and distinct licences**, six date-warning rows and zero rejects. Coordinates are stored as reported with geometry pending workbook datum.
 
 All **136 unit/PostGIS integration tests passed** on Windows PostgreSQL 17.11/PostGIS 3.6.2. Tests cover leading-zero IDs, complete accounting, global duplicates, formula/numeric-ID rejection, malformed coordinates/dates, quality warnings, changed originals, immutable reuse/corruption, schema drift, fail-without-truncation limits, retained rejects/raw attributes, geometry projection, idempotency, no screening publication and failed-import rollback. Tests use synthetic records in a separate database ending in `_test`; they never reset the user's database.
 

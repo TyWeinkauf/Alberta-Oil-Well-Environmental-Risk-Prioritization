@@ -87,7 +87,9 @@ def test_local_files_load_spatial_and_verified_production_without_network(test_e
     assert a['acquisition']['downloaded_at']=='2026-11-08T00:00:00+00:00'
     monkeypatch.setenv('DATABASE_URL',test_engine.url.render_as_string(hide_password=False))
     monkeypatch.setenv('SOURCE_CATALOG_PATH',str(file_catalog))
-    app=AppTest.from_file(str(ROOT/'app.py')).run(timeout=30)
+    app=AppTest.from_file(str(ROOT/'app.py'))
+    app.query_params['dataset_mode']='PostGIS workflows'
+    app.run(timeout=30)
     assert not app.exception
     assert not next(b for b in app.button if b.label=='Run full pipeline').disabled
     assert not next(b for b in app.button if b.label=='Refresh production').disabled

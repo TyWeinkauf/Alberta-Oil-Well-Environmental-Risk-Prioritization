@@ -9,21 +9,21 @@ FIELDS = ('run_id','source_well_id','licensee_name','operator_name_if_verified',
           'selected_categories')
 
 
-def table_records(records: list[dict]) -> list[dict]:
+def table_records(records: list[dict], fields: tuple[str, ...] = FIELDS) -> list[dict]:
     return [{field:(';'.join(row[field]) if field=='selected_categories' else row.get(field))
-             for field in FIELDS} for row in records]
+             for field in fields} for row in records]
 
 
-def csv_bytes(records: list[dict]) -> bytes:
+def csv_bytes(records: list[dict], fields: tuple[str, ...] = FIELDS) -> bytes:
     output = io.StringIO(newline='')
-    writer = csv.DictWriter(output,fieldnames=FIELDS)
+    writer = csv.DictWriter(output,fieldnames=fields)
     writer.writeheader()
-    writer.writerows(table_records(records))
+    writer.writerows(table_records(records, fields))
     return output.getvalue().encode('utf-8-sig')
 
 
-def geojson_bytes(records: list[dict], selection: dict) -> bytes:
-    rows = table_records(records)
+def geojson_bytes(records: list[dict], selection: dict, fields: tuple[str, ...] = FIELDS) -> bytes:
+    rows = table_records(records, fields)
     payload = {'type':'FeatureCollection','selection':selection,'features':[
         {'type':'Feature','id':str(original['well_pk']),
          'geometry':{'type':'Point','coordinates':[row['longitude'],row['latitude']]},'properties':row}

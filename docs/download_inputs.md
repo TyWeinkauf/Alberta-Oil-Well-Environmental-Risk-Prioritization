@@ -4,6 +4,8 @@ The current scope is **AER well locations/attributes plus environmental layers**
 
 ## File-to-database workflow
 
+This checklist covers a custom multi-source catalogue. The retained Excel workbook and Alberta waterbody polygons have their own [Streamlit import buttons](hydrography.md#province-wide-layer-72-and-st37-comparison).
+
 1. Download permitted data from the publisher on your machine. Keep the original package and record its URL, download date, version and terms.
 2. Put files under `data/raw/`, for example:
 
@@ -20,14 +22,7 @@ These are example names, not bundled data. **The entire `data/` directory is ign
 
 3. Copy `config/source_catalog.local.example.yml` to your private catalogue and set the actual paths/mappings/provenance. With the layout above, paths in `imports/catalog.yml` would start `../aer/` or `../environment/` because they resolve relative to the YAML file.
 4. Inspect actual layers, fields, unique IDs, geometry/CRS, extent and package size. Configure verified mappings and permitted use before enabling sources. Use [the ST37 guide review](st37_reference.md) for candidate fields, not as proof of the downloaded schema.
-5. Run the project's ingestion pipeline to create its expected PostGIS tables, source snapshots, quarantine and proximity results. The Streamlit app then reads those normalized tables; downloading files alone does not populate them.
-
-```bash
-python scripts/setup_db.py
-python scripts/run_live.py --catalog data/raw/imports/catalog.yml
-```
-
-For the app's **Run full pipeline** button, set `SOURCE_CATALOG_PATH` to the catalogue's absolute path in your local `.env` or process environment, restart Streamlit and configure all required sources. See [input configuration](data_access.md). The example above requires supported input sizes and completed mappings. For the large ST37 original, first use [regional preparation](regional_extracts.md) and use its generated small-package catalogue for ingestion.
+5. Set `SOURCE_CATALOG_PATH` to the verified catalogue's absolute path. Open **PostGIS workflows** in Streamlit and click **Run full pipeline**. The app creates the PostGIS tables, source snapshots, quarantine and proximity results. Use [regional preparation](regional_extracts.md) for large geodatabase archives. [Input configuration](data_access.md)
 
 ## AER wells
 
@@ -112,16 +107,9 @@ python scripts/prepare_extract.py --catalog data/raw/imports/catalog.yml --sourc
 - [ ] If a second source also needs preparation, pass the previous `prepared_catalogue.json` as `--catalog` and the second source key with a different `--output-root`. This preserves already prepared entries. Keep the **last generated catalogue** as the final input catalogue; bounded files and verified REST sources can remain as their original entries.
 - [ ] Use the same study-area configuration for preparation and ingestion. Environmental extracts retain the 500 m margin; inspection/preparation does not itself establish publisher coverage. Keep original downloads or a trustworthy external archive for audit/rebuilding. See [regional extract instructions](regional_extracts.md).
 
-### 4. Ingest into local PostGIS, then start the app
+### 4. Ingest into local PostGIS from Streamlit
 
-- [ ] Ingest with the **final prepared catalogue** and chosen study file. Example for the single AER-preparation command above:
-
-```bash
-python scripts/run_live.py --catalog data/raw/extracts/aer/prepared_catalogue.json --study-area config/study_area.live.yml
-```
-
-- [ ] Check the completed run ID, manifest, counts, CRS, coverage and quarantine reasons under `outputs/runs/<run-id>/`. Previously successful data must remain selectable if a new run fails. Inspect failures and fix the source/mapping rather than treating missing data as zero nearby features.
-- [ ] Set `SOURCE_CATALOG_PATH` in `.env` to the **absolute path of the final catalogue**, restart Streamlit and select the real-source dataset. For example, use your own local path rather than this placeholder:
+- [ ] Set `SOURCE_CATALOG_PATH` in `.env` to the **absolute path of the final catalogue**. Set `config/study_area.live.yml` to the same study area used for preparation.
 
 ```text
 SOURCE_CATALOG_PATH="C:/Projects/alberta/data/raw/extracts/aer/prepared_catalogue.json"
@@ -131,7 +119,8 @@ SOURCE_CATALOG_PATH="C:/Projects/alberta/data/raw/extracts/aer/prepared_catalogu
 python -m streamlit run app.py
 ```
 
-The CLI above can use a custom `--study-area`; the app's **Run full pipeline** action currently uses `config/study_area.live.yml`. Keep that file aligned with the prepared packages when using the app to rerun ingestion. Read-only selection of an existing result uses its stored study area.
+- [ ] Open **PostGIS workflows** in Streamlit and click **Run full pipeline**.
+- [ ] Check the completed run ID, manifest, counts, CRS, coverage and quarantine reasons under `outputs/runs/<run-id>/`. Check that previously successful data remains selectable after a failed refresh.
 
 ### 5. Finish the real-data acceptance and handoff
 

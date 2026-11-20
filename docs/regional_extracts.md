@@ -45,13 +45,7 @@ data/raw/extracts/
 
 `prepared_catalogue.json` replaces only the selected entry's local path/layer/archive settings with the small package; other catalogue entries are preserved. Flags are preserved too: preparation does not verify or enable a source automatically. Inspect the report and finish source/coverage checks, then enable only verified entries in your private catalogue.
 
-Use the generated catalogue for normal ingestion once all four required sources are ready:
-
-```bash
-python scripts/run_live.py --catalog data/raw/extracts/prepared_catalogue.json --study-area config/study_area.live.yml
-```
-
-For the app, set `SOURCE_CATALOG_PATH` to the absolute path of the prepared catalogue, restart Streamlit and use **Run full pipeline**. The app needs only the small package at ingestion time; the original remains referenced by path/checksum for audit/rebuilding. Keep the original or a trustworthy external archive for reproducibility.
+When the required sources are ready, set `SOURCE_CATALOG_PATH` to the prepared catalogue's absolute path. Open **PostGIS workflows** in Streamlit and click **Run full pipeline**. The app loads the small package and retains the original path and checksum for audit. Keep the original or a trustworthy external archive for reproducibility.
 
 Use `--output-root` to choose a different ignored destination, `--max-records` for an explicit record cap (default 10,000, maximum 100,000), and `--max-output-mib` for a smaller output cap (maximum 512 MiB). The output GeoPackage and ZIP must each fit the byte cap. Exceeding a limit fails with **no truncation**; shrink the area or use multiple independently defined study areas. The normal pipeline still has its own record limit, so a deliberately larger preparation cap does not change the app's defaults.
 

@@ -1,0 +1,9 @@
+sample_limit: 28
+sample_seed: 20261110
+regions:
+  red_deer:
+    name: Red Deer
+    bbox_wgs84: [-113.88, 52.22, -113.74, 52.32]
+  drayton_valley:
+    name: Drayton Valley
+    bbox_wgs84: [-115.08, 53.20, -114.94, 53.30]

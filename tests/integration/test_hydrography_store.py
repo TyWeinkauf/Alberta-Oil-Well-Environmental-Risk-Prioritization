@@ -65,7 +65,9 @@ def test_app_can_import_and_preview_water_before_wells_without_reimporting_on_re
             calls.append(kwargs)
             return run(engine, catalog, tmp_path, include_optional=kwargs['include_optional'])
         monkeypatch.setattr(water_ui, 'import_waterways', importer)
-        app = AppTest.from_file(str(ROOT/'app.py')).run(timeout=30)
+        app = AppTest.from_file(str(ROOT/'app.py'))
+        app.query_params['dataset_mode'] = 'PostGIS workflows'
+        app.run(timeout=30)
         assert not app.exception
         app.button(key='import_waterways').click().run(timeout=30)
         assert not app.exception and len(calls) == 1

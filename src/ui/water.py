@@ -8,6 +8,7 @@ import streamlit as st
 from src.db.workflow import WorkflowBusy
 from src.sources.hydrography import import_waterways, latest_water_import, water_features, water_requirements
 from src.ui.map import build_map
+from src.ui.waterbody_workflow import show_waterbody_workflow
 
 
 @st.cache_data(ttl=60, max_entries=8)
@@ -28,6 +29,9 @@ def show_waterways(engine, catalog):
             st.caption(reason)
         st.caption('Water imports are independent of synthetic demo wells and complete screening runs.')
         preview = st.checkbox('Preview imported waterways', key='water_preview')
+        province = st.checkbox('Alberta waterbodies, streams and ST37', key='province_water_comparison')
+    if province:
+        show_waterbody_workflow(engine)
     if requested:
         st.session_state.busy = True
         stages, outcome = [], 'Failed'
@@ -70,7 +74,7 @@ def show_waterways(engine, catalog):
     st.caption(f'{area["name"]} plus 500 m · {report["feature_count"]} features · inventory {report["import_id"][:8]}')
     if report['coverage_status'] != 'complete':
         st.warning('Some water features were quarantined. Water coverage is incomplete; inspect the manifest.')
-    st.caption('Independent real-water inventory preview. These features are not combined with synthetic wells; well distances require a complete real-source screening run.')
+    st.caption('Regional water inventory preview. Open Alberta waterbodies, streams and ST37 for province-wide comparisons.')
     features = cached_water_features(engine, engine.url.render_as_string(hide_password=True), report['import_id'])
     basemap = st.checkbox('Show OpenStreetMap on water preview', key='water_basemap')
     view = build_map([], features, ['water'], basemap=basemap)

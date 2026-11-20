@@ -42,7 +42,7 @@ def require_crs(value) -> CRS:
 
 
 def validate_records(rows: list, entity: Literal['wells', 'features'], crs_value,
-                     study_area: StudyArea) -> ValidationBatch:
+                     study_area: StudyArea | None) -> ValidationBatch:
     """Validate IDs, geometry, CRS, extent and fields; project accepted rows to 3400.
 
     All occurrences of a duplicate ID are quarantined, so row ordering cannot
@@ -52,8 +52,8 @@ def validate_records(rows: list, entity: Literal['wells', 'features'], crs_value
         raise ValueError('Expected wells/features as a list of source records')
     crs = require_crs(crs_value)
     to_wgs84 = Transformer.from_crs(crs, 4326, always_xy=True)
-    to_analysis = Transformer.from_crs(crs, study_area.analysis_crs, always_xy=True)
-    feature_extent = study_geometry(study_area).buffer(500) if study_area.mode=='live' and entity=='features' else None
+    to_analysis = Transformer.from_crs(crs, study_area.analysis_crs if study_area else 'EPSG:3400', always_xy=True)
+    feature_extent = study_geometry(study_area).buffer(500) if study_area and study_area.mode=='live' and entity=='features' else None
     id_field = 'source_well_id' if entity == 'wells' else 'source_feature_id'
     ids = Counter(row[id_field].strip() for row in rows if isinstance(row, dict)
                   and isinstance(row.get(id_field), str) and row[id_field].strip())
@@ -94,10 +94,8 @@ def validate_records(rows: list, entity: Literal['wells', 'features'], crs_value
                 raise ContractError('invalid_coordinates', 'Coordinate transformation failed') from None
             if not np.isfinite(get_coordinates(geographic)).all() or not np.isfinite(get_coordinates(projected)).all():
                 raise ContractError('invalid_coordinates', 'Coordinate transformation produced nonfinite values')
-            west, south, east, north = study_area.bbox_wgs84
             # Demo fixtures use strict containment; live environmental inputs
             # are clipped to the projected study polygon plus its 500 m margin.
-            left, bottom, right, top = geographic.bounds
             if feature_extent is not None:
                 clipped = projected.intersection(feature_extent)
                 if clipped.is_empty:
@@ -106,8 +104,13 @@ def validate_records(rows: list, entity: Literal['wells', 'features'], crs_value
                 # its valid original geometry so an inclusive 500 m match survives.
                 if clipped.geom_type in allowed:
                     projected=clipped
-            elif not (west <= left <= right <= east and south <= bottom <= top <= north):
-                raise ContractError('outside_study_area', 'Geometry is outside the configured study extent')
+            elif study_area is not None:
+                west, south, east, north = study_area.bbox_wgs84
+                left, bottom, right, top = geographic.bounds
+                if not (west <= left <= right <= east and south <= bottom <= top <= north):
+                    raise ContractError('outside_study_area', 'Geometry is outside the configured study extent')
+            if projected.is_empty or not projected.is_valid:
+                raise ContractError('invalid_geometry', 'Projected geometry is empty or invalid')
             fields = WELL_FIELDS if entity == 'wells' else ('name',)
             if any(row.get(field) is not None and not isinstance(row[field], str) for field in fields):
                 raise ContractError('invalid_field_type', 'Optional text fields must be strings or null')

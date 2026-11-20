@@ -6,7 +6,11 @@ from src.config import StudyArea
 
 
 def study_geometry(area: StudyArea):
-    west,south,east,north=area.bbox_wgs84
+    return projected_bbox(area.bbox_wgs84)
+
+
+def projected_bbox(bbox_wgs84: tuple[float, float, float, float]):
+    west,south,east,north=bbox_wgs84
     points=[]
     for start,end in [((west,south),(east,south)),((east,south),(east,north)),
                       ((east,north),(west,north)),((west,north),(west,south))]:
