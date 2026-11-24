@@ -89,7 +89,7 @@ def run_live(engine, *, catalog: SourceCatalog | None=None, area: StudyArea | No
             coverage[category]=Coverage(status='unavailable' if not relevant else 'incomplete' if gaps else 'complete',
                 note='No enabled source for this category.' if not relevant else
                      'At least one feature was quarantined; dataset coverage is incomplete.' if gaps else
-                     ' | '.join(a.source.coverage_note for a in relevant))
+                     ' | '.join(a.source.coverage_note for a in relevant if a.source.coverage_note is not None))
         stage='load-and-analyze';progress(stage)
         with engine.begin() as conn:
             conn.execute(text("SELECT pg_advisory_xact_lock(hashtext('alberta-live:' || CAST(:run AS text)))"),{'run':run_id})

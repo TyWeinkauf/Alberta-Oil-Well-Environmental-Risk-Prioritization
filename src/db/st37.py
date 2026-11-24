@@ -4,11 +4,11 @@ import hashlib
 import json
 from datetime import date, datetime
 from pathlib import Path
-from uuid import NAMESPACE_URL, uuid5
+from uuid import NAMESPACE_URL, UUID, uuid5
 
 from psycopg.types.json import Jsonb
 from pyproj import CRS
-from sqlalchemy import text
+from sqlalchemy import Connection, Engine, text
 
 from src.config import ROOT, load_study_area
 from src.db.migrations import migrate
@@ -16,6 +16,29 @@ from src.db.workflow import serialized_workflow
 from src.sources.st37 import FIELDS, finite_number, parse_date, read_prepared_st37, retained_st37_report, verify_prepared
 
 ST37_LICENSE_NOTE = 'AER ST37 surface-hole workbook for educational noncommercial use. AER source attribution retained.'
+ST37_INVENTORY_PAGE_SIZE = 100
+
+
+def st37_import_snapshots(conn: Connection) -> list[dict]:
+    """Return available inventory headers without initializing a fresh database."""
+    if conn.execute(text("SELECT to_regclass('screening.st37_imports')")).scalar_one() is None:
+        return []
+    return [dict(row) for row in conn.execute(text('''SELECT import_id, imported_at,
+        record_count, accepted_count, quarantined_count, coordinate_crs, crs_evidence, release_date,
+        source_metadata->'source'->>'worksheet' AS worksheet
+        FROM screening.st37_imports ORDER BY imported_at DESC, import_id DESC''')).mappings()]
+
+
+def st37_inventory_page(engine: Engine, import_id: UUID, *, offset: int = 0, licence: str = '') -> list[dict]:
+    """Read at most one page of original worksheet values from the selected snapshot."""
+    licence_filter = 'AND well_licence_number=:licence' if licence else ''
+    with engine.connect() as conn:
+        return [dict(row) for row in conn.execute(text(f'''SELECT source_row, raw_payload,
+            validation_errors, quality_warnings FROM screening.st37_surface_holes
+            WHERE import_id=:id {licence_filter}
+            ORDER BY source_row LIMIT :limit OFFSET :offset'''),
+            {'id': import_id, 'licence': licence, 'limit': ST37_INVENTORY_PAGE_SIZE,
+             'offset': offset}).mappings()]
 
 
 def safe_date(value):

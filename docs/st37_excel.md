@@ -14,6 +14,12 @@ On 23 November 2026, bounded HTTPS range requests recovered the AER Excel ZIP di
 
 The paired November geodatabase's catalog documents NAD83 lineage for the ST37 surface-hole locations. Inspection found 541,190 valid points in EPSG:3400 with NAD83 geographic base CRS EPSG:4269. An exact string join on `Well_Licence_Number` matched every retained row and both coordinate fields exactly. Projecting the workbook columns from EPSG:4269 to EPSG:3400 reproduced all publisher point geometries within **0.000109 m**. This verifies the workbook coordinate interpretation against the corresponding publisher geometry. The residual measures agreement between formats. Ground position accuracy requires independent survey evidence. [AER ST37 distributions](https://www.aer.ca/data-and-performance-reports/statistical-reports/st37) · [Comparison evidence](evidence/st37_datum_2026-11-23.json)
 
+## Alberta boundary and distance accuracy
+
+On 23 November 2026, a point-in-polygon check in EPSG:3400 against Alberta's ATS v4.1 provincial boundary found **541,188 wells on or inside Alberta**. Two reported surface positions were outside, about **135 m** and **492 m** from the boundary. The map excludes those two positions for the audited projected snapshot. **Workbook records** marks them for review and retains the original coordinates. The stored comparison summaries still cover the whole inventory. [Official boundary layer](https://geospatial.alberta.ca/titan/rest/services/boundary/goa_administrative_area/MapServer/0) · [Boundary check evidence](evidence/st37_alberta_boundary_2026-11-23.json)
+
+The app reads `SH_Actual_Longitude` as X and `SH_Actual_Latitude` as Y. It transforms the NAD83 points to WGS84 (EPSG:4326) for display on the Leaflet/OpenStreetMap basemap. PostGIS measures straight-line distance from the well point to the nearest accepted imported water geometry within 500 m in Alberta 10-TM (EPSG:3400). The well positions and hydrography have independent location uncertainty. Distances are for screening, and values near a threshold or the provincial border warrant review of the source geometry. [Hydrography and coverage](hydrography.md#browse-shuffled-well-batches)
+
 ## Actual schema and meaning
 
 Worksheet: `ST37_Surface_Holes`. Every source field is retained in the inventory CSV and in each database row's `raw_payload`.
@@ -68,9 +74,17 @@ DATABASE_URL=postgresql+psycopg://postgres:CHANGE_ME@localhost:5432/alberta_risk
 
 Replace the password, role, host, port and database as needed. URL-encode special characters in the password. The database must already exist; migration enables PostGIS and creates the project schema/tables using an appropriately permitted role. A process-level `DATABASE_URL` takes precedence over `.env`. Never send the password in chat or commit this file.
 
+## Browse the workbook in Streamlit
+
+Launch the app and select **ST37 well inventory** under **Dataset mode**. The verified November snapshot already has stored comparisons, so **Water proximity map** opens by default. Select **Imported water layer** to choose waterbody polygons or stream lines. Use **Next batch** or **Previous batch** to cycle through shuffled well locations, and click a point for its licence, water feature and distance. Enter the full **Well licence number**, including leading zeros, to zoom to a specific well. OpenStreetMap tiles require an internet connection. The well and water layers are read from PostGIS.
+
+Select **Workbook records** to inspect the source coordinates and attributes. Use **Page** to browse 100 rows at a time or keep a licence entered to review the original row for that well. Snapshots without a stored comparison open directly to workbook records. Quarantined rows include their validation errors.
+
+Use **Import ST37 wells** in the sidebar to load the retained `ST37_SH.xlsx` into a fresh PostgreSQL/PostGIS database. The same import controls appear under **PostGIS workflows → Waterways → Alberta waterbodies, streams and ST37** for water comparisons.
+
 ## Stage well information before environmental analysis
 
-In Streamlit, open **PostGIS workflows → Waterways → Alberta waterbodies, streams and ST37**, then click **Import ST37 wells**. The app uses the retained `ST37_SH.xlsx` in the AIDA 1145 data folder. It reuses an intact matching preparation or prepares the workbook before staging the complete inventory.
+The app uses the retained `ST37_SH.xlsx` in the AIDA 1145 data folder. It reuses an intact matching preparation or prepares the workbook before staging the complete inventory.
 
 This creates migration `005_st37_inventory.sql` and transactionally loads all source rows into **`screening.st37_surface_holes`**, with provenance in **`screening.st37_imports`**. The new tables are separate from the published `screening.wells` dataset. The importer retains invalid rows with errors and leaves their geometry null. Date warnings are stored separately from rejection reasons. Without verified datum evidence **every geometry stays null**, while well attributes and original coordinate values are available for inspection.
 

@@ -146,6 +146,7 @@ def refresh_production(engine,run_id: str,*,start: str,end: str,source: Source |
         source=next((s for s in load_source_catalog().sources if s.key=='petrinex_production'),None)
     errors=production_requirements(source)
     if errors:raise ValueError('Production source preflight blocked: '+'; '.join(errors))
+    assert source is not None  # Required by source preflight.
     migrate(engine)
     run=UUID(str(run_id));attempt=uuid4();stage='production:acquire'
     with engine.begin() as conn:

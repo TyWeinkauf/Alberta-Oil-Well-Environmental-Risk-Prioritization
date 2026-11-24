@@ -1,5 +1,6 @@
 """Province inventory, transactional rejection handling and ST37/PostGIS comparison."""
 import json
+from datetime import date
 from pathlib import Path
 from uuid import UUID
 
@@ -10,7 +11,7 @@ from streamlit.testing.v1 import AppTest
 from src.config import ROOT, load_study_area
 from src.db.st37 import import_st37
 from src.db.waterbodies import (
-    compare_st37_waterbodies, latest_province_waterbodies, waterbody_comparison_summary,
+    compare_st37_waterbodies, latest_province_waterbodies, st37_water_comparisons, waterbody_comparison_summary,
     waterbody_map_batch, waterbody_result,
 )
 from src.sources.http import HttpCache
@@ -56,17 +57,27 @@ def test_province_pages_preserve_every_id_then_compare_verified_wells(test_engin
     well_id = UUID(verified['import_id'])
     comparison = compare_st37_waterbodies(test_engine, well_id, water_id)
     assert compare_st37_waterbodies(test_engine, well_id, water_id) == comparison
+    assert [row['comparison_id'] for row in st37_water_comparisons(test_engine, well_id)] == [comparison]
+    assert st37_water_comparisons(test_engine, UUID(raw['import_id'])) == []
     assert latest_province_waterbodies(test_engine)['comparison_id'] == comparison
     summary = waterbody_comparison_summary(test_engine, comparison)
     assert summary['well_count'] == 2 and summary['within_50'] == 1 and summary['unknown_within_500'] == 1
     match = waterbody_result(test_engine, comparison, '0000012')
-    assert match['observed_distance_m'] == 0 and match['nearest_source_feature_id'] == '10'
+    assert match is not None and match['observed_distance_m'] == 0 and match['nearest_source_feature_id'] == '10'
     unmatched = waterbody_result(test_engine, comparison, '0000013')
-    assert unmatched['result_state'] == 'unknown_incomplete_coverage'
+    assert unmatched is not None and unmatched['result_state'] == 'unknown_incomplete_coverage'
     pages = [waterbody_map_batch(test_engine, comparison, seed=123, offset=index, limit=1) for index in (0, 1)]
     assert waterbody_map_batch(test_engine, comparison, seed=123, limit=1) == pages[0]
     assert waterbody_map_batch(test_engine, comparison, seed=123, offset=2, limit=1) == ([], [])
     assert sorted(wells[0]['well_licence_number'] for wells, _ in pages) == ['0000012', '0000013']
+    focused, water = waterbody_map_batch(test_engine, comparison, seed=123, licence='0000012')
+    assert focused[0]['geometry']['coordinates'] == pytest.approx([-115.0, 53.25])
+    assert water[0]['source_feature_id'] == '10'
+    assert waterbody_map_batch(test_engine, comparison, seed=123, licence='12') == ([], [])
+    excluded = (focused[0]['source_row'],)
+    included, _ = waterbody_map_batch(test_engine, comparison, seed=123, excluded_rows=excluded)
+    assert [well['well_licence_number'] for well in included] == ['0000013']
+    assert waterbody_map_batch(test_engine, comparison, seed=123, licence='0000012', excluded_rows=excluded) == ([], [])
     for wells, features in pages:
         point = wells[0]
         assert point['geometry']['type'] == 'Point'
@@ -96,6 +107,20 @@ def test_province_pages_preserve_every_id_then_compare_verified_wells(test_engin
     assert not app.exception
     assert any('well_licence_number' in frame.value and frame.value['well_licence_number'].tolist() == ['0000012']
                for frame in app.dataframe)
+
+    audit = tmp_path / 'alberta_boundary.json'
+    audit.write_text(json.dumps({'st37_snapshot': str(well_id), 'outside_source_rows': excluded}), encoding='utf-8')
+    monkeypatch.setattr(waterbody_workflow, 'ST37_ALBERTA_BOUNDARY_QA', audit)
+    app.selectbox(key='dataset_mode').select('ST37 well inventory').run()
+    assert not app.exception and app.checkbox(key='st37_inventory_basemap').value
+    assert any('Batch 1 of 1 · Showing 1 of 1 wells' in element.value for element in app.caption)
+    app.text_input(key='st37_inventory_licence').input('0000012').run()
+    assert not app.exception and any('position falls outside the Alberta boundary' in e.value for e in app.info)
+    app.radio(key='st37_inventory_view').set_value('Workbook records').run()
+    assert not app.exception
+    outside = app.dataframe[0].value.iloc[0]
+    assert outside['Well_Licence_Number'] == '0000012'
+    assert outside['Boundary review'] == 'Reported position outside Alberta'
 
 
 def test_app_buttons_load_inputs_and_compare_with_read_only_reruns(test_engine, tmp_path, monkeypatch):
@@ -135,7 +160,7 @@ def test_app_buttons_load_inputs_and_compare_with_read_only_reruns(test_engine, 
         app.text_input(key='st37_coordinate_crs').input('EPSG:4326').run()
         assert app.button(key='import_st37_workbook').disabled
         app.text_area(key='st37_crs_evidence').input('Declared WGS84 for the test workbook').run()
-        app.date_input(key='st37_release_date').set_value('2026-11-03').run()
+        app.date_input(key='st37_release_date').set_value(date(2026, 11, 3)).run()
         assert app.button(key='compare_waterbodies').disabled
         assert len(app.session_state.actions) == 2
         app.button(key='import_st37_workbook').click().run()
@@ -208,7 +233,7 @@ def test_app_can_import_and_compare_province_streams(test_engine, tmp_path, monk
         assert not app.exception and not app.error
         comparison_id = compare_st37_waterbodies(test_engine, UUID(wells['import_id']), streams_id)
         row = waterbody_result(test_engine, comparison_id, '0000012')
-        assert row['nearest_source_feature_id'] == '10'
+        assert row is not None and row['nearest_source_feature_id'] == '10'
         assert 0 < row['observed_distance_m'] < 50
         requests = simulator['requests']
         app.run()

@@ -3,13 +3,48 @@ from pathlib import Path
 
 import pytest
 from sqlalchemy import text
+from streamlit.testing.v1 import AppTest
 
 from src.config import ROOT, load_study_area
 from src.db.st37 import import_st37
 from src.sources.st37 import prepare_st37
+from src.ui import waterbody_workflow
 from tests.st37_helpers import synthetic_row, write_workbook
 
 pytestmark = pytest.mark.integration
+
+
+def test_app_imports_and_browses_st37_without_a_water_snapshot(test_engine, tmp_path, monkeypatch):
+    wells = [synthetic_row(f'{number:07}') for number in range(1, 101)]
+    wells.append(synthetic_row('0000101', SH_Actual_Longitude='invalid'))
+    workbook = write_workbook(tmp_path / 'ST37_SH.xlsx', wells)
+    monkeypatch.setattr(waterbody_workflow, 'ST37_WORKBOOK', workbook)
+    monkeypatch.setattr(waterbody_workflow, 'ST37_RAW_ROOT', tmp_path / 'raw')
+    monkeypatch.setenv('DATABASE_URL', test_engine.url.render_as_string(hide_password=False))
+    app = AppTest.from_file(str(ROOT / 'app.py'), default_timeout=30)
+    app.query_params['dataset_mode'] = 'ST37 well inventory'
+    app.run()
+    assert not app.exception and not app.error and not app.dataframe
+    with test_engine.connect() as conn:
+        assert conn.execute(text("SELECT to_regnamespace('screening')")).scalar_one() is None
+
+    app.button(key='import_st37_workbook').click().run()
+    assert not app.exception and not app.error
+    table = app.dataframe[0].value
+    assert len(table) == 100 and table['Well_Licence_Number'].iloc[0] == '0000001'
+    assert any('101 workbook rows · 100 accepted · 1 quarantined' in caption.value for caption in app.caption)
+    app.number_input[0].set_value(2).run()
+    last = app.dataframe[0].value.iloc[0]
+    assert last['Well_Licence_Number'] == '0000101' and last['SH_Actual_Longitude'] == 'invalid'
+    assert last['Validation errors']
+
+    app.text_input(key='st37_inventory_licence').input('0000007').run()
+    assert app.dataframe[0].value['Well_Licence_Number'].tolist() == ['0000007']
+    app.text_input(key='st37_inventory_licence').input('7').run()
+    assert not app.exception and not app.dataframe and any('No rows match' in alert.value for alert in app.info)
+    with test_engine.connect() as conn:
+        assert conn.execute(text('SELECT count(*) FROM screening.st37_imports')).scalar_one() == 1
+        assert conn.execute(text('SELECT count(*) FROM screening.water_imports')).scalar_one() == 0
 
 
 def test_st37_inventory_keeps_rejects_preserves_ids_and_reuses_import_without_publishing(test_engine, tmp_path):

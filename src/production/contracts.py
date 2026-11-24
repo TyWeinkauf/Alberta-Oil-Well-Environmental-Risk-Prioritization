@@ -8,7 +8,7 @@ from decimal import Decimal, InvalidOperation
 from src.config import Source
 
 
-def month(value: str) -> date:
+def month(value: object) -> date:
     if not isinstance(value,str) or not re.fullmatch(r'\d{4}-\d{2}',value):
         raise ValueError('Month must use YYYY-MM')
     try:return date.fromisoformat(value+'-01')
@@ -27,6 +27,7 @@ def validate_production(rows: list[dict], source: Source, start: str, end: str) 
     first,last=month(start),month(end)
     if first>last:raise ValueError('Production window start must not follow its end')
     accepted=[];rejected=[];excluded=0
+    allowed_adjustments = {activity.strip() for activity in source.adjustment_activities}
     ids=Counter(r.get('source_record_id','').strip() for r in rows
                 if isinstance(r,dict) and isinstance(r.get('source_record_id'),str) and r['source_record_id'].strip())
     for index,row in enumerate(rows,1):
@@ -49,9 +50,11 @@ def validate_production(rows: list[dict], source: Source, start: str, end: str) 
             code='invalid_volume';detail='Volume must be finite, with at most 38 significant/integer digits and 12 decimals'
             try:volume=Decimal(str(row.get('volume')))
             except InvalidOperation:raise ValueError(detail) from None
-            if not volume.is_finite() or len(volume.as_tuple().digits)>38 or volume.adjusted()>37 or volume.as_tuple().exponent < -12:
+            parts = volume.as_tuple()
+            if not isinstance(parts.exponent, int) or parts.exponent < -12 or len(parts.digits) > 38 or volume.adjusted() > 37:
                 raise ValueError(detail)
-            if volume<0 and not (row['activity'] in source.adjustment_activities and source.adjustment_note):
+            activity = row['activity'].strip()
+            if volume<0 and not (activity in allowed_adjustments and source.adjustment_note):
                 code='undocumented_adjustment';detail='Negative values require a documented allowed adjustment activity'
                 raise ValueError(detail)
             code='invalid_attribution';detail='Reporting level must be well, facility or unknown'
@@ -61,7 +64,7 @@ def validate_production(rows: list[dict], source: Source, start: str, end: str) 
             if any(row.get(k) is not None and not isinstance(row[k],str) for k in ('reporting_facility_id','well_identifier_nullable')):
                 raise ValueError(detail)
             accepted.append({'source_record_id':identifier.strip(),'period':period,'volume':volume,
-                'product':row['product'].strip(),'activity':row['activity'].strip(),'unit':row['unit'].strip(),
+                'product':row['product'].strip(),'activity':activity,'unit':row['unit'].strip(),
                 'attribution_level':level,'reporting_facility_id':row.get('reporting_facility_id') or None,
                 'well_identifier_nullable':row.get('well_identifier_nullable') or None,
                 'record_reference':reference})

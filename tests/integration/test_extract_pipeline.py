@@ -33,10 +33,12 @@ def test_regional_filegdb_packages_load_atomically_keep_margin_and_reject_wider_
                 publisher='Synthetic test publisher',metadata_url='https://example.invalid/synthetic',
                 downloaded_at=datetime(2026,11,8,tzinfo=timezone.utc),license_note='Project-authored synthetic only',
                 coverage_note='Closed synthetic world covers region and margin')
-    sources=[Source(key='aer_wells',file_layer='surface',field_mapping={'source_well_id':'ID','licensee_name':'COMPANY'},**shared)]
+    sources=[Source.model_validate(shared | dict(
+        key='aer_wells',file_layer='surface',field_mapping={'source_well_id':'ID','licensee_name':'COMPANY'}))]
     for key,category,layer in [('alberta_water','water','water'),('alberta_protected_areas','protected_area','parks'),
                                ('federal_critical_habitat','critical_habitat','habitat')]:
-        sources.append(Source(key=key,category=category,file_layer=layer,field_mapping={'source_feature_id':'ID'},**shared))
+        sources.append(Source.model_validate(shared | dict(
+            key=key,category=category,file_layer=layer,field_mapping={'source_feature_id':'ID'})))
     prepared=[]
     for source in sources:
         report=prepare_extract(source,area,tmp_path/'extracts')

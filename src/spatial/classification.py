@@ -1,6 +1,7 @@
 """Shared threshold/category logic for CLI results and the future map UI."""
 import math
 from collections import defaultdict
+from typing import TypedDict
 
 from src.contracts.spatial import CATEGORIES
 
@@ -61,7 +62,16 @@ def summarize_wells(rows: list[dict], categories: list[str], threshold_m: int = 
     return sorted(output, key=lambda r: (r['source_well_id'], r['well_pk']))
 
 
-def compare_selections(baseline: list[dict], changed: list[dict]) -> dict:
+class SelectionComparison(TypedDict):
+    changed_well_ids: list[str]
+    changed_count: int
+    baseline_matched: int
+    changed_matched: int
+    baseline_unknown: int
+    changed_unknown: int
+
+
+def compare_selections(baseline: list[dict], changed: list[dict]) -> SelectionComparison:
     """Report stable well identities affected by a changed category/threshold selection."""
     before = {row['well_pk']: row for row in baseline}
     after = {row['well_pk']: row for row in changed}

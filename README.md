@@ -10,6 +10,8 @@ The retained all-real pipeline targets AER wells, Alberta surface water, protect
 
 ## What works now
 
+**ST37 well inventory.** Choose **ST37 well inventory** under **Dataset mode**. The **Water proximity map** plots the verified November well positions on OpenStreetMap in shuffled batches of up to 10,000. Switch between imported waterbodies and streams, or enter an exact licence with leading zeros to zoom to one well and read its stored distance. **Workbook records** keeps all 541,190 original rows available, including two reported locations outside Alberta. [Map, workbook import and coordinate accuracy](docs/st37_excel.md#browse-the-workbook-in-streamlit)
+
 **Alberta hydrography and ST37 — 23 November 2026.** In Streamlit, open **PostGIS workflows → Waterways → Alberta waterbodies, streams and ST37**. The project database contains the projected November ST37 snapshot and both provincial water comparisons, with one result per accepted well in each. The water snapshots retain 38 polygon and two stream geometry rejects, and unmatched wells are unknown where coverage is incomplete. [Stored results and comparison workflow](docs/hydrography.md#project-database-status)
 
 **Waterways update, 10 November 2026:** open **Waterways → Import waterways** in the app sidebar, then **Preview imported waterways**. Verified official waterbody polygons/stream lines are imported for the study area plus 500 m; seasonal sources are optional. Actual validation: 33 default or 121 seasonal features, one invalid polygon quarantined, all 142 tests/type checks and running-app checks pass. Your database needs actual `.env` values. See [waterways setup and quality details](docs/hydrography.md).

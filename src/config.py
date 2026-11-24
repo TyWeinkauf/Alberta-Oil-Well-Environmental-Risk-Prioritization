@@ -109,13 +109,13 @@ class StudyArea(StrictModel):
 
 
 def load_study_area(path: Path | None = None) -> StudyArea:
-    return StudyArea.model_validate(yaml.safe_load((path or ROOT / 'config/study_area.yml').read_text()))
+    return StudyArea.model_validate(yaml.safe_load((path or ROOT / 'config/study_area.yml').read_text(encoding='utf-8')))
 
 
 def load_source_catalog(path: Path | None = None) -> SourceCatalog:
     load_dotenv(ROOT / '.env', override=False)
     path = Path(path or os.getenv('SOURCE_CATALOG_PATH') or ROOT / 'config/source_catalog.yml').resolve()
-    catalog = SourceCatalog.model_validate(yaml.safe_load(path.read_text()))
+    catalog = SourceCatalog.model_validate(yaml.safe_load(path.read_text(encoding='utf-8')))
     for source in catalog.sources:
         if source.local_path is not None:
             source.local_path = (path.parent / source.local_path).resolve()

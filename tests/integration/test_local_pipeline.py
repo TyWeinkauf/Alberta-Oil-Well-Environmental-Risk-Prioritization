@@ -28,16 +28,17 @@ def file_catalog(tmp_path,request):
                 coverage_note='Synthetic complete pilot and 500 m margin')
     wells=tmp_path/'wells.csv'
     wells.write_text('ID,COMPANY,X,Y\n000123,Synthetic Company,500000,5900000\n')
-    sources=[Source(key='aer_wells',kind='file',local_path=wells,native_crs='EPSG:3400',
-        csv_x_field='X',csv_y_field='Y',field_mapping={'source_well_id':'ID','licensee_name':'COMPANY'},**shared)]
+    sources=[Source.model_validate(shared | dict(key='aer_wells',kind='file',local_path=wells,native_crs='EPSG:3400',
+        csv_x_field='X',csv_y_field='Y',field_mapping={'source_well_id':'ID','licensee_name':'COMPANY'}))]
     polygon=Polygon([(499900,5899900),(500100,5899900),(500100,5900100),(499900,5900100)])
     for key,category in [('alberta_water','water'),('alberta_protected_areas','protected_area'),
                          ('federal_critical_habitat','critical_habitat')]:
         path=tmp_path/(key+'.geojson')
         geometry=LineString([(500050,5899900),(500050,5900100)]) if category=='water' else polygon
         gpd.GeoDataFrame({'ID':['001'],'NAME':['Synthetic geometry']},geometry=[geometry],crs=3400).to_crs(4326).to_file(path,driver='GeoJSON')
-        sources.append(Source(key=key,kind='file',local_path=path,native_crs='EPSG:4326',category=category,
-            field_mapping={'source_feature_id':'ID','name':'NAME'},**shared))
+        sources.append(Source.model_validate(shared | dict(
+            key=key,kind='file',local_path=path,native_crs='EPSG:4326',category=category,
+            field_mapping={'source_feature_id':'ID','name':'NAME'})))
     production=tmp_path/'production.csv'
     production.write_text('ID,MONTH,PRODUCT,ACTIVITY,VOLUME,UNIT,LEVEL,WELL\n'
                           'one,2026-09,OIL,PRODUCTION,12.50,m3,W,000123\n'
@@ -47,12 +48,12 @@ def file_catalog(tmp_path,request):
         with zipfile.ZipFile(zipped,'w') as archive:
             archive.write(production,'production.csv')
         production=zipped
-    sources.append(Source(key='petrinex_production',kind='file',role='production',local_path=production,
+    sources.append(Source.model_validate(shared | dict(key='petrinex_production',kind='file',role='production',local_path=production,
         reporting_level='mixed',attribution_values={'W':'well','F':'facility'},
         well_identifier_field='source_well_id',identifier_namespace='synthetic-local-id',
         join_evidence='Both project-authored fixtures use exactly the same synthetic identifier.',
         field_mapping={'source_record_id':'ID','period':'MONTH','product':'PRODUCT','activity':'ACTIVITY',
-                       'volume':'VOLUME','unit':'UNIT','attribution_level':'LEVEL','well_identifier_nullable':'WELL'},**shared))
+                       'volume':'VOLUME','unit':'UNIT','attribution_level':'LEVEL','well_identifier_nullable':'WELL'})))
     path=tmp_path/'catalog.yml'
     path.write_text(yaml.safe_dump(SourceCatalog(sources=sources).model_dump(mode='json')))
     return path
@@ -110,11 +111,14 @@ def test_missing_or_invalid_local_refresh_retains_prior_results(test_engine,file
     catalog=load_source_catalog(file_catalog);first=run(test_engine,catalog,tmp_path)
     source=next(s for s in catalog.sources if s.role=='production')
     batch=refresh(test_engine,first['run_id'],source,tmp_path)
+    assert source.local_path is not None
     source.local_path.write_text('wrong,headers\nnot,a production record\n')
     with pytest.raises(ValueError,match='headers'):
         refresh(test_engine,first['run_id'],source,tmp_path)
     assert production_view(test_engine,first['run_id'])['batch']['batch_id']==batch['batch_id']
-    next(s for s in catalog.sources if s.key=='alberta_water').local_path.unlink()
+    water_path = next(s for s in catalog.sources if s.key=='alberta_water').local_path
+    assert water_path is not None
+    water_path.unlink()
     with pytest.raises(ValueError,match='regular file'):
         run(test_engine,catalog,tmp_path)
     assert load_dashboard(test_engine,first['run_id'])['ingestion_status']=='succeeded'

@@ -49,19 +49,21 @@ def local_sources(tmp_path):
                            [{'type':'Feature','properties':{'OID':1,'LABEL':f'Synthetic revision {state["revision"]}'},'geometry':geometry}]}
                 body=json.dumps(value).encode();content='application/json'
             self.send_response(200);self.send_header('Content-Type',content);self.end_headers();self.wfile.write(body)
-        def log_message(self,*args):pass
+        def log_message(self, format, *args):pass
     server=ThreadingHTTPServer(('127.0.0.1',0),Handler)
     thread=threading.Thread(target=server.serve_forever,daemon=True);thread.start()
     base=f'http://127.0.0.1:{server.server_port}'
     shared={'enabled':True,'verified':True,'native_crs':'EPSG:3400',
             'license_note':'Synthetic local protocol test data, not an official product licence',
             'coverage_note':'Synthetic test source covers the pilot plus its 500 m margin.'}
-    sources=[Source(key='aer_wells',kind='file',url=base+'/wells.zip',
-                    field_mapping={'source_well_id':'IDENT','licensee_name':'COMPANY'},**shared)]
+    sources=[Source.model_validate(shared | dict(
+        key='aer_wells',kind='file',url=base+'/wells.zip',
+        field_mapping={'source_well_id':'IDENT','licensee_name':'COMPANY'}))]
     for layer,(key,category) in enumerate([('alberta_water','water'),('alberta_protected_areas','protected_area'),
                                           ('federal_critical_habitat','critical_habitat')]):
-        sources.append(Source(key=key,kind='arcgis',url=base+'/MapServer',layer_id=layer,category=category,
-                              field_mapping={'source_feature_id':'OID','name':'LABEL'},**shared))
+        sources.append(Source.model_validate(shared | dict(
+            key=key,kind='arcgis',url=base+'/MapServer',layer_id=layer,category=category,
+            field_mapping={'source_feature_id':'OID','name':'LABEL'})))
     try:yield SourceCatalog(sources=sources),state
     finally:server.shutdown();server.server_close();thread.join()
 

@@ -135,7 +135,7 @@ def show_classroom():
         selection.update(categories=categories, threshold_m=threshold, matches_only=matches_only)
         baseline = [row for row in filtered_wells(dashboard, categories, BASELINE_M, companies, statuses)
                     if licence in row['source_well_id'].casefold()]
-        comparison = {'baseline_m': BASELINE_M, 'changed_m': threshold, **compare_selections(baseline, population)}
+        comparison = compare_selections(baseline, population)
         map_bytes = show_map(dashboard, visible, region, selection)
     show_details(visible, [row for row in dashboard['proximity'] if row['category'] in categories])
     show_table(visible, projected)
@@ -146,7 +146,8 @@ def show_classroom():
                  f'{comparison["changed_count"]} wells changed.')
         if comparison['changed_well_ids']:
             st.text('Changed well licences: ' + ', '.join(comparison['changed_well_ids']))
-    show_exports(visible, package, selection, comparison, map_bytes)
+    comparison_export = None if comparison is None else {'baseline_m': BASELINE_M, 'changed_m': threshold, **comparison}
+    show_exports(visible, package, selection, comparison_export, map_bytes)
 
 
 def show_map(dashboard: dict, records: list[dict], region: str, selection: dict) -> bytes:

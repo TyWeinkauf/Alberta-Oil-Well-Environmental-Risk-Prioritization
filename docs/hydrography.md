@@ -30,11 +30,11 @@ Results are stored in `screening.st37_waterbody_proximity` and tied to both immu
 
 ### Browse shuffled well batches
 
-Open a stored comparison and use **Next batch** or **Previous batch** under **ST37 wells and water features**. The app shuffles the selected well snapshot for the session and splits it into non-overlapping batches of up to 10,000 points. The 541,190-well snapshot has 55 batches. The last batch contains 1,190 wells, and the controls wrap at either end. Switching between waterbody and stream comparisons for the same well snapshot keeps the same well batch.
+Open **ST37 well inventory → Water proximity map** and choose an **Imported water layer**. The same map is available in the stored comparison under **PostGIS workflows**. Use **Next batch** or **Previous batch** to cycle through non-overlapping shuffled batches of up to 10,000 well points. The 541,188 positions on or inside Alberta span 55 batches, with 1,188 wells in the last batch. The controls wrap at either end. Switching water layers keeps the same wells in view. [Boundary check and coordinate accuracy](st37_excel.md#alberta-boundary-and-distance-accuracy)
 
-The map draws each batch's well locations and the nearest accepted water features recorded within 500 m. Click a point for the original licence and its stored distance or coverage result. Water shapes are simplified for display. The full comparison supplies the summary counts and exact licence lookup.
+The map draws each batch's well locations and the nearest accepted water features recorded within 500 m. Click a point for its licence, named feature when available, and stored distance or coverage result. Enter the exact licence to zoom to a single well. Map geometries are displayed in WGS84, and water shapes are simplified for display with a 25 m tolerance. PostGIS measures distances on the full accepted geometry in EPSG:3400. The threshold summary still counts the full 541,190-well comparison.
 
-On 23 November 2026, SQL and Edge checks against project PostGIS verified 10,000 points in batches 1 and 2 and 1,190 in batch 55, with no repeated wells across those batches. The browser rendered the same batch against stream lines and waterbody polygons. `python -m pytest -q` passed all 149 tests in a disposable PostGIS database.
+On 23 November 2026, Edge loaded OpenStreetMap tiles, cycled from the first batch to the last and back, and showed the same well position for licence `0321984` on both water layers. The stored distances of **195.26 m to Checker Lake** and **199.29 m to the Gregoire River** matched an independent PostGIS `ST_Distance` calculation using the imported geometries.
 
 ### Project database status
 

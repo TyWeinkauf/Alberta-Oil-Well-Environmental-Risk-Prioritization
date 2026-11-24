@@ -53,8 +53,9 @@ def main():
                                 downloaded_at=datetime(2026,11,8,tzinfo=timezone.utc),
                                 metadata_url='https://example.invalid/synthetic-benchmark',license_note='Synthetic benchmark only',
                                 coverage_note='Closed synthetic world covers the pilot and its 500 m margin.')
-                    sources=[Source(key='aer_wells',local_path=wells,native_crs='EPSG:3400',csv_x_field='X',csv_y_field='Y',
-                                    field_mapping={'source_well_id':'ID','licensee_name':'COMPANY'},**common)]
+                    sources=[Source.model_validate(common | dict(
+                        key='aer_wells',local_path=wells,native_crs='EPSG:3400',csv_x_field='X',csv_y_field='Y',
+                        field_mapping={'source_well_id':'ID','licensee_name':'COMPANY'}))]
                     for key,category in [('alberta_water','water'),('alberta_protected_areas','protected_area'),('federal_critical_habitat','critical_habitat')]:
                         geometries=[]
                         for i in range(10):
@@ -63,8 +64,9 @@ def main():
                                 Polygon([(x,5899900),(x+20,5899900),(x+20,5900600),(x,5900600)]))
                         path=root/(key+'.geojson')
                         gpd.GeoDataFrame({'ID':[str(i) for i in range(10)]},geometry=geometries,crs=3400).to_crs(4326).to_file(path,driver='GeoJSON')
-                        sources.append(Source(key=key,category=category,local_path=path,native_crs='EPSG:4326',
-                                              field_mapping={'source_feature_id':'ID'},**common))
+                        sources.append(Source.model_validate(common | dict(
+                            key=key,category=category,local_path=path,native_crs='EPSG:4326',
+                            field_mapping={'source_feature_id':'ID'})))
                     catalog=SourceCatalog(sources=sources)
                     area=load_study_area(ROOT/'config/study_area.live.yml')
                     def run():

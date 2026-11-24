@@ -34,8 +34,9 @@ def test_invalid_production_is_explicitly_quarantined(change,reason):
 
 def test_documented_adjustments_decimal_precision_and_window_accounting():
     source=spec(adjustment_activities=['ADJ'],adjustment_note='Synthetic documented signed corrections')
-    result=validate_production([row(activity='ADJ',volume='-0.125'),row(source_record_id='OUTSIDE',period='2026-07')],source,'2026-08','2026-10')
+    result=validate_production([row(activity=' ADJ ',volume='-0.125'),row(source_record_id='OUTSIDE',period='2026-07')],source,'2026-08','2026-10')
     assert result.accepted[0]['volume']==Decimal('-0.125')
+    assert result.accepted[0]['activity']=='ADJ'
     assert result.excluded_records==1 and result.input_records==2
     duplicate=validate_production([row(),row()],source,'2026-08','2026-10')
     assert len(duplicate.rejected)==2 and all(r['reason_code']=='duplicate_id' for r in duplicate.rejected)

@@ -18,6 +18,7 @@ from src.ui.classroom import show_classroom
 from src.ui.map import build_map
 from src.ui.model import filtered_wells, map_selection
 from src.ui.water import show_waterways
+from src.ui.waterbody_workflow import show_st37_inventory
 from src.sources.pipeline import live_requirements, run_live
 from src.production.store import load_demo_production, production_requirements, refresh_production
 from src.production.view import production_view
@@ -44,27 +45,30 @@ def choose_well():
 def main():
     st.title('Alberta well screening')
     st.caption('Educational proximity screening — not an environmental risk assessment or an operational recommendation.')
-    mode = st.sidebar.selectbox('Dataset mode', ['Classroom demo', 'PostGIS workflows'],
+    mode = st.sidebar.selectbox('Dataset mode', ['Classroom demo', 'ST37 well inventory', 'PostGIS workflows'],
                                 key='dataset_mode', bind='query-params')
     if st.session_state.get('previous_dataset_mode') != mode:
         st.session_state.previous_dataset_mode = mode
         st.session_state.pop('classroom_scope' if mode == 'Classroom demo' else 'previous_run', None)
     if mode == 'Classroom demo':
         show_classroom()
-    else:
-        show_postgis()
-
-
-def show_postgis():
-    st.caption('Run the synthetic fixture or use verified real sources from the configured catalogue.')
+        return
     try:
         engine = connection_pool(database_url())
     except Exception:
         st.error('Configure DATABASE_URL for local PostgreSQL/PostGIS using README.md, then restart the app.')
         st.stop()
     st.session_state.setdefault('busy',False)
-    st.session_state.setdefault('selected_well',None)
     st.session_state.setdefault('actions',[])
+    if mode == 'ST37 well inventory':
+        show_st37_inventory(engine)
+    else:
+        show_postgis(engine)
+
+
+def show_postgis(engine):
+    st.caption('Run the synthetic fixture or use verified real sources from the configured catalogue.')
+    st.session_state.setdefault('selected_well',None)
     st.sidebar.header('Workflow')
     demo_requested=st.sidebar.button('Use demo dataset',type='primary',disabled=st.session_state.busy)
     try:
@@ -138,7 +142,7 @@ def show_postgis():
     if production_source is not None:
         production_blockers=production_requirements(production_source)
         with st.sidebar.expander('Production'):
-            window=yaml.safe_load((ROOT/'config/production_window.yml').read_text())
+            window=yaml.safe_load((ROOT/'config/production_window.yml').read_text(encoding='utf-8'))
             production_start=st.text_input('Production start month',window['start'])
             production_end=st.text_input('Production end month',window['end'])
             demo_production=st.button('Load synthetic production demo',disabled=st.session_state.busy or dashboard['study_area']['mode']!='demo')

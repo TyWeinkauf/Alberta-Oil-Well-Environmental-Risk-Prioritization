@@ -1,4 +1,5 @@
 """Read the active batch only; verified well charts and facility audits stay separate."""
+from datetime import date
 from uuid import UUID
 
 from sqlalchemy import text
@@ -35,5 +36,5 @@ def production_view(engine,run_id: str,well_pk: int | None=None) -> dict:
         result['quarantine']=[dict(row) for row in conn.execute(text('''SELECT record_reference,reason_code,reason_detail,raw_payload_reference
             FROM screening.production_quarantine WHERE batch_id=:batch ORDER BY record_reference'''),{'batch':batch['batch_id']}).mappings()]
         for key,value in list(result['batch'].items()):
-            if hasattr(value,'isoformat'):result['batch'][key]=value.isoformat()
+            if isinstance(value, date):result['batch'][key]=value.isoformat()
         return result

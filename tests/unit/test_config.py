@@ -1,3 +1,5 @@
+import json
+
 import pytest
 from pydantic import ValidationError
 
@@ -17,6 +19,17 @@ def test_only_verified_water_sources_are_enabled_and_config_is_stable():
 def test_unverified_enabled_source_fails_closed():
     with pytest.raises(ValidationError, match='verified URL'):
         Source(key='unverified', kind='arcgis', enabled=True)
+
+
+def test_utf8_yaml_preserves_names(tmp_path):
+    catalogue = tmp_path / 'sources.yml'
+    area = tmp_path / 'area.yml'
+    catalogue.write_text('sources:\n  - key: example\n    kind: file\n    publisher: Québec\n', encoding='utf-8')
+    settings = load_study_area().model_dump(mode='json') | {'name': 'Étude régionale'}
+    area.write_text(json.dumps(settings, ensure_ascii=False), encoding='utf-8')
+
+    assert load_source_catalog(catalogue).sources[0].publisher == 'Québec'
+    assert load_study_area(area).name == 'Étude régionale'
 
 
 def test_discovered_endpoint_cannot_enable_an_uninspected_source():

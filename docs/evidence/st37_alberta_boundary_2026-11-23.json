@@ -1,0 +1,30 @@
+{
+  "date_checked": "2026-11-23",
+  "st37_snapshot": "4bb2ac73-df0b-5698-9295-c86028ced168",
+  "projected_crs": "EPSG:3400",
+  "source_coordinate_crs": "EPSG:4269",
+  "boundary_layer": "https://geospatial.alberta.ca/titan/rest/services/boundary/goa_administrative_area/MapServer/0",
+  "boundary_query": "where=1%3D1&outFields=OBJECTID%2CPROV_NAME&returnGeometry=true&outSR=3400&f=geojson",
+  "boundary_sha256": "3516e13a309ca88a1de67e52510ee7d559cbddcbe84ff56ead250eded15dfa01",
+  "boundary_features": 1,
+  "boundary_source_attributes": {
+    "OBJECTID": 1,
+    "PROV_NAME": "ALBERTA"
+  },
+  "method": "Point-in-polygon on stored NAD83 / Alberta 10-TM points. Includes points touching the official ATS v4.1 border.",
+  "wells_total": 541190,
+  "wells_unprojected": 0,
+  "wells_on_or_inside": 541188,
+  "wells_outside": 2,
+  "outside_distance_m": {
+    "nearest": 134.6139535250246,
+    "farthest": 491.60620927051815,
+    "within_10m": 0,
+    "within_100m": 0,
+    "within_500m": 2
+  },
+  "outside_source_rows": [
+    255346,
+    269530
+  ]
+}

@@ -4,6 +4,7 @@ from uuid import NAMESPACE_URL, UUID, uuid5
 from sqlalchemy import text
 
 from src.db.migrations import migrate
+from src.db.st37 import st37_import_snapshots
 from src.db.workflow import serialized_workflow
 from src.sources.waterbodies import PROVINCE_SCOPE, PROVINCE_SCOPES, PROVINCE_STREAM_SCOPE
 
@@ -65,15 +66,12 @@ def latest_province_waterbodies(engine):
 def waterbody_workflow_snapshots(engine) -> tuple[list[dict], list[dict]]:
     """Return inventory headers for the app, including database versions before migration 007."""
     with engine.connect() as conn:
-        tables = conn.execute(text("""SELECT to_regclass('screening.st37_imports') IS NOT NULL AS wells,
-            to_regclass('screening.water_imports') IS NOT NULL AS water""")).mappings().one()
-        wells = conn.execute(text('''SELECT import_id,imported_at,accepted_count,
-            coordinate_crs,crs_evidence FROM screening.st37_imports
-            ORDER BY imported_at DESC,import_id DESC''')).mappings() if tables['wells'] else ()
+        wells = st37_import_snapshots(conn)
+        has_water = conn.execute(text("SELECT to_regclass('screening.water_imports') IS NOT NULL")).scalar_one()
         water = conn.execute(text('''SELECT import_id,imported_at,feature_count,quarantined_count,coverage_status,
             manifest->>'scope' AS scope FROM screening.water_imports WHERE (manifest->>'scope')=ANY(:scopes)
-            ORDER BY imported_at DESC,import_id DESC'''), {'scopes': list(PROVINCE_SCOPES)}).mappings() if tables['water'] else ()
-        return [dict(row) for row in wells], [dict(row) for row in water]
+            ORDER BY imported_at DESC,import_id DESC'''), {'scopes': list(PROVINCE_SCOPES)}).mappings() if has_water else ()
+        return wells, [dict(row) for row in water]
 
 
 def find_waterbody_comparison(engine, st37_import_id: UUID, water_import_id: UUID) -> UUID | None:
@@ -83,6 +81,19 @@ def find_waterbody_comparison(engine, st37_import_id: UUID, water_import_id: UUI
         return conn.execute(text('''SELECT comparison_id FROM screening.waterbody_comparisons
             WHERE st37_import_id=:st37 AND water_import_id=:water'''),
             {'st37': st37_import_id, 'water': water_import_id}).scalar_one_or_none()
+
+
+def st37_water_comparisons(engine, st37_import_id: UUID) -> list[dict]:
+    """List the stored water comparisons for this exact well snapshot."""
+    with engine.connect() as conn:
+        if not conn.execute(text("SELECT to_regclass('screening.waterbody_comparisons')")).scalar_one():
+            return []
+        return [dict(row) for row in conn.execute(text('''SELECT c.comparison_id,
+            w.import_id,w.imported_at,w.feature_count,w.coverage_status,w.manifest->>'scope' AS scope
+            FROM screening.waterbody_comparisons c
+            JOIN screening.water_imports w ON w.import_id=c.water_import_id
+            WHERE c.st37_import_id=:st37
+            ORDER BY w.imported_at DESC,w.import_id DESC'''), {'st37': st37_import_id}).mappings()]
 
 
 def waterbody_comparison_summary(engine, comparison_id: UUID) -> dict:
@@ -109,17 +120,24 @@ def waterbody_comparison_summary(engine, comparison_id: UUID) -> dict:
 
 
 def waterbody_map_batch(engine, comparison_id: UUID, seed: int, offset: int = 0,
-                        limit: int = WELL_MAP_BATCH_SIZE) -> tuple[list[dict], list[dict]]:
-    """Read a slice of a stable shuffle and its matching display geometries."""
+                        limit: int = WELL_MAP_BATCH_SIZE, *, licence: str = '',
+                        excluded_rows: tuple[int, ...] = ()) -> tuple[list[dict], list[dict]]:
+    """Read a shuffled page or an exact licence and its matching display geometries."""
     if offset < 0 or not 1 <= limit <= WELL_MAP_BATCH_SIZE:
         raise ValueError('A map batch must contain between 1 and 10,000 wells')
     with engine.connect() as conn:
         # Page the narrow proximity rows before loading well attributes or geometries.
-        wells = [dict(row) for row in conn.execute(text('''WITH batch AS MATERIALIZED (
+        licence_filter = '''AND p.source_row IN (
+            SELECT s.source_row FROM screening.waterbody_comparisons c
+            JOIN screening.st37_surface_holes s ON s.import_id=c.st37_import_id
+            WHERE c.comparison_id=:id AND s.well_licence_number=:licence
+        )''' if licence else ''
+        boundary_filter = 'AND p.source_row <> ALL(:excluded_rows)' if excluded_rows else ''
+        wells = [dict(row) for row in conn.execute(text(f'''WITH batch AS MATERIALIZED (
                 SELECT p.source_row, p.observed_distance_m, p.nearest_source_feature_id,
                     CAST(md5(CAST(:seed AS text) || ':' || p.source_row) AS uuid) AS shuffle_key
                 FROM screening.st37_waterbody_proximity p
-                WHERE p.comparison_id=:id
+                WHERE p.comparison_id=:id {licence_filter} {boundary_filter}
                 ORDER BY shuffle_key, p.source_row LIMIT :limit OFFSET :offset
             )
             SELECT s.source_row, s.well_licence_number, b.observed_distance_m, b.nearest_source_feature_id,
@@ -128,7 +146,8 @@ def waterbody_map_batch(engine, comparison_id: UUID, seed: int, offset: int = 0,
             JOIN screening.waterbody_comparisons c ON c.comparison_id=:id
             JOIN screening.st37_surface_holes s ON s.import_id=c.st37_import_id AND s.source_row=b.source_row
             ORDER BY b.shuffle_key, b.source_row'''),
-            {'id': comparison_id, 'seed': seed, 'offset': offset, 'limit': limit}).mappings()]
+            {'id': comparison_id, 'seed': seed, 'offset': offset, 'limit': limit, 'licence': licence,
+             'excluded_rows': list(excluded_rows)}).mappings()]
         feature_ids = sorted({row['nearest_source_feature_id'] for row in wells
                               if row['nearest_source_feature_id'] is not None})
         if not feature_ids:

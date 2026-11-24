@@ -9,7 +9,7 @@ import pytest
 from shapely.geometry import LineString, Point
 
 from src.config import Source, load_study_area
-from src.sources.extract import inspect_original, parent_fingerprint, prepare_extract
+from src.sources.extract import extract_lineage, inspect_original, parent_fingerprint, prepare_extract
 from src.sources.files import acquire_file
 from src.sources.http import HttpCache
 from src.spatial.extent import study_geometry
@@ -97,6 +97,15 @@ def test_mismatched_scope_mapping_and_corrupt_package_are_rejected(tmp_path,area
     report_path.write_text(report_path.read_text().replace(report['package_sha256'],'0'*64))
     with pytest.raises(ValueError,match='immutable regional extract is corrupt'):
         prepare_extract(source(path),area,tmp_path/'extracts')
+
+
+def test_nonobject_regional_manifest_is_rejected(tmp_path, area):
+    archive = tmp_path / 'invalid.zip'
+    with zipfile.ZipFile(archive, 'w') as package:
+        package.writestr('extract_manifest.json', '[]')
+
+    with pytest.raises(ValueError, match='format/version'):
+        extract_lineage(archive, source(archive), area)
 
 
 def test_limit_failure_is_not_a_truncated_extract_and_preserves_previous_package(tmp_path,area):

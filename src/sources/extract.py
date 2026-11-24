@@ -7,6 +7,7 @@ import tempfile
 import zipfile
 from contextlib import closing
 from pathlib import Path
+from typing import TypedDict
 
 import pyogrio
 from pyproj import Transformer
@@ -20,6 +21,12 @@ FORMAT = 'alberta-regional-extract'
 DATA_MEMBER = 'extract.gpkg'
 MANIFEST_MEMBER = 'extract_manifest.json'
 MAX_MANIFEST_BYTES = 4*1024**2
+
+
+class _FileFingerprint(TypedDict):
+    name: str
+    size_bytes: int
+    sha256: str
 
 
 def _digest(path):
@@ -41,7 +48,7 @@ def parent_fingerprint(path: Path):
         raise ValueError('Provide an existing local GIS file/ZIP or a .gdb directory')
     if not 1<=len(files)<=10000:
         raise ValueError('Original GIS input has an unsupported file count')
-    inventory=[]
+    inventory: list[_FileFingerprint] = []
     for item in files:
         before=item.stat();checksum=_digest(item);after=item.stat()
         if (before.st_size,before.st_mtime_ns,before.st_ctime_ns)!=(after.st_size,after.st_mtime_ns,after.st_ctime_ns):
@@ -101,7 +108,7 @@ def extract_lineage(path: Path, source: Source, area: StudyArea):
         if len(matches)!=1 or matches[0].file_size>MAX_MANIFEST_BYTES:
             raise ValueError('Regional extract manifest is ambiguous or too large')
         manifest=json.loads(archive.read(matches[0]))
-        if manifest.get('format')!=FORMAT or manifest.get('version')!=1:
+        if not isinstance(manifest, dict) or manifest.get('format')!=FORMAT or manifest.get('version')!=1:
             raise ValueError('Regional extract manifest format/version is unsupported')
         if manifest.get('study_area')!=area.model_dump(mode='json'):
             raise ValueError('Regional extract was prepared for a different study area; prepare another extract')
@@ -114,21 +121,24 @@ def extract_lineage(path: Path, source: Source, area: StudyArea):
         members=[m for m in archive.infolist() if m.filename==DATA_MEMBER]
         if len(members)!=1:
             raise ValueError('Regional extract must contain exactly one expected GeoPackage')
+        digest = hashlib.sha256()
         with archive.open(members[0]) as handle:
-            if hashlib.file_digest(handle,'sha256').hexdigest()!=manifest.get('data_sha256'):
-                raise ValueError('Regional extract data checksum mismatch')
+            while chunk := handle.read(256 * 1024):
+                digest.update(chunk)
+        if digest.hexdigest() != manifest.get('data_sha256'):
+            raise ValueError('Regional extract data checksum mismatch')
         return manifest
 
 
 def _existing(folder,source,area,identity):
-    report=json.loads((folder/'report.json').read_text())
+    report=json.loads((folder/'report.json').read_text(encoding='utf-8'))
     path=folder/'extract.zip'
     if report.get('artifact_id')!=identity or _digest(path)!=report.get('package_sha256'):
         raise ValueError('Existing immutable regional extract is corrupt')
     if extract_lineage(path,source,area)!=report['manifest']:
         raise ValueError('Regional extract report does not match its embedded provenance')
     expected={**report['catalogue_entry'],'local_path':'extract.zip'}
-    if json.loads((folder/'source.json').read_text())!={'sources':[expected]}:
+    if json.loads((folder/'source.json').read_text(encoding='utf-8'))!={'sources':[expected]}:
         raise ValueError('Regional extract catalogue fragment is corrupt')
     return {**report,'package_path':str(path)}
 
@@ -146,6 +156,8 @@ def prepare_extract(source: Source, area: StudyArea, output_root: Path, *,
         raise ValueError('Regional preparation requires an explicit identifier field mapping')
     progress('Inspecting original GIS layer')
     dataset,layer,inspection=inspect_original(source)
+    original_path = source.local_path
+    assert original_path is not None  # Required by inspect_original.
     if layer is None:
         raise ValueError('Original input has multiple layers; inspect and configure file_layer')
     metadata=inspection['metadata'];crs=verify_crs(metadata['crs'],source)
@@ -153,7 +165,7 @@ def prepare_extract(source: Source, area: StudyArea, output_root: Path, *,
     if not set(fields)<=set(metadata['fields']):
         raise ValueError('Configured fields are absent from the original layer')
     progress('Hashing original input without copying it')
-    parent=parent_fingerprint(source.local_path)
+    parent=parent_fingerprint(original_path)
     request={'version':1,'source':source.model_dump(mode='json'),'parent_input':parent,
              'study_area':area.model_dump(mode='json'),'max_records':max_records,'max_output_bytes':max_output_bytes,
              'gdal_version':pyogrio.__gdal_version_string__,'pyogrio_version':pyogrio.__version__}
@@ -162,7 +174,7 @@ def prepare_extract(source: Source, area: StudyArea, output_root: Path, *,
     if folder.exists():
         progress('Verifying and reusing the existing regional package')
         report=_existing(folder,source,area,identity)
-        if parent_fingerprint(source.local_path)!=parent:
+        if parent_fingerprint(original_path)!=parent:
             raise ValueError('Original input changed during preparation')
         return report
     environmental=source.category is not None
@@ -215,7 +227,7 @@ def prepare_extract(source: Source, area: StudyArea, output_root: Path, *,
         if package.stat().st_size>max_output_bytes:
             raise ValueError('Regional package exceeds the output byte cap; choose a smaller area')
         progress('Checking the original checksum again before publishing')
-        if parent_fingerprint(source.local_path)!=parent:
+        if parent_fingerprint(original_path)!=parent:
             raise ValueError('Original input changed during preparation; no extract was published')
         prepared={**source.model_dump(mode='json'),'local_path':'extract.zip',
                   'file_layer':'extract','archive_member':DATA_MEMBER,'native_crs':crs.to_string()}

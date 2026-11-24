@@ -25,7 +25,7 @@ def serve(route):
             self.send_response(status)
             for key,value in headers.items():self.send_header(key,value)
             self.end_headers();self.wfile.write(body)
-        def log_message(self,*args):pass
+        def log_message(self, format, *args):pass
     server=ThreadingHTTPServer(('127.0.0.1',0),Handler)
     thread=threading.Thread(target=server.serve_forever,daemon=True);thread.start()
     try:yield f'http://127.0.0.1:{server.server_port}'

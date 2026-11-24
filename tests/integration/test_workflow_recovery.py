@@ -109,9 +109,11 @@ with engine.connect() as conn:
 '''
     child=subprocess.Popen([sys.executable,'-c',code],cwd=ROOT,env=os.environ.copy(),
                            stdin=subprocess.PIPE,stdout=subprocess.PIPE,stderr=subprocess.DEVNULL,text=True)
+    stdin, stdout = child.stdin, child.stdout
+    assert stdin is not None and stdout is not None
     ready=threading.Event();output=[]
     def read_ready():
-        output.append(child.stdout.readline().strip());ready.set()
+        output.append(stdout.readline().strip());ready.set()
     reader=threading.Thread(target=read_ready,daemon=True);reader.start()
     try:
         assert ready.wait(5), 'Child failed to acquire its test lock'
@@ -141,7 +143,7 @@ with engine.connect() as conn:
         if child.poll() is None:
             child.kill();child.wait(timeout=5)
         reader.join(timeout=5)
-        child.stdin.close();child.stdout.close()
+        stdin.close();stdout.close()
 
 
 def test_manifest_export_failure_keeps_previous_active_production(test_engine,tmp_path,monkeypatch):

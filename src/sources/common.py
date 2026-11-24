@@ -16,7 +16,7 @@ def query_bounds(area: StudyArea, *, environmental: bool):
     return (geometry.buffer(500) if environmental else geometry).bounds
 
 
-def mapped_record(source: Source, properties: dict, geometry: dict, *, environmental: bool):
+def mapped_record(source: Source, properties: dict, geometry: dict | None, *, environmental: bool):
     required='source_feature_id' if environmental else 'source_well_id'
     if required not in source.field_mapping:
         raise ValueError(f'{source.key}: verified mapping for {required} is required')

@@ -79,12 +79,14 @@ def build_map(records: list[dict], features: list[dict], categories: list[str], 
 
 
 def build_waterbody_batch_map(wells: list[dict], water: list[dict], *,
-                              coverage_incomplete: bool, basemap: bool) -> folium.Map:
+                              coverage_incomplete: bool, basemap: bool, focus: bool = False) -> folium.Map:
     view = leaflet_view([54.5, -115], 5, basemap, prefer_canvas=True)
+    feature_labels = {row['source_feature_id']: popup_text(row['name'] or f'Feature {row["source_feature_id"]}')
+                      for row in water}
     if water:
         folium.GeoJson({'type': 'FeatureCollection', 'features': [
             {'type': 'Feature', 'id': row['source_feature_id'], 'geometry': row['geometry'],
-             'properties': {'name': popup_text(row['name'] or f'Feature {row["source_feature_id"]}')}}
+             'properties': {'name': feature_labels[row['source_feature_id']]}}
             for row in water
         ]}, style_function=lambda _: {'color': '#247ba0', 'weight': 2, 'fillOpacity': 0.2},
             tooltip=folium.GeoJsonTooltip(fields=['name'], aliases=['Water feature'])).add_to(view)
@@ -98,13 +100,14 @@ def build_waterbody_batch_map(wells: list[dict], water: list[dict], *,
                               'properties': {
                                   'licence': popup_text(row['well_licence_number']),
                                   'distance': f'{distance:,.2f} m' if distance is not None else unmatched,
+                                  'feature': feature_labels.get(row['nearest_source_feature_id'], '—'),
                                   'color': WELL_COLORS[classify_distance(distance)['color']],
                               }})
     markers = folium.GeoJson({'type': 'FeatureCollection', 'features': well_features},
-                             marker=folium.CircleMarker(radius=3, stroke=False, fill=True, fill_opacity=0.78),
+                             marker=folium.CircleMarker(radius=7 if focus else 3, stroke=False, fill=True, fill_opacity=0.78),
                              style_function=lambda feature: {'fillColor': feature['properties']['color']},
-                             popup=folium.GeoJsonPopup(fields=['licence', 'distance'],
-                                                       aliases=['ST37 licence', 'Observed result']))
+                             popup=folium.GeoJsonPopup(fields=['licence', 'distance', 'feature'],
+                                                       aliases=['ST37 licence', 'Observed result', 'Water feature']))
     markers.add_to(view)
-    view.fit_bounds(cast(list[list[float]], markers.get_bounds()), padding=(20, 20), max_zoom=12)
+    view.fit_bounds(cast(list[list[float]], markers.get_bounds()), padding=(20, 20), max_zoom=15 if focus else 12)
     return view
