@@ -23,6 +23,8 @@ For each row, choose one status: **Not started**, **In progress**, **Ready for f
 
 **Classroom water revision — 23 November 2026.** The default app and revised teacher ZIP use imported Alberta water geometries and selectable buffer distances, with the map and exports showing the same filtered wells. The original course review candidates document the earlier synthetic-water demonstration. [Revised classroom package and verification](../docs/classroom_demo.md)
 
+**Map legends — 24 November 2026.** The live Classroom demo and ST37 maps and the classroom HTML download include a legend for the well colors and water feature symbol. Edge verified the live and offline views. [Classroom map controls](../docs/classroom_demo.md)
+
 See [the Markdown design and implementation tracker](../DESIGN.md#13-phased-codex-implementation-plan) for phase and step status. Update it when implementation work starts or completes. The course checkpoints in this file require their own evidence and are not automatically completed by environment setup.
 
 ## How to ask for feedback

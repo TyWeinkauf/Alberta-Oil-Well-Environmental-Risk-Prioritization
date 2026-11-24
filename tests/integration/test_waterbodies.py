@@ -51,6 +51,7 @@ def test_province_pages_preserve_every_id_then_compare_verified_wells(test_engin
     workbook = write_workbook(tmp_path / 'st37.xlsx', [
         synthetic_row('0000012'), synthetic_row('0000013', SH_Actual_Latitude=53.29),
         synthetic_row('0000014', SH_Actual_Latitude=53.2525),
+        synthetic_row('0000015', SH_Actual_Longitude='invalid'),
     ])
     preparation = prepare_st37(workbook, load_study_area(), tmp_path / 'st37')
     report = Path(preparation['artifacts']['inventory']['path']).with_name('report.json')
@@ -143,6 +144,24 @@ def test_province_pages_preserve_every_id_then_compare_verified_wells(test_engin
     outside = app.dataframe[0].value.iloc[0]
     assert outside['Well_Licence_Number'] == '0000012'
     assert outside['Boundary review'] == 'Reported position outside Alberta'
+    assert outside['Observed water distance (m)'] == 0
+    assert outside['Water proximity band'] == '≤50 m'
+    app.text_input(key='st37_inventory_licence').input('').run()
+    records = app.dataframe[0].value.set_index('Well_Licence_Number')
+    assert records.loc['0000013', 'Water proximity band'] == 'No match within 500 m'
+    assert records.loc['0000014', 'Water proximity band'] == '>100–250 m'
+    band_filter = next(widget for widget in app.multiselect if widget.label == 'Water proximity band')
+    band_key = band_filter.key
+    assert band_key is not None
+    band_filter.set_value(['within_250m']).run()
+    assert app.dataframe[0].value['Well_Licence_Number'].tolist() == ['0000014']
+    app.text_input(key='st37_inventory_licence').input('0000012').run()
+    assert not app.dataframe and any('match the licence and selected filters' in item.value for item in app.info)
+    app.text_input(key='st37_inventory_licence').input('').run()
+    app.multiselect(key=band_key).set_value(['within_50m', 'none_within_500m']).run()
+    assert app.dataframe[0].value['Well_Licence_Number'].tolist() == ['0000012', '0000013']
+    app.multiselect(key=band_key).set_value(['unavailable']).run()
+    assert app.dataframe[0].value['Well_Licence_Number'].tolist() == ['0000015']
 
 
 def test_app_buttons_load_inputs_and_compare_with_read_only_reruns(test_engine, tmp_path, monkeypatch):
@@ -291,3 +310,13 @@ def test_app_can_import_and_compare_province_streams(test_engine, tmp_path, monk
         assert simulator['requests'] == requests
         app.selectbox(key='province_water_snapshot').select(UUID(water['import_id'])).run()
         assert not app.exception and app.button(key='compare_waterbodies').label == 'Run waterbody comparison'
+        app.button(key='compare_waterbodies').click().run()
+        inventory = AppTest.from_file(str(ROOT / 'app.py'), default_timeout=20)
+        inventory.query_params['dataset_mode'] = 'ST37 well inventory'
+        inventory.run()
+        inventory.radio(key='st37_inventory_view').set_value('Workbook records').run()
+        assert not inventory.exception and not inventory.error
+        table = inventory.dataframe[0].value.set_index('Well_Licence_Number')
+        assert 'Intersects water' not in table.columns
+        assert table.loc['0000012', 'Observed water distance (m)'] == 0
+        assert table.loc['0000012', 'Water proximity band'] == '≤50 m'

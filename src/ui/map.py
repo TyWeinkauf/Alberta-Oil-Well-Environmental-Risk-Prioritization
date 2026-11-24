@@ -5,16 +5,64 @@ from functools import lru_cache
 from typing import cast
 
 import folium
-from branca.element import Element, Figure
+from branca.element import Element, Figure, MacroElement, Template
+from folium.utilities import JsCode
 
 from src.config import ROOT
-from src.spatial.classification import classify_distance
+from src.spatial.classification import BAND_COLORS, classify_distance
 
+WATER_COLOR = '#247ba0'
 SCENARIO_COLORS = {
-    'water': '#247ba0', 'wetland': '#087e66', 'protected_area': '#527629',
+    'water': WATER_COLOR, 'wetland': '#087e66', 'protected_area': '#527629',
     'critical_habitat': '#8849a7', 'esa': '#9b521e',
 }
 WELL_COLORS = {'red': '#b91c1c', 'orange': '#c2410c', 'yellow': '#ca8a04', 'blue': '#1d4ed8', 'gray': '#64748b'}
+WELL_DISTANCE_LABELS = {50: '≤50 m', 100: '>50–100 m', 250: '>100–250 m', 500: '>250–500 m'}
+
+
+class ProximityLegend(MacroElement):
+    """A Leaflet control shared by the interactive maps and standalone export."""
+
+    _template = Template("""
+        {% macro script(this, kwargs) %}
+        const proximityLegend = L.control({position: 'bottomright'});
+        proximityLegend.onAdd = function () {
+            const legend = L.DomUtil.create('div', 'well-proximity-legend');
+            legend.setAttribute('role', 'group');
+            legend.setAttribute('aria-label', 'Map legend');
+            legend.style.cssText = 'background:#fff;color:#1f2937;border:1px solid #cbd5e1;border-radius:6px;'
+                + 'box-shadow:0 1px 5px #0004;font:13px/1.35 system-ui,sans-serif;'
+                + 'max-width:min(200px,53vw);padding:8px 10px;';
+            legend.innerHTML = {{ this.markup | tojson }};
+            L.DomEvent.disableClickPropagation(legend);
+            L.DomEvent.disableScrollPropagation(legend);
+            return legend;
+        };
+        proximityLegend.addTo({{ this._parent.get_name() }});
+        {% endmacro %}
+    """)
+
+    def __init__(self, distance_basis: str | None, unmatched: str, *, water_label: str | None = None):
+        super().__init__()
+        bands = (
+            [(WELL_COLORS[BAND_COLORS[band]], label) for band, label in WELL_DISTANCE_LABELS.items()]
+            if distance_basis else []
+        )
+        bands.append((WELL_COLORS['gray'], unmatched))
+        rows = [
+            '<li style="display:flex;align-items:baseline;gap:7px;margin-top:3px">'
+            f'<span aria-hidden="true" style="flex:none;align-self:center;width:9px;height:9px;border-radius:50%;'
+            f'background:{color}"></span>{html.escape(label)}</li>'
+            for color, label in bands
+        ]
+        if water_label:
+            rows.append('<li style="display:flex;align-items:center;gap:7px;margin-top:6px">'
+                        f'<span aria-hidden="true" style="flex:none;width:9px;border-top:2px solid {WATER_COLOR}">'
+                        f'</span>{html.escape(water_label)}</li>')
+        subtitle = (f'<div style="margin-top:2px;color:#475569;font-size:11px">'
+                    f'{html.escape(distance_basis)} (EPSG:3400)</div>') if distance_basis else ''
+        self.markup = ('<strong style="font-size:13px">Well proximity</strong>'
+                       f'{subtitle}<ul style="list-style:none;margin:3px 0 0;padding:0">{"".join(rows)}</ul>')
 
 
 def popup_text(value: str) -> str:
@@ -62,7 +110,7 @@ def build_map(records: list[dict], features: list[dict], categories: list[str], 
         for feature in features:
             if feature['feature_type'] in categories:
                 illustrative = feature.get('provenance') == 'synthetic_environment'
-                color = SCENARIO_COLORS[feature['feature_type']] if illustrative else '#247ba0'
+                color = SCENARIO_COLORS[feature['feature_type']] if illustrative else WATER_COLOR
                 folium.GeoJson(feature['geometry'],name=feature['source_feature_id'],
                     tooltip=popup_text(feature['name']) if 'provenance' in feature else None,
                     style_function=lambda _, feature_color=color: {
@@ -99,7 +147,7 @@ def build_waterbody_batch_map(wells: list[dict], water: list[dict], *,
             {'type': 'Feature', 'id': row['source_feature_id'], 'geometry': row['geometry'],
              'properties': {'name': feature_labels[row['source_feature_id']]}}
             for row in water
-        ]}, style_function=lambda _: {'color': '#247ba0', 'weight': 2, 'fillOpacity': 0.2},
+        ]}, style_function=lambda _: {'color': WATER_COLOR, 'weight': 2, 'fillOpacity': 0.2},
             tooltip=folium.GeoJsonTooltip(fields=['name'], aliases=['Water feature'])).add_to(view)
 
     well_features = []
@@ -115,10 +163,20 @@ def build_waterbody_batch_map(wells: list[dict], water: list[dict], *,
                                   'color': WELL_COLORS[classify_distance(distance)['color']],
                               }})
     markers = folium.GeoJson({'type': 'FeatureCollection', 'features': well_features},
-                             marker=folium.CircleMarker(radius=7 if focus else 3, stroke=False, fill=True, fill_opacity=0.78),
+                             marker=folium.CircleMarker(radius=8 if focus else 3, stroke=False, fill=True, fill_opacity=0.78),
                              style_function=lambda feature: {'fillColor': feature['properties']['color']},
                              popup=folium.GeoJsonPopup(fields=['licence', 'distance', 'feature'],
                                                        aliases=['ST37 licence', 'Observed result', 'Water feature']))
     markers.add_to(view)
+    if not focus:
+        # Resize after zoom settles so the canvas can batch repaints of the well layer.
+        view.on(zoomend=JsCode(f'''function () {{
+            const radius = 3 + Math.min(5, Math.max(0, this.getZoom() - 8) * 0.75);
+            {markers.get_name()}.eachLayer(function (well) {{
+                if (well.getRadius() !== radius) well.setRadius(radius);
+            }});
+        }}'''))
     view.fit_bounds(cast(list[list[float]], markers.get_bounds()), padding=(20, 20), max_zoom=15 if focus else 12)
+    ProximityLegend('Distance to nearest accepted water feature', unmatched,
+                    water_label='Accepted water feature').add_to(view)
     return view

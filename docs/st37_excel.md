@@ -80,6 +80,10 @@ Launch the app and select **ST37 well inventory** under **Dataset mode**. The ve
 
 Select **Workbook records** to inspect the source coordinates and attributes. Use **Page** to browse 100 rows at a time or keep a licence entered to review the original row for that well. Snapshots without a stored comparison open directly to workbook records. Quarantined rows include their validation errors.
 
+Use **Licensee**, **Licence status**, **Energy development category** and **Water proximity band** to filter the selected snapshot. You can select multiple values in each dropdown. The results match any selected value within a dropdown and all populated dropdowns together. Filter changes return to page 1. An exact licence search also uses the selected filters. The water dropdown uses the same nearest accepted match as the table and includes **No match within 500 m** for compared wells with no accepted match.
+
+**Observed water distance (m)** and **Water proximity band** appear beside the licence. The table uses the closest accepted match from the latest stored comparison for each available water layer. An exact distance of 0 m means the point touches or lies inside an accepted water feature. **No match within 500 m** describes the search over accepted features, with no measured distance. Rows without a stored result show **Unavailable**.
+
 Use **Import ST37 wells** in the sidebar to load the retained `ST37_SH.xlsx` into a fresh PostgreSQL/PostGIS database. Create water comparisons from saved snapshot IDs using the comparison command. [Import and compare](hydrography.md#import-and-compare)
 
 ## Stage well information before environmental analysis

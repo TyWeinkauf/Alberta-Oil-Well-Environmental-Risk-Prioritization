@@ -84,7 +84,7 @@ The starter also proposes flood and ecological-occurrence categories. They are o
 
 Use **Buffer distance** to switch between **50 m**, **100 m**, **250 m** and **500 m**. The imported-water demo opens at 500 m with **Only show wells within the buffer** checked. Each setting includes observed distances at or below the selected radius. Uncheck the box to show all wells matching the other filters. The map, well table and downloads follow the same selection. Choose a well to display its buffer at the selected radius.
 
-The baseline comparison identifies well licences and counts that change at each distance. The map and exports label the imported water results and simulated categories. Licence status comes from the workbook.
+The baseline comparison identifies well licences and counts that change at each distance. The legend on the right shows what the well colors mean for the selected layers and identifies the water feature symbol when water is selected. The downloaded map HTML includes the legend offline. The map and exports label the imported water results and simulated categories. Licence status comes from the workbook.
 
 Classify from unrounded distances in metres, with inclusive thresholds. A well inside a synthetic polygon has distance zero. Missing synthetic input/coverage is unknown, not a healthy zero or a real-data assurance. Complete coverage means only that the generator supplied the declared synthetic scenario. An absent feature within 500 m does not mean the real well is environmentally safe.
 

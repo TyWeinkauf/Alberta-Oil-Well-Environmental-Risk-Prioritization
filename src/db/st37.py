@@ -14,9 +14,12 @@ from src.config import ROOT, load_study_area
 from src.db.migrations import migrate
 from src.db.workflow import serialized_workflow
 from src.sources.st37 import FIELDS, finite_number, parse_date, read_prepared_st37, retained_st37_report, verify_prepared
+from src.spatial.classification import THRESHOLDS
 
 ST37_LICENSE_NOTE = 'AER ST37 surface-hole workbook for educational noncommercial use. AER source attribution retained.'
 ST37_INVENTORY_PAGE_SIZE = 100
+ST37_INVENTORY_FILTER_FIELDS = ('licensee_name', 'licence_status', 'energy_development_category')
+ST37_INVENTORY_OPTION_LIMIT = 4_000
 
 
 def st37_import_snapshots(conn: Connection) -> list[dict]:
@@ -29,16 +32,71 @@ def st37_import_snapshots(conn: Connection) -> list[dict]:
         FROM screening.st37_imports ORDER BY imported_at DESC, import_id DESC''')).mappings()]
 
 
-def st37_inventory_page(engine: Engine, import_id: UUID, *, offset: int = 0, licence: str = '') -> list[dict]:
-    """Read at most one page of original worksheet values from the selected snapshot."""
-    licence_filter = 'AND well_licence_number=:licence' if licence else ''
+def st37_inventory_filter_options(engine: Engine, import_id: UUID, field: str, search: str = '') -> list[str]:
+    """Read distinct options with an extra value to detect when a search is needed."""
+    if field not in ST37_INVENTORY_FILTER_FIELDS:
+        raise ValueError('Unknown ST37 workbook filter')
+    search_clause = f"AND strpos(lower(COALESCE({field}, '')), lower(:search)) > 0" if search else ''
     with engine.connect() as conn:
-        return [dict(row) for row in conn.execute(text(f'''SELECT source_row, raw_payload,
-            validation_errors, quality_warnings FROM screening.st37_surface_holes
-            WHERE import_id=:id {licence_filter}
-            ORDER BY source_row LIMIT :limit OFFSET :offset'''),
-            {'id': import_id, 'licence': licence, 'limit': ST37_INVENTORY_PAGE_SIZE,
-             'offset': offset}).mappings()]
+        return list(conn.execute(text(f'''SELECT DISTINCT COALESCE({field}, '') AS option
+            FROM screening.st37_surface_holes
+            WHERE import_id=:id {search_clause}
+            ORDER BY option LIMIT :limit'''),
+            {'id': import_id, 'search': search, 'limit': ST37_INVENTORY_OPTION_LIMIT + 1}).scalars())
+
+
+def inventory_selection(import_id: UUID, filters: dict[str, list[str]] | None, licence: str,
+                        water_comparison_ids: tuple[UUID, ...]) -> tuple[str, dict]:
+    source = 'screening.st37_surface_holes AS well'
+    conditions = ['well.import_id=:id']
+    params: dict = {'id': import_id}
+    if licence:
+        conditions.append('well.well_licence_number=:licence')
+        params['licence'] = licence
+    for field in ST37_INVENTORY_FILTER_FIELDS:
+        values = (filters or {}).get(field)
+        if values:
+            match = f'well.{field}=ANY(:{field})'
+            conditions.append(f'({match} OR well.{field} IS NULL)' if '' in values else match)
+            params[field] = values
+    bands = (filters or {}).get('water_band')
+    if bands:
+        params['water_bands'] = bands
+        band = "'unavailable'"
+        if water_comparison_ids:
+            # Classify the minimum across the same stored comparisons used by the table.
+            ranges = ' '.join(f"WHEN min(p.observed_distance_m)<={metres} THEN 'within_{metres}m'"
+                              for metres in THRESHOLDS)
+            source += f''' LEFT JOIN (
+                SELECT p.source_row, CASE {ranges} ELSE 'none_within_500m' END AS band
+                FROM screening.st37_waterbody_proximity p
+                JOIN screening.waterbody_comparisons c ON c.comparison_id=p.comparison_id
+                WHERE c.st37_import_id=:id AND p.comparison_id=ANY(:water_comparisons)
+                GROUP BY p.source_row
+            ) AS water ON water.source_row=well.source_row'''
+            params['water_comparisons'] = list(water_comparison_ids)
+            band = "COALESCE(water.band, 'unavailable')"
+        conditions.append(f'{band}=ANY(:water_bands)')
+    return f"{source} WHERE {' AND '.join(conditions)}", params
+
+
+def st37_inventory_count(engine: Engine, import_id: UUID, filters: dict[str, list[str]], *,
+                         water_comparison_ids: tuple[UUID, ...] = ()) -> int:
+    selection, params = inventory_selection(import_id, filters, '', water_comparison_ids)
+    with engine.connect() as conn:
+        return conn.execute(text(f'SELECT count(*) FROM {selection}'), params).scalar_one()
+
+
+def st37_inventory_page(engine: Engine, import_id: UUID, *, offset: int = 0, licence: str = '',
+                        filters: dict[str, list[str]] | None = None,
+                        water_comparison_ids: tuple[UUID, ...] = ()) -> list[dict]:
+    """Read at most one page of original worksheet values from the selected snapshot."""
+    selection, params = inventory_selection(import_id, filters, licence, water_comparison_ids)
+    with engine.connect() as conn:
+        return [dict(row) for row in conn.execute(text(f'''SELECT well.source_row, well.raw_payload,
+            well.validation_errors, well.quality_warnings FROM {selection}
+            ORDER BY well.source_row LIMIT :limit OFFSET :offset'''),
+            params | {'limit': ST37_INVENTORY_PAGE_SIZE, 'offset': offset}).mappings()]
 
 
 def safe_date(value):

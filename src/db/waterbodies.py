@@ -96,6 +96,19 @@ def st37_water_comparisons(engine, st37_import_id: UUID) -> list[dict]:
             ORDER BY w.imported_at DESC,w.import_id DESC'''), {'st37': st37_import_id}).mappings()]
 
 
+def st37_workbook_water_results(engine, st37_import_id: UUID, source_rows: list[int],
+                               comparison_ids: tuple[UUID, ...]) -> dict[int, dict]:
+    """Read the closest accepted water match for each requested workbook row."""
+    with engine.connect() as conn:
+        rows = conn.execute(text('''SELECT p.source_row, min(p.observed_distance_m) AS observed_distance_m
+            FROM screening.st37_waterbody_proximity p
+            JOIN screening.waterbody_comparisons c ON c.comparison_id=p.comparison_id
+            WHERE c.st37_import_id=:st37 AND p.comparison_id=ANY(:comparisons) AND p.source_row=ANY(:source_rows)
+            GROUP BY p.source_row'''),
+            {'st37': st37_import_id, 'source_rows': source_rows, 'comparisons': list(comparison_ids)}).mappings()
+        return {row['source_row']: dict(row) for row in rows}
+
+
 def waterbody_comparison_summary(engine, comparison_id: UUID) -> dict:
     with engine.connect() as conn:
         row = conn.execute(text('''SELECT c.comparison_id,c.st37_import_id,c.water_import_id,c.well_count,

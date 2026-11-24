@@ -14,7 +14,7 @@ from src.demo.regions import REGION_IDS
 from src.demo.spatial import WATER_PROVENANCE, selected_buffer
 from src.exports.selection import FIELDS as EXPORT_FIELDS, csv_bytes, geojson_bytes, table_records
 from src.spatial.classification import THRESHOLDS, classify_distance, compare_selections
-from src.ui.map import buffer_group, build_map
+from src.ui.map import ProximityLegend, buffer_group, build_map
 from src.ui.model import filtered_wells, map_selection
 
 MISSING = 'Not available from this source'
@@ -196,7 +196,25 @@ def show_map(dashboard: dict, records: list[dict], region: str, selection: dict)
     notice = (f'Imported Alberta waterways · Other layers and their distances are synthetic · {SOURCE_CREDIT}'
               if dashboard['manifest']['mode'] == IMPORTED_WATER_MODE
               else f'Synthetic environmental features and simulated distances · {SOURCE_CREDIT}')
+    distance_basis = selection['distance_basis']
+    distance_label = {
+        'imported_water': 'Distance to nearest accepted water feature',
+        'imported_water_and_simulated': 'Imported water and simulated layers',
+        'simulated': 'Simulated distance to selected layers',
+        None: None,
+    }[distance_basis]
+    if distance_basis is None:
+        unmatched = 'No layers selected'
+    elif selection.get('water_coverage_status') == 'incomplete':
+        unmatched = ('Unknown within 500 m' if distance_basis == 'imported_water'
+                     else 'Unknown or no match within 500 m')
+    else:
+        unmatched = 'No match within 500 m'
+    water_label = None
+    if 'water' in selection['categories']:
+        water_label = 'Simulated water feature' if distance_basis == 'simulated' else 'Accepted water feature'
     view = build_map(*view_args, basemap=basemap, notice=notice, bounds=bounds)
+    ProximityLegend(distance_label, unmatched, water_label=water_label).add_to(view)
     well = next((row for row in records if row['well_pk'] == st.session_state.classroom_selected), None)
     geometry = selected_buffer(well, threshold) if well is not None else None
     event = st_folium(
@@ -209,14 +227,12 @@ def show_map(dashboard: dict, records: list[dict], region: str, selection: dict)
     if selected is not None and selected != st.session_state.classroom_selected:
         st.session_state.classroom_selected = selected
         st.rerun()
-    caption = ('Imported-water colors use the nearest accepted geometry. ' if selection['distance_basis'] == 'imported_water' else '')
-    st.caption(f'{caption}Distance bands in EPSG:3400 metres. Red ≤50 m, orange >50–100 m, yellow >100–250 m, '
-               'blue >250–500 m. Gray indicates unknown proximity or no match.')
     if well is not None:
         st.caption(f'{threshold} m buffer around selected well {well["source_well_id"]}.')
     coverage = 'Imported water coverage is incomplete. ' if selection.get('water_coverage_status') == 'incomplete' else ''
     export_map = build_map(*view_args, basemap=basemap,
                            notice=f'{dashboard["manifest"]["disclaimer"]} {coverage}{SOURCE_CREDIT}', bounds=bounds)
+    ProximityLegend(distance_label, unmatched, water_label=water_label).add_to(export_map)
     # streamlit-folium rewrites component IDs, including IDs on dynamic layers.
     if geometry is not None:
         buffer_group(geometry, threshold).add_to(export_map)

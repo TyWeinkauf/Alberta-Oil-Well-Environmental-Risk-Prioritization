@@ -6,7 +6,7 @@ from sqlalchemy import text
 from streamlit.testing.v1 import AppTest
 
 from src.config import ROOT, load_study_area
-from src.db.st37 import import_st37
+from src.db.st37 import import_st37, st37_inventory_filter_options
 from src.sources.st37 import prepare_st37
 from src.ui import waterbody_workflow
 from tests.st37_helpers import synthetic_row, write_workbook
@@ -16,7 +16,9 @@ pytestmark = pytest.mark.integration
 
 def test_app_imports_and_browses_st37_without_a_water_snapshot(test_engine, tmp_path, monkeypatch):
     wells = [synthetic_row(f'{number:07}') for number in range(1, 101)]
-    wells.append(synthetic_row('0000101', SH_Actual_Longitude='invalid'))
+    wells[0] = synthetic_row('0000001', Licensee='Another Licensee', Licence_Status='Suspended')
+    wells.append(synthetic_row('0000101', SH_Actual_Longitude='invalid', Licensee='Another Licensee',
+                               Energy_Devlpmt_Category_Type='Alternate category'))
     workbook = write_workbook(tmp_path / 'ST37_SH.xlsx', wells)
     monkeypatch.setattr(waterbody_workflow, 'ST37_WORKBOOK', workbook)
     monkeypatch.setattr(waterbody_workflow, 'ST37_RAW_ROOT', tmp_path / 'raw')
@@ -32,11 +34,37 @@ def test_app_imports_and_browses_st37_without_a_water_snapshot(test_engine, tmp_
     assert not app.exception and not app.error
     table = app.dataframe[0].value
     assert len(table) == 100 and table['Well_Licence_Number'].iloc[0] == '0000001'
+    assert table['Water proximity band'].eq('Unavailable').all()
+    assert table['Observed water distance (m)'].isna().all()
     assert any('101 workbook rows · 100 accepted · 1 quarantined' in caption.value for caption in app.caption)
     app.number_input[0].set_value(2).run()
     last = app.dataframe[0].value.iloc[0]
     assert last['Well_Licence_Number'] == '0000101' and last['SH_Actual_Longitude'] == 'invalid'
     assert last['Validation errors']
+
+    snapshot_id = app.session_state.st37_inventory_snapshot
+    assert st37_inventory_filter_options(test_engine, snapshot_id, 'licensee_name', 'aNoThEr') == ['Another Licensee']
+    licensees, statuses, categories, bands = app.multiselect
+    licensee_key, status_key, category_key, band_key = licensees.key, statuses.key, categories.key, bands.key
+    assert licensee_key is not None and status_key is not None and category_key is not None and band_key is not None
+    assert bands.options == ['Unavailable']
+    bands.set_value(['unavailable']).run()
+    assert len(app.dataframe[0].value) == 100
+    app.multiselect(key=licensee_key).set_value(['Another Licensee']).run()
+    assert app.number_input[0].value == 1
+    assert app.dataframe[0].value['Well_Licence_Number'].tolist() == ['0000001', '0000101']
+    assert any('2 matching workbook records' in caption.value for caption in app.caption)
+    app.multiselect(key=status_key).set_value(['Issued']).run()
+    app.multiselect(key=category_key).set_value(['Synthetic category']).run()
+    assert not app.dataframe and any('No workbook records match the selected filters' in alert.value for alert in app.info)
+    app.multiselect(key=category_key).set_value(['Alternate category']).run()
+    assert app.dataframe[0].value['Well_Licence_Number'].tolist() == ['0000101']
+    app.text_input(key='st37_inventory_licence').input('0000001').run()
+    assert not app.dataframe and any('match the licence and selected filters' in alert.value for alert in app.info)
+    app.text_input(key='st37_inventory_licence').input('0000101').run()
+    assert app.dataframe[0].value['Well_Licence_Number'].tolist() == ['0000101']
+    for key in (licensee_key, status_key, category_key, band_key):
+        app.multiselect(key=key).set_value([]).run()
 
     app.text_input(key='st37_inventory_licence').input('0000007').run()
     assert app.dataframe[0].value['Well_Licence_Number'].tolist() == ['0000007']

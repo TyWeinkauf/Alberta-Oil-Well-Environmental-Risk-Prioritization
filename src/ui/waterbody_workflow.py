@@ -9,21 +9,34 @@ import streamlit as st
 from sqlalchemy.exc import SQLAlchemyError
 
 from src.config import ROOT
-from src.db.st37 import ST37_INVENTORY_PAGE_SIZE, import_st37_workbook, st37_import_snapshots, st37_inventory_page
+from src.db.st37 import (
+    ST37_INVENTORY_OPTION_LIMIT, ST37_INVENTORY_PAGE_SIZE, import_st37_workbook, st37_import_snapshots,
+    st37_inventory_count, st37_inventory_filter_options, st37_inventory_page,
+)
 from src.db.waterbodies import (
     WELL_MAP_BATCH_SIZE, compare_st37_waterbodies, find_waterbody_comparison, st37_water_comparisons, waterbody_buffer_count,
-    waterbody_comparison_summary, waterbody_map_batch, waterbody_result, waterbody_workflow_snapshots,
+    st37_workbook_water_results, waterbody_comparison_summary, waterbody_map_batch, waterbody_result,
+    waterbody_workflow_snapshots,
 )
 from src.db.workflow import WorkflowBusy
 from src.demo.spatial import selected_buffer
 from src.sources.st37 import FIELDS as ST37_FIELDS
 from src.sources.waterbodies import PROVINCE_STREAM_SCOPE, import_province_streams, import_province_waterbodies
-from src.spatial.classification import THRESHOLDS
+from src.spatial.classification import THRESHOLDS, classify_distance
 from src.ui.map import buffer_group, build_waterbody_batch_map
 
 ST37_WORKBOOK = ROOT / 'aida-final-project-tyler-weinkauf/courses/AIDA-1145/data/ST37_SH.xlsx'
 ST37_RAW_ROOT = ROOT / 'data/raw/st37'
 ST37_ALBERTA_BOUNDARY_QA = ROOT / 'docs/evidence/st37_alberta_boundary_2026-11-23.json'
+WORKBOOK_WATER_BANDS = {
+    'within_50m': '≤50 m', 'within_100m': '>50–100 m', 'within_250m': '>100–250 m',
+    'within_500m': '>250–500 m', 'none_within_500m': 'No match within 500 m', 'unavailable': 'Unavailable',
+}
+WORKBOOK_FILTER_LABELS = {
+    'licensee_name': 'Licensee',
+    'licence_status': 'Licence status',
+    'energy_development_category': 'Energy development category',
+}
 
 
 def audited_outside_rows(snapshot_id: UUID) -> tuple[int, ...]:
@@ -113,6 +126,52 @@ def show_st37_import(engine, snapshot_key):
             st.session_state[snapshot_key] = UUID(result['import_id'])
 
 
+def workbook_water_columns(result: dict | None) -> dict:
+    distance = result['observed_distance_m'] if result is not None else None
+    if result is None:
+        band = 'unavailable'
+    elif distance is None:
+        band = 'none_within_500m'
+    else:
+        band = classify_distance(distance)['band']
+    return {'Observed water distance (m)': distance, 'Water proximity band': WORKBOOK_WATER_BANDS[band]}
+
+
+@st.cache_data(max_entries=24, show_spinner=False)
+def cached_workbook_filter_options(_engine, database_identity, snapshot_id, field, search=''):
+    return st37_inventory_filter_options(_engine, snapshot_id, field, search)
+
+
+@st.cache_data(max_entries=32, show_spinner=False)
+def cached_workbook_match_count(_engine, database_identity, snapshot_id, filters, comparison_ids):
+    return st37_inventory_count(_engine, snapshot_id, filters, water_comparison_ids=comparison_ids)
+
+
+def workbook_filters(engine, database_identity, snapshot_id, comparison_ids):
+    filters = {}
+    columns = st.columns(len(WORKBOOK_FILTER_LABELS) + 1)
+    for column, (field, label) in zip(columns, WORKBOOK_FILTER_LABELS.items()):
+        key = f'st37_filter_{field}_{snapshot_id}'
+        options = cached_workbook_filter_options(engine, database_identity, snapshot_id, field)
+        if len(options) > ST37_INVENTORY_OPTION_LIMIT:
+            search = column.text_input(f'Search {label.lower()}', key=f'{key}_search', live='300ms').strip()
+            found = cached_workbook_filter_options(engine, database_identity, snapshot_id, field, search) if search else []
+            if len(found) > ST37_INVENTORY_OPTION_LIMIT:
+                column.caption('Narrow the search to see all matching options.')
+            blank = {''} if '' in options else set()
+            options = sorted(set(found[:ST37_INVENTORY_OPTION_LIMIT]) | set(st.session_state.get(key, ())) | blank)
+        values = column.multiselect(label, options, key=key, format_func=lambda value: value or '(Blank)', placeholder='All')
+        if values:
+            filters[field] = values
+    bands = columns[-1].multiselect(
+        'Water proximity band', list(WORKBOOK_WATER_BANDS) if comparison_ids else ['unavailable'],
+        key=f'st37_filter_water_band_{snapshot_id}', format_func=WORKBOOK_WATER_BANDS.__getitem__, placeholder='All',
+    )
+    if bands:
+        filters['water_band'] = bands
+    return filters
+
+
 def show_st37_inventory(engine):
     st.subheader('AER ST37 surface-hole inventory')
     with st.sidebar:
@@ -153,37 +212,79 @@ def show_st37_inventory(engine):
         st.caption('Create a stored water comparison with `scripts/compare_st37_waterbodies.py` to enable the map.')
     else:
         st.caption('The water proximity map requires a documented workbook coordinate CRS.')
+    latest_by_layer: dict[str, UUID] = {}
+    for comparison in comparisons:
+        latest_by_layer.setdefault(comparison['scope'], comparison['comparison_id'])
+    comparison_ids = tuple(latest_by_layer.values())
+    database_identity = engine.url.render_as_string(hide_password=True)
+    try:
+        filters = workbook_filters(engine, database_identity, snapshot['import_id'], comparison_ids)
+        matched_count = records
+        if filters and not licence:
+            matched_count = cached_workbook_match_count(engine, database_identity, snapshot['import_id'], filters, comparison_ids)
+    except SQLAlchemyError:
+        st.error('The workbook filters could not be read from PostgreSQL.')
+        return
+    page_key = f'st37_inventory_page_{snapshot["import_id"]}'
+    scope = (snapshot['import_id'], licence, comparison_ids,
+             tuple((field, tuple(sorted(values))) for field, values in filters.items()))
+    if st.session_state.get('st37_workbook_page_scope') != scope:
+        st.session_state.st37_workbook_page_scope = scope
+        st.session_state[page_key] = 1
     offset = 0
     if not licence:
-        last_page = (records + ST37_INVENTORY_PAGE_SIZE - 1) // ST37_INVENTORY_PAGE_SIZE
-        page = st.number_input('Page', min_value=1, max_value=last_page, step=1,
-                               key=f'st37_inventory_page_{snapshot["import_id"]}')
+        if not matched_count:
+            st.info('No workbook records match the selected filters.')
+            return
+        last_page = (matched_count + ST37_INVENTORY_PAGE_SIZE - 1) // ST37_INVENTORY_PAGE_SIZE
+        page = st.number_input('Page', min_value=1, max_value=last_page, step=1, key=page_key)
         offset = (page - 1) * ST37_INVENTORY_PAGE_SIZE
     try:
-        rows = st37_inventory_page(engine, snapshot['import_id'], offset=offset, licence=licence)
+        rows = st37_inventory_page(engine, snapshot['import_id'], offset=offset, licence=licence, filters=filters,
+                                   water_comparison_ids=comparison_ids)
     except SQLAlchemyError:
         st.error('The selected ST37 rows could not be read from PostgreSQL.')
         return
     if not rows:
-        st.info('No rows match this selection. Enter the full licence number, including any leading zeros.')
+        if filters:
+            st.info('No workbook records match the licence and selected filters.')
+        else:
+            st.info('No rows match this selection. Enter the full licence number, including any leading zeros.')
         return
     if licence:
         st.caption(f'Showing up to {ST37_INVENTORY_PAGE_SIZE:,} exact licence matches.')
     else:
-        st.caption(f'Rows {offset + 1:,}–{offset + len(rows):,} of {records:,} in workbook order.')
+        page_label = 'matching workbook records' if filters else 'in workbook order'
+        st.caption(f'Rows {offset + 1:,}–{offset + len(rows):,} of {matched_count:,} {page_label}.')
+    proximity = {}
+    if comparison_ids:
+        try:
+            proximity = st37_workbook_water_results(engine, snapshot['import_id'],
+                                                   [row['source_row'] for row in rows], comparison_ids)
+            st.caption('Water columns use the nearest accepted match within 500 m from the latest stored comparison for each available layer.')
+        except SQLAlchemyError:
+            st.warning('Water proximity could not be read for this page.')
     outside = audited_outside_rows(snapshot['import_id'])
     table = [{
         'Workbook row': row['source_row'],
-        **{field: row['raw_payload'][field] for field in ST37_FIELDS},
+        'Well_Licence_Number': row['raw_payload']['Well_Licence_Number'],
+        **workbook_water_columns(proximity.get(row['source_row'])),
+        **{field: row['raw_payload'][field] for field in ST37_FIELDS if field != 'Well_Licence_Number'},
         'Validation errors': ', '.join(row['validation_errors']),
         'Quality warnings': ', '.join(row['quality_warnings']),
         **({'Boundary review': 'Reported position outside Alberta' if row['source_row'] in outside else ''}
            if outside else {}),
     } for row in rows]
-    st.dataframe(pd.DataFrame(table), hide_index=True, alt='Original values from the selected AER ST37 workbook rows',
-                 column_config={'Well_Licence_Number': 'Well licence', 'Licence_Status': 'Licence status',
-                                'Licence_Surface_Location_Label': 'Legal location', 'SH_Actual_Latitude': 'Reported latitude',
-                                'SH_Actual_Longitude': 'Reported longitude'})
+    records_table = pd.DataFrame(table).astype({'Observed water distance (m)': 'Float64'})
+    st.dataframe(records_table, hide_index=True, alt='Original ST37 workbook records and observed water proximity',
+                 column_config={
+                     'Well_Licence_Number': 'Well licence', 'Licence_Status': 'Licence status',
+                     'Energy_Devlpmt_Category_Type': 'Energy development category',
+                     'Licence_Surface_Location_Label': 'Legal location', 'SH_Actual_Latitude': 'Reported latitude',
+                     'SH_Actual_Longitude': 'Reported longitude',
+                     'Observed water distance (m)': st.column_config.NumberColumn(
+                         format='%.2f', help='Nearest observed distance in EPSG:3400 metres, displayed to two decimal places.'),
+                 })
 
 
 def water_choice(row):
@@ -362,9 +463,6 @@ def show_comparison_map(engine, database_identity, summary, licence, basemap_def
     alt = ('Selected ST37 well and nearest observed water feature' if licence else
            'Current shuffled ST37 well batch and nearest observed water features')
     st.iframe(html, height=520, alt=alt)
-    gray = 'unknown within 500 m' if incomplete else 'no feature within 500 m'
-    st.caption(f'Well colors by stored distance: red ≤50 m, orange >50–100 m, yellow >100–250 m, '
-               f'blue >250–500 m, gray {gray}. Teal shapes show the nearest accepted water features.')
 
 
 def show_stored_comparison(engine, comparison_id, *, licence=None, basemap_default=False):

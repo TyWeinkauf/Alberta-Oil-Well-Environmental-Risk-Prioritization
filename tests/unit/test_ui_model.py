@@ -7,6 +7,7 @@ from src.config import ROOT
 from src.exports.selection import csv_bytes, geojson_bytes, table_records
 from src.ui.map import build_map
 from src.ui.model import filtered_wells, map_selection
+from src.ui.waterbody_workflow import workbook_water_columns
 
 
 def dashboard():
@@ -18,6 +19,14 @@ def dashboard():
              'distance_m':50 if i==1 and category=='water' else 150 if category=='water' else None}
             for i in (1,2) for category in ('water','protected_area')]
     return {'run_id':'synthetic-run','wells':wells,'proximity':rows}
+
+
+def test_workbook_water_columns_keep_distances_and_search_outcome():
+    for distance, expected in [(50, '≤50 m'), (100, '>50–100 m'), (250, '>100–250 m'), (500, '>250–500 m')]:
+        row = workbook_water_columns({'observed_distance_m': distance})
+        assert row == {'Observed water distance (m)': distance, 'Water proximity band': expected}
+    unmatched = workbook_water_columns({'observed_distance_m': None})
+    assert unmatched == {'Observed water distance (m)': None, 'Water proximity band': 'No match within 500 m'}
 
 
 def test_filters_table_and_exports_use_identical_ids_and_values():
