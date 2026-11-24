@@ -119,9 +119,20 @@ def waterbody_comparison_summary(engine, comparison_id: UUID) -> dict:
         return summary
 
 
+def waterbody_buffer_count(engine, comparison_id: UUID, threshold_m: int,
+                           excluded_rows: tuple[int, ...] = ()) -> int:
+    """Count observed matches among the wells eligible for the map."""
+    with engine.connect() as conn:
+        return conn.execute(text('''SELECT count(*) FROM screening.st37_waterbody_proximity
+            WHERE comparison_id=:id AND observed_distance_m<=:threshold
+                AND source_row<>ALL(CAST(:excluded_rows AS integer[]))'''),
+            {'id': comparison_id, 'threshold': threshold_m, 'excluded_rows': list(excluded_rows)}).scalar_one()
+
+
 def waterbody_map_batch(engine, comparison_id: UUID, seed: int, offset: int = 0,
                         limit: int = WELL_MAP_BATCH_SIZE, *, licence: str = '',
-                        excluded_rows: tuple[int, ...] = ()) -> tuple[list[dict], list[dict]]:
+                        excluded_rows: tuple[int, ...] = (),
+                        max_distance_m: int | None = None) -> tuple[list[dict], list[dict]]:
     """Read a shuffled page or an exact licence and its matching display geometries."""
     if offset < 0 or not 1 <= limit <= WELL_MAP_BATCH_SIZE:
         raise ValueError('A map batch must contain between 1 and 10,000 wells')
@@ -133,21 +144,23 @@ def waterbody_map_batch(engine, comparison_id: UUID, seed: int, offset: int = 0,
             WHERE c.comparison_id=:id AND s.well_licence_number=:licence
         )''' if licence else ''
         boundary_filter = 'AND p.source_row <> ALL(:excluded_rows)' if excluded_rows else ''
+        distance_filter = 'AND p.observed_distance_m<=:max_distance_m' if max_distance_m is not None else ''
+        projected_coordinates = ', ST_X(s.geom) AS analysis_x, ST_Y(s.geom) AS analysis_y' if licence else ''
         wells = [dict(row) for row in conn.execute(text(f'''WITH batch AS MATERIALIZED (
                 SELECT p.source_row, p.observed_distance_m, p.nearest_source_feature_id,
                     CAST(md5(CAST(:seed AS text) || ':' || p.source_row) AS uuid) AS shuffle_key
                 FROM screening.st37_waterbody_proximity p
-                WHERE p.comparison_id=:id {licence_filter} {boundary_filter}
+                WHERE p.comparison_id=:id {licence_filter} {boundary_filter} {distance_filter}
                 ORDER BY shuffle_key, p.source_row LIMIT :limit OFFSET :offset
             )
             SELECT s.source_row, s.well_licence_number, b.observed_distance_m, b.nearest_source_feature_id,
-                CAST(ST_AsGeoJSON(ST_Transform(s.geom,4326),6) AS jsonb) AS geometry
+                CAST(ST_AsGeoJSON(ST_Transform(s.geom,4326),6) AS jsonb) AS geometry{projected_coordinates}
             FROM batch b
             JOIN screening.waterbody_comparisons c ON c.comparison_id=:id
             JOIN screening.st37_surface_holes s ON s.import_id=c.st37_import_id AND s.source_row=b.source_row
             ORDER BY b.shuffle_key, b.source_row'''),
             {'id': comparison_id, 'seed': seed, 'offset': offset, 'limit': limit, 'licence': licence,
-             'excluded_rows': list(excluded_rows)}).mappings()]
+             'excluded_rows': list(excluded_rows), 'max_distance_m': max_distance_m}).mappings()]
         feature_ids = sorted({row['nearest_source_feature_id'] for row in wells
                               if row['nearest_source_feature_id'] is not None})
         if not feature_ids:

@@ -66,7 +66,7 @@ The fixture `tests/fixtures/production_demo.csv` contains **9 inputs: 6 accepted
 
 The synthetic header names (`ROW_ID`, `MONTH`, etc.) are test-only. The synthetic source namespace/evidence does not certify actual AER/Petrinex identifier compatibility.
 
-The Python suite tests month/decimal/unit/duplicate/adjustment validation, exact leading-zero IDs, ambiguous joins, idempotency, active-batch rollback, cross-run scope, synthetic/live separation, unavailable wells and persisted transport failure. `node tests/browser/production_smoke.cjs` verifies explicit demo import, a rendered monthly chart, switching to the adjustment series, unavailable other-well behavior and downloaded attribution audit. The original map/export browser smoke remains valid too.
+The Python suite tests month/decimal/unit/duplicate/adjustment validation, exact leading-zero IDs, ambiguous joins, idempotency, active-batch rollback, cross-run scope, synthetic/live separation, unavailable wells and persisted transport failure. Legacy production operations are available through the scripts in this document. [Historical release verification](release_verification.md)
 
 ## Official verification still required
 

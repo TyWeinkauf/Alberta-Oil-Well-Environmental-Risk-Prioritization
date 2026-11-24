@@ -67,14 +67,17 @@ def test_raw_preview_preserves_rows_and_previous_output(source_inventory, tmp_pa
         decode_package(previous.replace(b'Example A', b'Example X', 1))
     assert output.read_bytes() == previous
 
-    def fail_publish(*args):
+    before_failure = set(tmp_path.iterdir())
+
+    def fail_publish(candidate, destination):
+        assert candidate.parent == destination.parent == output.parent
         raise PermissionError('Injected write failure')
 
-    monkeypatch.setattr('src.demo.data.os.replace', fail_publish)
+    monkeypatch.setattr('src.artifacts.os.replace', fail_publish)
     with pytest.raises(PermissionError):
         prepare_package(report, config, output)
     assert output.read_bytes() == previous
-    assert list(tmp_path.glob('.classroom-*')) == []
+    assert set(tmp_path.iterdir()) == before_failure
 
 
 @pytest.fixture
@@ -143,8 +146,12 @@ def test_streamlit_modes_without_database(source_inventory, projected_package, t
 
     with monkeypatch.context() as patch:
         patch.setattr('src.config.database_url', fail_database_preflight)
-        app = AppTest.from_file(str(ROOT / 'app.py'), default_timeout=20).run()
+        app = AppTest.from_file(str(ROOT / 'app.py'), default_timeout=20)
+        app.query_params['dataset_mode'] = 'PostGIS workflows'
+        app.run()
         assert not app.exception and app.metric[2].value == '3'
+        assert app.selectbox(key='dataset_mode').options == ['Classroom demo', 'ST37 well inventory']
+        assert app.selectbox(key='dataset_mode').value == 'Classroom demo'
         assert any('coordinate datum is pending' in alert.value for alert in app.info)
         assert not app.get('component_instance')
         monkeypatch.setenv('CLASSROOM_DEMO_PATH', str(output))
@@ -163,8 +170,15 @@ def test_streamlit_modes_without_database(source_inventory, projected_package, t
         raise ValueError('PostGIS deliberately unavailable in the classroom test')
 
     monkeypatch.setattr('src.config.database_url', missing_database_url)
-    app.selectbox(key='dataset_mode').select('PostGIS workflows').run()
+    app.selectbox(key='dataset_mode').select('ST37 well inventory').run()
     assert not app.exception and any('DATABASE_URL' in alert.value for alert in app.error)
     app.selectbox(key='dataset_mode').select('Classroom demo').run()
     assert not app.exception and app.text_input(key='classroom_licence').value == ''
-    assert app.selectbox(key='classroom_threshold').value == 100
+    assert app.segmented_control(key='classroom_threshold').value == 100
+
+    def deny_package_read(_path):
+        raise PermissionError('Injected read failure')
+
+    monkeypatch.setattr('src.ui.classroom.read_package_bytes', deny_package_read)
+    app.run()
+    assert not app.exception and any('Check file permissions' in alert.value for alert in app.error)

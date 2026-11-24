@@ -12,14 +12,19 @@ from src.config import ROOT, load_study_area
 from src.db.st37 import import_st37
 from src.db.waterbodies import (
     compare_st37_waterbodies, latest_province_waterbodies, st37_water_comparisons, waterbody_comparison_summary,
-    waterbody_map_batch, waterbody_result,
+    waterbody_buffer_count, waterbody_map_batch, waterbody_result,
 )
+from src.demo.data import IMPORTED_WATER_MODE, dashboard_for, prepare_package
+from src.demo.hydrography import extract_imported_water
+from src.demo.regions import REGION_IDS, load_regions
+from src.demo.spatial import WATER_PROVENANCE
 from src.sources.http import HttpCache
 from src.sources.hydrography import latest_water_import
 from src.sources.st37 import prepare_st37
 from src.sources.waterbodies import PROVINCE_STREAM_SCOPE, import_province_streams, import_province_waterbodies
 from src.ui import waterbody_workflow
-from tests.hydro_helpers import hydro_service
+from src.ui.model import filtered_wells
+from tests.hydro_helpers import hydro_service, water_controls_app
 from tests.st37_helpers import synthetic_row, write_workbook
 
 pytestmark = pytest.mark.integration
@@ -45,6 +50,7 @@ def test_province_pages_preserve_every_id_then_compare_verified_wells(test_engin
             assert reject.source_feature_id == '12' and reject.payload['_source_properties']['FEATURE_TYPE'] == 'RESERVOIR'
     workbook = write_workbook(tmp_path / 'st37.xlsx', [
         synthetic_row('0000012'), synthetic_row('0000013', SH_Actual_Latitude=53.29),
+        synthetic_row('0000014', SH_Actual_Latitude=53.2525),
     ])
     preparation = prepare_st37(workbook, load_study_area(), tmp_path / 'st37')
     report = Path(preparation['artifacts']['inventory']['path']).with_name('report.json')
@@ -61,22 +67,30 @@ def test_province_pages_preserve_every_id_then_compare_verified_wells(test_engin
     assert st37_water_comparisons(test_engine, UUID(raw['import_id'])) == []
     assert latest_province_waterbodies(test_engine)['comparison_id'] == comparison
     summary = waterbody_comparison_summary(test_engine, comparison)
-    assert summary['well_count'] == 2 and summary['within_50'] == 1 and summary['unknown_within_500'] == 1
+    assert summary['well_count'] == 3 and summary['within_50'] == 1 and summary['unknown_within_500'] == 1
     match = waterbody_result(test_engine, comparison, '0000012')
     assert match is not None and match['observed_distance_m'] == 0 and match['nearest_source_feature_id'] == '10'
     unmatched = waterbody_result(test_engine, comparison, '0000013')
     assert unmatched is not None and unmatched['result_state'] == 'unknown_incomplete_coverage'
-    pages = [waterbody_map_batch(test_engine, comparison, seed=123, offset=index, limit=1) for index in (0, 1)]
+    pages = [waterbody_map_batch(test_engine, comparison, seed=123, offset=index, limit=1) for index in range(3)]
     assert waterbody_map_batch(test_engine, comparison, seed=123, limit=1) == pages[0]
-    assert waterbody_map_batch(test_engine, comparison, seed=123, offset=2, limit=1) == ([], [])
-    assert sorted(wells[0]['well_licence_number'] for wells, _ in pages) == ['0000012', '0000013']
+    assert waterbody_map_batch(test_engine, comparison, seed=123, offset=3, limit=1) == ([], [])
+    assert sorted(wells[0]['well_licence_number'] for wells, _ in pages) == ['0000012', '0000013', '0000014']
+    assert waterbody_buffer_count(test_engine, comparison, 50) == 1
+    assert waterbody_buffer_count(test_engine, comparison, 250) == 2
+    within_50, _ = waterbody_map_batch(test_engine, comparison, seed=123, max_distance_m=50)
+    assert [well['well_licence_number'] for well in within_50] == ['0000012']
+    wider, _ = waterbody_map_batch(test_engine, comparison, seed=123, max_distance_m=250)
+    assert {well['well_licence_number'] for well in wider} == {'0000012', '0000014'}
     focused, water = waterbody_map_batch(test_engine, comparison, seed=123, licence='0000012')
     assert focused[0]['geometry']['coordinates'] == pytest.approx([-115.0, 53.25])
     assert water[0]['source_feature_id'] == '10'
     assert waterbody_map_batch(test_engine, comparison, seed=123, licence='12') == ([], [])
     excluded = (focused[0]['source_row'],)
     included, _ = waterbody_map_batch(test_engine, comparison, seed=123, excluded_rows=excluded)
-    assert [well['well_licence_number'] for well in included] == ['0000013']
+    assert {well['well_licence_number'] for well in included} == {'0000013', '0000014'}
+    assert waterbody_buffer_count(test_engine, comparison, 50, excluded) == 0
+    assert not waterbody_map_batch(test_engine, comparison, seed=123, excluded_rows=excluded, max_distance_m=50)[0]
     assert waterbody_map_batch(test_engine, comparison, seed=123, licence='0000012', excluded_rows=excluded) == ([], [])
     for wells, features in pages:
         point = wells[0]
@@ -85,6 +99,8 @@ def test_province_pages_preserve_every_id_then_compare_verified_wells(test_engin
             assert point['observed_distance_m'] == 0
             assert [feature['source_feature_id'] for feature in features] == ['10']
             assert features[0]['geometry']['type'] == 'Polygon'
+        elif point['well_licence_number'] == '0000014':
+            assert 100 < point['observed_distance_m'] < 250
         else:
             assert point['observed_distance_m'] is None and features == []
     with pytest.raises(ValueError, match='10,000'):
@@ -94,26 +110,32 @@ def test_province_pages_preserve_every_id_then_compare_verified_wells(test_engin
     monkeypatch.setenv('DATABASE_URL', test_engine.url.render_as_string(hide_password=False))
     monkeypatch.setattr(waterbody_workflow, 'WELL_MAP_BATCH_SIZE', 1)
     app = AppTest.from_file(str(ROOT / 'app.py'), default_timeout=20)
-    app.query_params['dataset_mode'] = 'PostGIS workflows'
+    app.query_params['dataset_mode'] = 'ST37 well inventory'
     app.run()
-    app.checkbox(key='province_water_comparison').check().run()
-    assert not app.exception and any('2 ST37 wells' in element.value for element in app.caption)
+    assert not app.exception and any('3 ST37 wells' in element.value for element in app.caption)
+    assert app.segmented_control(key='st37_map_threshold').value == 500
+    assert app.checkbox(key='st37_map_matches_only').value
+    assert app.checkbox(key='st37_inventory_basemap').value
     assert any('Batch 1 of 2 · Showing 1 of 2 wells' in element.value for element in app.caption)
     app.button(key='province_map_next').click().run()
     assert not app.exception and any('Batch 2 of 2 · Showing 1 of 2 wells' in element.value for element in app.caption)
-    app.button(key='province_map_next').click().run()
-    assert any('Batch 1 of 2 · Showing 1 of 2 wells' in element.value for element in app.caption)
-    app.text_input(key='province_water_licence').input('0000012').run()
+    app.segmented_control(key='st37_map_threshold').set_value(50).run()
+    assert any('Batch 1 of 1 · Showing 1 of 1 wells' in element.value for element in app.caption)
+    app.checkbox(key='st37_map_matches_only').uncheck().run()
+    assert any('Batch 1 of 3 · Showing 1 of 3 wells' in element.value for element in app.caption)
+    app.checkbox(key='st37_map_matches_only').check().run()
+    app.text_input(key='st37_inventory_licence').input('0000014').run()
     assert not app.exception
-    assert any('well_licence_number' in frame.value and frame.value['well_licence_number'].tolist() == ['0000012']
+    assert any('50 m buffer around selected well 0000014' in element.value for element in app.caption)
+    assert any('well_licence_number' in frame.value and frame.value['well_licence_number'].tolist() == ['0000014']
                for frame in app.dataframe)
 
     audit = tmp_path / 'alberta_boundary.json'
     audit.write_text(json.dumps({'st37_snapshot': str(well_id), 'outside_source_rows': excluded}), encoding='utf-8')
     monkeypatch.setattr(waterbody_workflow, 'ST37_ALBERTA_BOUNDARY_QA', audit)
-    app.selectbox(key='dataset_mode').select('ST37 well inventory').run()
-    assert not app.exception and app.checkbox(key='st37_inventory_basemap').value
-    assert any('Batch 1 of 1 · Showing 1 of 1 wells' in element.value for element in app.caption)
+    app.text_input(key='st37_inventory_licence').input('').run()
+    assert not app.exception
+    assert any('No observed well matches within 50 m' in element.value for element in app.info)
     app.text_input(key='st37_inventory_licence').input('0000012').run()
     assert not app.exception and any('position falls outside the Alberta boundary' in e.value for e in app.info)
     app.radio(key='st37_inventory_view').set_value('Workbook records').run()
@@ -136,8 +158,7 @@ def test_app_buttons_load_inputs_and_compare_with_read_only_reruns(test_engine, 
             return import_province_waterbodies(engine, source=source, cache=cache, progress=progress)
 
         monkeypatch.setattr(waterbody_workflow, 'import_province_waterbodies', load_water)
-        app = AppTest.from_file(str(ROOT / 'app.py'), default_timeout=20)
-        app.query_params['dataset_mode'] = 'PostGIS workflows'
+        app = AppTest.from_function(water_controls_app, default_timeout=20)
         app.run()
         app.checkbox(key='province_water_comparison').check().run()
         assert not app.exception and not app.session_state.actions and simulator['requests'] == 0
@@ -193,7 +214,8 @@ def test_app_buttons_load_inputs_and_compare_with_read_only_reruns(test_engine, 
 
 
 def test_app_can_import_and_compare_province_streams(test_engine, tmp_path, monkeypatch):
-    workbook = write_workbook(tmp_path / 'fixture.xlsx', [synthetic_row('0000012')])
+    workbook = write_workbook(tmp_path / 'fixture.xlsx', [synthetic_row('0000012'),
+        synthetic_row('0000013', SH_Actual_Latitude=52.25, SH_Actual_Longitude=-113.81)])
     preparation = prepare_st37(workbook, load_study_area(), tmp_path / 'inventory')
     report = Path(preparation['artifacts']['inventory']['path']).with_name('report.json')
     wells = import_st37(test_engine, report, license_note='Synthetic test workbook', coordinate_crs='EPSG:4326',
@@ -209,8 +231,7 @@ def test_app_can_import_and_compare_province_streams(test_engine, tmp_path, monk
             return import_province_streams(engine, source=source, cache=cache, progress=progress)
 
         monkeypatch.setattr(waterbody_workflow, 'import_province_streams', load_streams)
-        app = AppTest.from_file(str(ROOT / 'app.py'), default_timeout=20)
-        app.query_params['dataset_mode'] = 'PostGIS workflows'
+        app = AppTest.from_function(water_controls_app, default_timeout=20)
         app.run()
         requests = simulator['requests']
         app.checkbox(key='province_water_comparison').check().run()
@@ -218,6 +239,7 @@ def test_app_can_import_and_compare_province_streams(test_engine, tmp_path, monk
         app.button(key='import_province_streams').click().run()
         assert not app.exception and not app.error
         streams_id = app.selectbox(key='province_water_snapshot').value
+        assert isinstance(streams_id, UUID)
         assert streams_id != UUID(water['import_id'])
         assert latest_water_import(test_engine) is None
         with test_engine.connect() as conn:
@@ -235,6 +257,35 @@ def test_app_can_import_and_compare_province_streams(test_engine, tmp_path, monk
         row = waterbody_result(test_engine, comparison_id, '0000012')
         assert row is not None and row['nearest_source_feature_id'] == '10'
         assert 0 < row['observed_distance_m'] < 50
+        regions = load_regions()
+        output = tmp_path / 'classroom-with-water.json'
+        hydro = extract_imported_water(test_engine, regions, UUID(water['import_id']), streams_id)
+        package = prepare_package(report, regions, output, coordinate_crs='EPSG:4326',
+                                  crs_evidence='Declared WGS84 for test workbook', hydrography=hydro)
+        assert package['manifest']['mode'] == IMPORTED_WATER_MODE
+        local_water = [f for f in package['regions']['drayton_valley']['features'] if f['feature_type'] == 'water']
+        assert {f['subtype'] for f in local_water} == {'stream', 'waterbody'}
+        assert all(f['provenance'] == WATER_PROVENANCE for f in local_water)
+        distances = {r['source_well_id']: r for r in filtered_wells(dashboard_for(package, REGION_IDS), ['water'], 50)}
+        assert distances['0000012']['observed_min_distance_m'] == 0
+        assert distances['0000012']['matches_threshold'] is True
+        assert distances['0000013']['matches_threshold'] is None
+        monkeypatch.setenv('CLASSROOM_DEMO_PATH', str(output))
+        classroom = AppTest.from_file(str(ROOT / 'app.py'), default_timeout=20).run()
+        assert not classroom.exception and not classroom.error
+        assert any('imported waterways' in heading.value for heading in classroom.subheader)
+        classroom.radio(key='classroom_region').set_value('both').run()
+        assert classroom.segmented_control(key='classroom_threshold').value == 500
+        assert classroom.checkbox(key='classroom_matches_only').value
+        assert classroom.metric[2].value == '1' and classroom.metric[3].value == '1'
+        classroom.segmented_control(key='classroom_threshold').set_value(50).run()
+        assert not classroom.exception and classroom.metric[2].value == '1'
+        classroom.checkbox(key='classroom_matches_only').uncheck().run()
+        assert classroom.metric[2].value == '2' and classroom.segmented_control(key='classroom_threshold').value == 50
+        classroom.radio(key='classroom_region').set_value('red_deer').run()
+        assert classroom.metric[2].value == '0'
+        assert any('No observed well matches within 500 m' in alert.value for alert in classroom.info)
+        assert any('unknown water proximity' in alert.value for alert in classroom.warning)
         requests = simulator['requests']
         app.run()
         assert simulator['requests'] == requests

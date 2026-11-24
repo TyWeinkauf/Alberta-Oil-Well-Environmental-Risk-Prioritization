@@ -38,7 +38,7 @@ For a developer inspection of a local example file:
 python scripts/inspect_source.py file --path data/raw/imports/water.geojson
 ```
 
-Set `SOURCE_CATALOG_PATH` in the local `.env` or process environment to the verified catalogue's absolute path. Open **PostGIS workflows** and click **Run full pipeline** when the core sources are ready. Use [regional preparation](regional_extracts.md) for optional large geodatabase inputs.
+Set `SOURCE_CATALOG_PATH` in the local `.env` or process environment to the verified catalogue's absolute path. Run `python scripts/run_live.py` when the core sources are ready. Use [regional preparation](regional_extracts.md) for optional large geodatabase inputs.
 
 ## Snapshot and provenance behavior
 

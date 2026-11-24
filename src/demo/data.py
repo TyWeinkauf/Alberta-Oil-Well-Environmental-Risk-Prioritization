@@ -1,28 +1,36 @@
 """Build and load a checksummed, portable classroom package."""
 import hashlib
 import json
-import os
-import tempfile
 from datetime import date
 from pathlib import Path
 
+from src.artifacts import atomic_output
 from src.config import ROOT
 from src.contracts.spatial import CATEGORIES
 from src.demo.regions import (
     REGION_IDS, SELECTION_METHOD, DemoRegions, coordinate_reference, project_from, sample_inventory,
 )
 from src.demo.spatial import (
-    ANALYSIS_CRS, FEATURE_PROVENANCE, FEATURE_SPECS, GENERATOR_VERSION, SEARCH_MARGIN_M,
-    analyze, display_geometry, feature_geometry, generate_features, projected_wells, region_seed,
+    ANALYSIS_CRS, FEATURE_PROVENANCE, FEATURE_SPECS, GENERATOR_VERSION, SEARCH_MARGIN_M, WATER_PROVENANCE,
+    analyze, display_geometry, feature_geometry, generate_features, imported_water_extent, projected_wells, region_seed,
 )
 from src.sources.st37 import FIELDS, row_errors
 from src.spatial.classification import THRESHOLDS
 from src.spatial.extent import projected_bbox
 
-DEFAULT_PACKAGE = ROOT / 'data/demo/classroom/demo.json'
+SYNTHETIC_PACKAGE = ROOT / 'data/demo/classroom/demo.json'
+DEFAULT_PACKAGE = SYNTHETIC_PACKAGE.with_name('demo_imported_water.json')
 PACKAGE_VERSION = 1
 MAX_PACKAGE_BYTES = 512 * 1024
 DATASET_MODE = 'illustrative_classroom'
+IMPORTED_WATER_MODE = 'classroom_imported_water'
+MIXED_PROVENANCE = 'imported_water_and_synthetic_other_layers'
+IMPORTED_WATER_NOTICE = (
+    'Classroom demo: real AER ST37 wells and imported Alberta waterbodies and streams. '
+    'Water distances are measured from the imported geometries. Wetlands, protected areas, habitat '
+    'and significance areas are synthetic, and distances to those layers are simulated. '
+    'This is educational proximity screening.'
+)
 WELL_PROVENANCE = 'actual_aer_st37_surface_hole'
 NOTICE = (
     'Illustrative classroom demo: real AER ST37 well locations with synthetic environmental features. '
@@ -60,12 +68,23 @@ def decode_package(contents: bytes) -> dict:
         expected = hashlib.sha256(json_bytes({'manifest': manifest, 'regions': regions})).hexdigest()
         if package['package_id'] != expected:
             raise ValueError('Classroom package checksum mismatch')
-        if manifest['version'] != PACKAGE_VERSION or manifest['mode'] != DATASET_MODE:
+        if manifest['version'] != PACKAGE_VERSION or manifest['mode'] not in (DATASET_MODE, IMPORTED_WATER_MODE):
             raise ValueError('Unsupported classroom package version or mode')
         coordinate = manifest['coordinate_reference']
+        real_water = manifest['mode'] == IMPORTED_WATER_MODE
+        water_sources = {}
+        if real_water:
+            declared = manifest['water_sources']
+            water_sources = {source['import_id']: source for source in declared}
+            if (not coordinate or len(water_sources) != 2 or len(declared) != 2
+                    or {source['kind'] for source in declared} != {'waterbody', 'stream'}
+                    or any(source['coverage_status'] not in {'complete', 'incomplete'} for source in declared)
+                    or manifest['environment_provenance'] != MIXED_PROVENANCE):
+                raise ValueError('Real-water classroom packages require both water inventories and a verified well CRS')
         if coordinate is not None and coordinate_reference(coordinate['crs'], coordinate['evidence']) != coordinate:
             raise ValueError('Invalid coordinate evidence in classroom package')
-        if (manifest['disclaimer'] != (NOTICE if coordinate else PREVIEW_NOTICE)
+        notice = IMPORTED_WATER_NOTICE if real_water else (NOTICE if coordinate else PREVIEW_NOTICE)
+        if (manifest['disclaimer'] != notice
                 or manifest['readiness'] != ('projected' if coordinate else 'awaiting_workbook_datum')):
             raise ValueError('Classroom package readiness and disclaimer must agree with coordinate evidence')
         config = DemoRegions.model_validate(manifest['config'])
@@ -90,17 +109,21 @@ def decode_package(contents: bytes) -> dict:
                 licence_ids.add(licence)
             features = group['features']
             if coordinate:
-                expected_types = {(category, subtype) for category, subtype, _, _ in FEATURE_SPECS}
-                if len(features) != len(expected_types) or {
-                    (feature['feature_type'], feature['subtype']) for feature in features
+                expected_types = {(category, subtype) for category, subtype, _, _ in FEATURE_SPECS
+                                  if not real_water or category != 'water'}
+                synthetic = [f for f in features if not real_water or f['feature_type'] != 'water']
+                if len(synthetic) != len(expected_types) or {
+                    (feature['feature_type'], feature['subtype']) for feature in synthetic
                 } != expected_types:
                     raise ValueError('Classroom package has incomplete synthetic scenarios')
                 margin = projected_bbox(config.regions[key].bbox_wgs84).buffer(SEARCH_MARGIN_M + 1e-6)
-                for feature in features:
+                for feature in synthetic:
                     if (feature['source_feature_id'] != f'{key}-{feature["subtype"]}'
                             or feature['provenance'] != FEATURE_PROVENANCE
                             or not margin.covers(feature_geometry(feature))):
                         raise ValueError('Invalid synthetic feature provenance, ID or regional margin')
+                if real_water:
+                    validate_imported_features(features, water_sources, config.regions[key].bbox_wgs84)
             elif features or group['generator_seed'] is not None:
                 raise ValueError('A pending-datum package may only contain unprojected well records')
     except (KeyError, TypeError, AttributeError, IndexError) as exc:
@@ -108,9 +131,29 @@ def decode_package(contents: bytes) -> dict:
     return package
 
 
+def validate_imported_features(features: list[dict], sources: dict,
+                               bbox: tuple[float, float, float, float]):
+    extent = imported_water_extent(bbox).buffer(1e-6)
+    seen = set()
+    for feature in features:
+        if feature['feature_type'] != 'water':
+            continue
+        source = sources.get(feature.get('import_id'))
+        identifier = feature['source_feature_id']
+        publisher_id = feature['publisher_feature_id']
+        geometry = feature_geometry(feature)
+        geometry_kind = 'stream' if geometry.geom_type.endswith('LineString') else 'waterbody'
+        if (feature['provenance'] != WATER_PROVENANCE or not source or source['kind'] != geometry_kind
+                or feature['subtype'] != geometry_kind or not publisher_id or identifier != f'{source["layer"]}:{publisher_id}'
+                or identifier in seen or not extent.covers(geometry)):
+            raise ValueError('Invalid imported water feature, provenance or regional extent')
+        seen.add(identifier)
+
+
 def prepare_package(report_path: Path, config: DemoRegions, output: Path, *,
                     coordinate_crs: str | None = None, crs_evidence: str | None = None,
-                    release_date: date | None = None) -> dict:
+                    release_date: date | None = None,
+                    hydrography: tuple[list[dict], dict[str, list[dict]]] | None = None) -> dict:
     """Read the retained inventory snapshot. Publish the new package in one replacement."""
     report_path, output = report_path.resolve(), output.resolve()
     if output.suffix.lower() != '.json' or output == report_path:
@@ -118,6 +161,8 @@ def prepare_package(report_path: Path, config: DemoRegions, output: Path, *,
     if output.exists():
         decode_package(read_package_bytes(output))
     coordinate = coordinate_reference(coordinate_crs, crs_evidence)
+    if hydrography is not None and not coordinate:
+        raise ValueError('Imported water requires verified well coordinates')
     report_bytes = report_path.read_bytes()
     report = json.loads(report_bytes)
     source = report['source']
@@ -132,6 +177,8 @@ def prepare_package(report_path: Path, config: DemoRegions, output: Path, *,
             generate_features(key, config.regions[key].bbox_wgs84, seed,
                               projected_wells(group['wells'], coordinate['crs'])) if coordinate else []
         )
+        if hydrography is not None:
+            group['features'] = [f for f in group['features'] if f['feature_type'] != 'water'] + hydrography[1][key]
     manifest = {
         'version': PACKAGE_VERSION, 'mode': DATASET_MODE,
         'readiness': 'projected' if coordinate else 'awaiting_workbook_datum',
@@ -153,15 +200,15 @@ def prepare_package(report_path: Path, config: DemoRegions, output: Path, *,
         'analysis_crs': ANALYSIS_CRS, 'thresholds_m': THRESHOLDS, 'search_margin_m': SEARCH_MARGIN_M,
         'disclaimer': NOTICE if coordinate else PREVIEW_NOTICE,
     }
+    if hydrography is not None:
+        manifest.update(mode=IMPORTED_WATER_MODE, water_sources=hydrography[0],
+                        environment_provenance=MIXED_PROVENANCE, disclaimer=IMPORTED_WATER_NOTICE)
     payload = {'manifest': manifest, 'regions': regions}
     package = {'package_id': hashlib.sha256(json_bytes(payload)).hexdigest(), **payload}
     contents = json_bytes(package) + b'\n'
     decode_package(contents)
-    output.parent.mkdir(parents=True, exist_ok=True)
-    with tempfile.TemporaryDirectory(prefix='.classroom-', dir=output.parent) as build_dir:
-        candidate = Path(build_dir) / output.name
+    with atomic_output(output) as candidate:
         candidate.write_bytes(contents)
-        os.replace(candidate, output)
     return package
 
 
@@ -174,6 +221,8 @@ def dashboard_for(package: dict, region_ids: tuple[str, ...]) -> dict:
         'candidate_count': 0, 'wells': [], 'features': [], 'proximity': [],
     }
     coverage = dict.fromkeys(CATEGORIES, 'complete') if coordinate else {}
+    if any(source['coverage_status'] == 'incomplete' for source in manifest.get('water_sources', [])):
+        coverage['water'] = 'incomplete'
     for key in region_ids:
         group = package['regions'][key]
         dashboard['candidate_count'] += group['candidate_count']
@@ -196,8 +245,8 @@ def dashboard_for(package: dict, region_ids: tuple[str, ...]) -> dict:
                 'source_crs': coordinate['crs'] if coordinate else None,
                 'analysis_x': point.x if point else None, 'analysis_y': point.y if point else None,
                 'source_credit': SOURCE_CREDIT, 'well_provenance': WELL_PROVENANCE,
-                'environment_provenance': FEATURE_PROVENANCE if coordinate else 'not_generated',
-                'mode': DATASET_MODE, 'disclaimer': manifest['disclaimer'],
+                'environment_provenance': manifest['environment_provenance'] if coordinate else 'not_generated',
+                'mode': manifest['mode'], 'disclaimer': manifest['disclaimer'],
                 'raw': raw, 'quality_warnings': row['quality_warnings'],
             })
         for feature in group['features']:

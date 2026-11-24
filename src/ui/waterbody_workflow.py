@@ -11,14 +11,15 @@ from sqlalchemy.exc import SQLAlchemyError
 from src.config import ROOT
 from src.db.st37 import ST37_INVENTORY_PAGE_SIZE, import_st37_workbook, st37_import_snapshots, st37_inventory_page
 from src.db.waterbodies import (
-    WELL_MAP_BATCH_SIZE, compare_st37_waterbodies, find_waterbody_comparison, st37_water_comparisons,
+    WELL_MAP_BATCH_SIZE, compare_st37_waterbodies, find_waterbody_comparison, st37_water_comparisons, waterbody_buffer_count,
     waterbody_comparison_summary, waterbody_map_batch, waterbody_result, waterbody_workflow_snapshots,
 )
 from src.db.workflow import WorkflowBusy
+from src.demo.spatial import selected_buffer
 from src.sources.st37 import FIELDS as ST37_FIELDS
 from src.sources.waterbodies import PROVINCE_STREAM_SCOPE, import_province_streams, import_province_waterbodies
 from src.spatial.classification import THRESHOLDS
-from src.ui.map import build_waterbody_batch_map
+from src.ui.map import buffer_group, build_waterbody_batch_map
 
 ST37_WORKBOOK = ROOT / 'aida-final-project-tyler-weinkauf/courses/AIDA-1145/data/ST37_SH.xlsx'
 ST37_RAW_ROOT = ROOT / 'data/raw/st37'
@@ -149,7 +150,7 @@ def show_st37_inventory(engine):
                 st.warning('The selected water comparison could not be read from PostGIS.')
             return
     elif snapshot['coordinate_crs']:
-        st.caption('Run a comparison for this snapshot under PostGIS workflows to enable the water proximity map.')
+        st.caption('Create a stored water comparison with `scripts/compare_st37_waterbodies.py` to enable the map.')
     else:
         st.caption('The water proximity map requires a documented workbook coordinate CRS.')
     offset = 0
@@ -267,14 +268,22 @@ def cached_province_summary(_engine, database_identity, comparison_id):
 
 @st.cache_data(max_entries=4, show_spinner=False)
 def cached_comparison_map(_engine, database_identity, comparison_id, seed, offset, limit,
-                          coverage_incomplete, basemap, licence, excluded_rows):
+                          coverage_incomplete, basemap, licence, excluded_rows, threshold, max_distance):
     wells, water = waterbody_map_batch(_engine, comparison_id, seed, offset, limit, licence=licence,
-                                        excluded_rows=excluded_rows)
+                                        excluded_rows=excluded_rows, max_distance_m=max_distance)
     if not wells:
         return None, 0, 0
     view = build_waterbody_batch_map(wells, water, coverage_incomplete=coverage_incomplete, basemap=basemap,
                                     focus=bool(licence))
-    return view.get_root().render(), len(wells), sum(row['observed_distance_m'] is not None for row in wells)
+    if licence:
+        buffer_group(selected_buffer(wells[0], threshold), threshold).add_to(view)
+    matched = sum(row['observed_distance_m'] is not None and row['observed_distance_m'] <= threshold for row in wells)
+    return view.get_root().render(), len(wells), matched
+
+
+@st.cache_data(max_entries=24, show_spinner=False)
+def cached_buffer_count(_engine, database_identity, comparison_id, threshold, excluded_rows):
+    return waterbody_buffer_count(_engine, comparison_id, threshold, excluded_rows)
 
 
 def shift_map_batch(step, batches):
@@ -294,10 +303,29 @@ def show_comparison_map(engine, database_identity, summary, licence, basemap_def
                    'Workbook records retains the original coordinates for review.')
     if not well_count:
         return
+    threshold = st.segmented_control('Buffer distance', THRESHOLDS, default=THRESHOLDS[-1], required=True,
+                                     format_func=lambda metres: f'{metres} m', key='st37_map_threshold') or THRESHOLDS[-1]
+    matches_only = st.checkbox('Only show wells within the buffer', value=True, key='st37_map_matches_only',
+                               disabled=bool(licence), help='Filters the shuffled batches by observed distance to the selected water layer.')
+    max_distance = threshold if matches_only and not licence else None
     if st.session_state.get('province_map_well_snapshot') != summary['st37_import_id']:
         st.session_state.province_map_well_snapshot = summary['st37_import_id']
         st.session_state.province_map_seed = randbits(32)
         st.session_state.province_map_batch = 0
+    if not licence:
+        batch_filter = (summary['comparison_id'], max_distance) if max_distance is not None else None
+        if st.session_state.get('province_map_batch_filter') != batch_filter:
+            st.session_state.province_map_batch_filter = batch_filter
+            st.session_state.province_map_batch = 0
+    try:
+        if max_distance is not None:
+            well_count = cached_buffer_count(engine, database_identity, summary['comparison_id'], threshold, outside)
+    except SQLAlchemyError:
+        st.warning('The buffer match count could not be read from PostGIS.')
+        return
+    if not well_count:
+        st.info(f'No observed well matches within {threshold} m for this water layer.')
+        return
     batches = (well_count + WELL_MAP_BATCH_SIZE - 1) // WELL_MAP_BATCH_SIZE
     page = st.session_state.province_map_batch
     if licence:
@@ -315,7 +343,8 @@ def show_comparison_map(engine, database_identity, summary, licence, basemap_def
         with st.spinner('Loading well locations…'):
             html, count, matched = cached_comparison_map(
                 engine, database_identity, summary['comparison_id'], st.session_state.province_map_seed,
-                0 if licence else page * WELL_MAP_BATCH_SIZE, WELL_MAP_BATCH_SIZE, incomplete, basemap, licence, outside)
+                0 if licence else page * WELL_MAP_BATCH_SIZE, WELL_MAP_BATCH_SIZE, incomplete, basemap,
+                licence, outside, threshold, max_distance)
     except SQLAlchemyError:
         st.warning('This map batch could not be read from PostGIS.')
         return
@@ -327,7 +356,9 @@ def show_comparison_map(engine, database_identity, summary, licence, basemap_def
         return
     if not licence:
         st.caption(f'Batch {page + 1:,} of {batches:,} · Showing {count:,} of {well_count:,} wells · '
-                   f'{matched:,} observed matches within 500 m')
+                   f'{matched:,} observed matches within {threshold} m')
+    else:
+        st.caption(f'{threshold} m buffer around selected well {licence}.')
     alt = ('Selected ST37 well and nearest observed water feature' if licence else
            'Current shuffled ST37 well batch and nearest observed water features')
     st.iframe(html, height=520, alt=alt)

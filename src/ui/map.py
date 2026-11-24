@@ -38,8 +38,18 @@ def leaflet_view(center: list[float], zoom: int, basemap: bool, *, prefer_canvas
     return view
 
 
+def buffer_group(geometry: dict | None, threshold: int) -> folium.FeatureGroup:
+    group = folium.FeatureGroup(name='Selected well buffer')
+    if geometry is not None:
+        folium.GeoJson(geometry, tooltip=f'{threshold} m selected well buffer',
+                       style_function=lambda _: {'color': '#202027', 'weight': 2, 'dashArray': '5 4',
+                                                 'fillOpacity': 0.06}).add_to(group)
+    return group
+
+
 def build_map(records: list[dict], features: list[dict], categories: list[str], *, basemap: bool = False,
-              overlays: bool = True, notice: str | None = None) -> folium.Map:
+              overlays: bool = True, notice: str | None = None, bounds: list[list[float]] | None = None) -> folium.Map:
+    """Draw the selected wells and layers with an optional fixed study-area viewport."""
     center = ([sum(r['latitude'] for r in records)/len(records),sum(r['longitude'] for r in records)/len(records)]
               if records else [53.5,-114])
     view = leaflet_view(center, 12, basemap)
@@ -54,7 +64,7 @@ def build_map(records: list[dict], features: list[dict], categories: list[str], 
                 illustrative = feature.get('provenance') == 'synthetic_environment'
                 color = SCENARIO_COLORS[feature['feature_type']] if illustrative else '#247ba0'
                 folium.GeoJson(feature['geometry'],name=feature['source_feature_id'],
-                    tooltip=popup_text(feature['name']) if illustrative else None,
+                    tooltip=popup_text(feature['name']) if 'provenance' in feature else None,
                     style_function=lambda _, feature_color=color: {
                         'color':feature_color,'weight':2,'fillOpacity':0.12}).add_to(view)
     for row in records:
@@ -63,7 +73,7 @@ def build_map(records: list[dict], features: list[dict], categories: list[str], 
         # streamlit-folium returns innerText, so attributes/hidden text are lost.
         # A small visible reference survives the bridge without using coordinates.
         token = f'<small>Record reference: {row["well_pk"]}</small><br>'
-        source = '<br>Actual ST37 well · simulated surroundings' if notice else ''
+        source = '<br>Actual ST37 well' if notice else ''
         popup = (f'<section data-well-key="{row["well_pk"]}">{token}<strong>{identifier}</strong>'
                  f'<br>{company}{source}<br>View details below the map</section>')
         # Fixed palette from the shared classifier; no untrusted CSS is inserted.
@@ -73,8 +83,9 @@ def build_map(records: list[dict], features: list[dict], categories: list[str], 
                               icon_size=(22,22),icon_anchor=(11,11))
         folium.Marker([row['latitude'],row['longitude']],popup=folium.Popup(popup,max_width=300),
                       tooltip=identifier,title=row['source_well_id'],icon=icon).add_to(view)
-    if records:
-        view.fit_bounds([[r['latitude'],r['longitude']] for r in records],padding=(35,35),max_zoom=18)
+    viewport = bounds if bounds is not None else [[r['latitude'],r['longitude']] for r in records]
+    if viewport:
+        view.fit_bounds(viewport,padding=(35,35),max_zoom=18)
     return view
 
 

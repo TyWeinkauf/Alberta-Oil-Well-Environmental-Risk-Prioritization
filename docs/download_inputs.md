@@ -22,7 +22,7 @@ These are example names, not bundled data. **The entire `data/` directory is ign
 
 3. Copy `config/source_catalog.local.example.yml` to your private catalogue and set the actual paths/mappings/provenance. With the layout above, paths in `imports/catalog.yml` would start `../aer/` or `../environment/` because they resolve relative to the YAML file.
 4. Inspect actual layers, fields, unique IDs, geometry/CRS, extent and package size. Configure verified mappings and permitted use before enabling sources. Use [the ST37 guide review](st37_reference.md) for candidate fields, not as proof of the downloaded schema.
-5. Set `SOURCE_CATALOG_PATH` to the verified catalogue's absolute path. Open **PostGIS workflows** in Streamlit and click **Run full pipeline**. The app creates the PostGIS tables, source snapshots, quarantine and proximity results. Use [regional preparation](regional_extracts.md) for large geodatabase archives. [Input configuration](data_access.md)
+5. Set `SOURCE_CATALOG_PATH` to the verified catalogue's absolute path. Run `python scripts/run_live.py` to create the PostGIS tables, source snapshots, quarantine and proximity results. Use [regional preparation](regional_extracts.md) for large geodatabase archives. [Input configuration](data_access.md)
 
 ## AER wells
 
@@ -119,7 +119,7 @@ SOURCE_CATALOG_PATH="C:/Projects/alberta/data/raw/extracts/aer/prepared_catalogu
 python -m streamlit run app.py
 ```
 
-- [ ] Open **PostGIS workflows** in Streamlit and click **Run full pipeline**.
+- [ ] Run `python scripts/run_live.py` with the verified catalogue.
 - [ ] Check the completed run ID, manifest, counts, CRS, coverage and quarantine reasons under `outputs/runs/<run-id>/`. Check that previously successful data remains selectable after a failed refresh.
 
 ### 5. Finish the real-data acceptance and handoff

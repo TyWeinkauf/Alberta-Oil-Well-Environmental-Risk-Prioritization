@@ -18,6 +18,7 @@ ANALYSIS_CRS = 'EPSG:3400'
 SEARCH_MARGIN_M = max(THRESHOLDS)
 GENERATOR_VERSION = 1
 FEATURE_PROVENANCE = 'synthetic_environment'
+WATER_PROVENANCE = 'imported_alberta_hydrography'
 FEATURE_SPECS = (
     ('water', 'stream', 35, None),
     ('water', 'waterbody', 215, 105),
@@ -77,6 +78,11 @@ def feature_geometry(feature: dict) -> BaseGeometry:
     return geometry
 
 
+def imported_water_extent(bbox_wgs84: tuple[float, float, float, float]) -> BaseGeometry:
+    """Keep the full 500 m search around even the wells at a regional edge."""
+    return projected_bbox(bbox_wgs84).buffer(SEARCH_MARGIN_M + 1).envelope
+
+
 def analyze(wells: list[dict], points: dict[int, Point], features: list[dict],
             coverage: dict[str, str]) -> list[dict]:
     by_category = defaultdict(list)
@@ -95,6 +101,8 @@ def analyze(wells: list[dict], points: dict[int, Point], features: list[dict],
                 distance, feature_id = None, None
             status = coverage.get(category, 'unavailable')
             result = status if status != 'complete' else ('matched' if feature_id else 'no_feature_within_500m')
+            if status == 'incomplete' and feature_id is not None:
+                result = 'observed_match'
             rows.append({
                 'well_pk': key, 'source_well_id': well['raw']['Well_Licence_Number'],
                 'category': category, 'nearest_feature_id': feature_id, 'distance_m': distance,

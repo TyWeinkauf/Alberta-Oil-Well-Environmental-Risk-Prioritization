@@ -24,6 +24,23 @@ class _Feature(TypedDict):
     geometry: dict | None
 
 
+def water_controls_app():
+    """Exercise the import controls independently of the public app routes."""
+    import streamlit as st
+    from sqlalchemy import create_engine
+
+    from src.config import database_url, load_source_catalog
+    from src.ui.water import show_waterways
+
+    st.session_state.setdefault('busy', False)
+    st.session_state.setdefault('actions', [])
+    engine = create_engine(database_url())
+    try:
+        show_waterways(engine, load_source_catalog())
+    finally:
+        engine.dispose()
+
+
 @contextmanager
 def hydro_service():
     state: _ServiceState = {'requests': 0, 'missing_page': False, 'invalid_geometry': False, 'revision': 'original', 'queries': []}

@@ -76,11 +76,11 @@ Replace the password, role, host, port and database as needed. URL-encode specia
 
 ## Browse the workbook in Streamlit
 
-Launch the app and select **ST37 well inventory** under **Dataset mode**. The verified November snapshot already has stored comparisons, so **Water proximity map** opens by default. Select **Imported water layer** to choose waterbody polygons or stream lines. Use **Next batch** or **Previous batch** to cycle through shuffled well locations, and click a point for its licence, water feature and distance. Enter the full **Well licence number**, including leading zeros, to zoom to a specific well. OpenStreetMap tiles require an internet connection. The well and water layers are read from PostGIS.
+Launch the app and select **ST37 well inventory** under **Dataset mode**. The verified November snapshot already has stored comparisons, so **Water proximity map** opens by default. Choose waterbody polygons or stream lines under **Imported water layer** and select a **Buffer distance**. The map starts with wells within 500 m of the selected layer. Uncheck **Only show wells within the buffer** to browse the full mapped inventory in batches. Enter the full **Well licence number**, including leading zeros, to zoom to a specific well and draw its selected buffer. [Map controls](hydrography.md#browse-shuffled-well-batches)
 
 Select **Workbook records** to inspect the source coordinates and attributes. Use **Page** to browse 100 rows at a time or keep a licence entered to review the original row for that well. Snapshots without a stored comparison open directly to workbook records. Quarantined rows include their validation errors.
 
-Use **Import ST37 wells** in the sidebar to load the retained `ST37_SH.xlsx` into a fresh PostgreSQL/PostGIS database. The same import controls appear under **PostGIS workflows → Waterways → Alberta waterbodies, streams and ST37** for water comparisons.
+Use **Import ST37 wells** in the sidebar to load the retained `ST37_SH.xlsx` into a fresh PostgreSQL/PostGIS database. Create water comparisons from saved snapshot IDs using the comparison command. [Import and compare](hydrography.md#import-and-compare)
 
 ## Stage well information before environmental analysis
 
@@ -92,7 +92,7 @@ For the verified November workbook, enter `EPSG:4269` under **Workbook coordinat
 
 The import uses the database-wide workflow lock, streams rows with PostgreSQL COPY, validates checksums before and after loading, verifies counts before commit, and rolls back on failure. Repeating the same input and declaration reuses its import ID. The app lists imports by snapshot and keeps coordinate evidence with the selected data in PostGIS.
 
-For the full multi-source screening workflow, configure the bounded `pilot.csv` as a coordinate well CSV with the report's `field_mapping`, longitude/latitude field names, verified geographic CRS, attribution and download and coverage evidence. After verifying the other required sources, click **Run full pipeline** in **PostGIS workflows**.
+For the full multi-source screening workflow, configure the bounded `pilot.csv` as a coordinate well CSV with the report's `field_mapping`, longitude/latitude field names, verified geographic CRS, attribution and download and coverage evidence. After verifying the other required sources, run `python scripts/run_live.py`.
 
 ## Verification
 

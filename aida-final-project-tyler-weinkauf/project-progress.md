@@ -21,6 +21,8 @@ For each row, choose one status: **Not started**, **In progress**, **Ready for f
 
 **Classroom build — 23 November 2026.** The offline teacher ZIP and separate course review candidates are available. Presentation, feedback, the student's AI declaration and D2L submissions remain open. [Classroom demo and evidence](../docs/classroom_demo.md)
 
+**Classroom water revision — 23 November 2026.** The default app and revised teacher ZIP use imported Alberta water geometries and selectable buffer distances, with the map and exports showing the same filtered wells. The original course review candidates document the earlier synthetic-water demonstration. [Revised classroom package and verification](../docs/classroom_demo.md)
+
 See [the Markdown design and implementation tracker](../DESIGN.md#13-phased-codex-implementation-plan) for phase and step status. Update it when implementation work starts or completes. The course checkpoints in this file require their own evidence and are not automatically completed by environment setup.
 
 ## How to ask for feedback

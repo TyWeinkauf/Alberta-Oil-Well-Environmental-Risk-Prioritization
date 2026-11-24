@@ -4,17 +4,17 @@ Educational training project for **AIDA 1145 (Data Engineering)** and **AIDA 236
 
 The existing course workspace is preserved in [aida-final-project-tyler-weinkauf/](aida-final-project-tyler-weinkauf/README.md). See [DESIGN.md](DESIGN.md#13-phased-codex-implementation-plan) for scope and live progress tracking.
 
-**Classroom demo — 23 November 2026.** The default Streamlit mode reads a local package with 28 actual AER ST37 wells per region and synthetic environmental features. Choose Red Deer, Drayton Valley or Both, click wells, compare thresholds and export the current selection. It runs offline with the prepared package and installed Python dependencies. [Classroom launch and preparation](docs/classroom_demo.md#launch-the-classroom-mode)
+**Classroom demo — 23 November 2026.** The default Streamlit mode reads a local package with 28 actual ST37 wells per region and imported Alberta streams and waterbodies. The other classroom environmental layers are labelled synthetic. Choose Red Deer, Drayton Valley or Both to inspect wells, compare thresholds and export the current selection offline. [Classroom launch and preparation](docs/classroom_demo.md#launch-the-classroom-mode)
 
 The retained all-real pipeline targets AER wells, Alberta surface water, protected areas and federal critical habitat, with optional wetlands/historical ESA and OpenStreetMap display. It remains separate from simulated classroom results. The [dataset reference](docs/dataset_reference.md) records intended real sources and licensing cautions. Petrinex/monthly production remains outside scope.
 
 ## What works now
 
-**ST37 well inventory.** Choose **ST37 well inventory** under **Dataset mode**. The **Water proximity map** plots the verified November well positions on OpenStreetMap in shuffled batches of up to 10,000. Switch between imported waterbodies and streams, or enter an exact licence with leading zeros to zoom to one well and read its stored distance. **Workbook records** keeps all 541,190 original rows available, including two reported locations outside Alberta. [Map, workbook import and coordinate accuracy](docs/st37_excel.md#browse-the-workbook-in-streamlit)
+**ST37 well inventory.** The **Water proximity map** displays matching well positions on OpenStreetMap in shuffled batches of up to 10,000. Choose imported waterbodies or streams and a buffer of 50, 100, 250 or 500 m. Enter an exact licence with leading zeros to zoom to one well and draw its buffer. **Workbook records** keeps all 541,190 original rows available, including two reported locations outside Alberta. [Map, workbook import and coordinate accuracy](docs/st37_excel.md#browse-the-workbook-in-streamlit)
 
-**Alberta hydrography and ST37 — 23 November 2026.** In Streamlit, open **PostGIS workflows → Waterways → Alberta waterbodies, streams and ST37**. The project database contains the projected November ST37 snapshot and both provincial water comparisons, with one result per accepted well in each. The water snapshots retain 38 polygon and two stream geometry rejects, and unmatched wells are unknown where coverage is incomplete. [Stored results and comparison workflow](docs/hydrography.md#project-database-status)
+**Alberta hydrography and ST37.** Open **ST37 well inventory → Water proximity map** to review the two stored provincial comparisons. The water snapshots retain 38 polygon and two stream geometry rejects, so unmatched results are unknown. [Stored results and comparison workflow](docs/hydrography.md#project-database-status)
 
-**Waterways update, 10 November 2026:** open **Waterways → Import waterways** in the app sidebar, then **Preview imported waterways**. Verified official waterbody polygons/stream lines are imported for the study area plus 500 m; seasonal sources are optional. Actual validation: 33 default or 121 seasonal features, one invalid polygon quarantined, all 142 tests/type checks and running-app checks pass. Your database needs actual `.env` values. See [waterways setup and quality details](docs/hydrography.md).
+**Waterway imports.** Run `python scripts/import_hydrography.py` for the configured study area plus 500 m. Use `--include-seasonal` to add verified seasonal sources. The command reads `DATABASE_URL` from the environment or `.env`. [Waterways setup and quality details](docs/hydrography.md)
 
 The retained ST37 workbook contains 541,190 distinct licences, with leading zeros preserved and six date-warning records. The app can reuse its audited preparation when staging it. [Excel preparation and inventory staging](docs/st37_excel.md)
 
@@ -24,7 +24,7 @@ The Phase 4 acquisition framework is implemented and tested with simulated sourc
 
 ## Managed cloud quick start
 
-For the database-backed workflows, select **PostGIS workflows** in the app sidebar after launch.
+Select **ST37 well inventory** after launch to browse database-backed records. The classroom demo uses the prepared local package.
 
 Use the existing checkout; cloud tasks are already isolated. From its root:
 
@@ -58,13 +58,9 @@ notepad .env
 .\.venv\Scripts\python.exe -m streamlit run app.py
 ```
 
-The app applies pending migrations when you click an import or **Use demo dataset**. The synthetic database fixture has a stable run ID, 2 accepted wells, 2 environmental features and 6 spatial quarantine records. The app shows its stored results and can export selection evidence. Run reports are recorded under `outputs/runs/<run_id>/`.
+**Import ST37 wells** applies pending migrations and loads the retained workbook. The classroom app uses the local demo package. The app offers these two views under **Dataset mode**. [Classroom launch and preparation](docs/classroom_demo.md#launch-the-classroom-mode)
 
-The default analysis selects water. The wells are 50 m and 150 m from the synthetic stream. In the sidebar, set the distance threshold from 500 m to 50 m to change the count from 2 to 1.
-
-The protected-area demo layer is incomplete because one polygon was quarantined. Selecting it makes the exact overall band unknown; that is different from no nearby feature. See [spatial methodology](docs/spatial_methodology.md) for coverage, cumulative flags and category selection rules. The clean boundary test fixture validates complete-category minima and exact distance boundaries.
-
-In the app, choose **PostGIS workflows** and then **Use demo dataset** to run setup, ingestion and analysis for the synthetic database fixture. Click a map marker or use **Inspect a well** for details. Apply filters and download matching CSV, GeoJSON, map HTML or the manifest. Data quality and Run history show provenance, rejected inputs and workflow status. Live acquisition requires verified enabled catalogue entries and coverage notes.
+Use `python scripts/analyze_demo.py` to run the synthetic database fixture and write analysis evidence under `outputs/runs/<run_id>/`. For verified real sources, run `python scripts/run_live.py`. [Source setup](docs/data_access.md) · [Spatial methodology](docs/spatial_methodology.md)
 
 Offline geometry and map exports require no CDN: small Leaflet/jQuery assets are vendored with licenses. **Show OpenStreetMap basemap (online)** is optional and requires `tile.openstreetmap.org`. The tile domain is now allowed by the published cloud policy and a fresh tile request returned HTTP 200. Some actual analytical service/download hosts remain inaccessible from this cloud session; access may differ on your machine. Offline rendering and interaction remain available. See [UI workflow](docs/ui_workflow.md).
 
@@ -132,7 +128,7 @@ python scripts/prepare_extract.py --catalog data/raw/imports/catalog.yml --sourc
 python scripts/prepare_extract.py --catalog data/raw/imports/catalog.yml --source aer_wells --study-area config/study_area.live.yml
 ```
 
-Set `SOURCE_CATALOG_PATH` to the generated catalogue and click **Run full pipeline** in Streamlit when the required sources are ready.
+Set `SOURCE_CATALOG_PATH` to the generated catalogue and run `python scripts/run_live.py` when the required sources are ready.
 
 Preparation retains only the selected layer/fields and regional candidates, includes a 500 m margin for environmental sources, records original input checksums and refuses truncation or incompatible scope reuse. It preserves verification flags and other catalogue entries; all required sources must still be ready before ingestion. Read [regional extract instructions](docs/regional_extracts.md) for limits, original-file handling and configuration steps. The full suite now passes **128 tests**, including prepared-package PostGIS ingestion and failure retention. No actual ST37 release has been loaded.
 

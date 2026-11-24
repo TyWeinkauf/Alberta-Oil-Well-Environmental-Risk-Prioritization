@@ -5,7 +5,7 @@ from sqlalchemy import text
 from sqlalchemy.exc import DBAPIError
 from streamlit.testing.v1 import AppTest
 
-from src.config import ROOT, Source
+from src.config import Source
 from src.db.demo import seed_demo
 from src.db.migrations import migrate
 from src.production.store import import_csv, load_demo_production, refresh_production
@@ -99,27 +99,21 @@ def test_well_production_read_cannot_cross_analysis_run_scope(test_engine,produc
         production_view(test_engine,production_run,999999)
 
 
-def test_streamlit_demo_production_chart_and_unavailable_other_well(test_engine,production_run,tmp_path,monkeypatch):
+def test_production_chart_and_unavailable_other_well(test_engine, production_run, tmp_path):
     load(test_engine,production_run,tmp_path)
-    monkeypatch.setenv('DATABASE_URL',test_engine.url.render_as_string(hide_password=False))
-    # Retained production UI is opt-in through a custom catalogue, outside the default project scope.
-    from src.config import SourceCatalog
-    source=Source(key='legacy_synthetic',kind='file',role='production',enabled=True,verified=True,
-                  url='https://example.invalid/synthetic',license_note='Synthetic test only',
-                  field_mapping={'source_record_id':'ROW_ID','period':'MONTH','product':'PRODUCT',
-                                 'activity':'ACTIVITY','volume':'VOLUME','unit':'UNIT'})
-    monkeypatch.setattr('src.config.load_source_catalog',lambda:SourceCatalog(sources=[source]))
-    app=AppTest.from_file(str(ROOT/'app.py'))
-    app.query_params['dataset_mode']='PostGIS workflows'
-    app.run(timeout=30)
     with test_engine.connect() as conn:
         wells=conn.execute(text('SELECT well_pk FROM screening.wells ORDER BY source_well_id')).scalars().all()
-    app.selectbox(key='detail_choice').select(wells[0]).run()
+
+    def show_chart(view):
+        from src.production.ui import show_well_production
+        show_well_production(view)
+
+    app=AppTest.from_function(show_chart, args=(production_view(test_engine, production_run, wells[0]),)).run()
     assert not app.exception
     assert any(s.label=='Production series' for s in app.selectbox)
     assert any('Latest reported month: 2026-09' in c.value for c in app.caption)
     assert len(app.get('vega_lite_chart'))==1
-    app.selectbox(key='detail_choice').select(wells[1]).run()
+    app=AppTest.from_function(show_chart, args=(production_view(test_engine, production_run, wells[1]),)).run()
     assert not app.exception
     assert any('production not available/verified' in i.value for i in app.info)
     assert len(app.get('vega_lite_chart'))==0

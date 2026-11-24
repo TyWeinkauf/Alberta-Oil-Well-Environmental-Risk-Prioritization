@@ -44,8 +44,9 @@ def summarize_wells(rows: list[dict], categories: list[str], threshold_m: int = 
         selected = {r['category']: r for r in well_rows if r['category'] in categories}
         complete = bool(categories) and all(
             category in selected and selected[category]['coverage_status'] == 'complete' for category in categories)
-        distances = [r['distance_m'] for r in selected.values()
-                     if r['coverage_status'] == 'complete' and r['distance_m'] is not None]
+        # An explicitly observed match can be reported even when coverage is incomplete.
+        distances = [r['distance_m'] for r in selected.values() if r['distance_m'] is not None
+                     and (r['coverage_status'] == 'complete' or r.get('result_state') == 'observed_match')]
         observed = min(distances) if distances else None
         classification = classify_distance(observed)
         if not complete:

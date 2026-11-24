@@ -9,7 +9,6 @@ from concurrent.futures import ThreadPoolExecutor
 import pytest
 from sqlalchemy import create_engine, text
 from sqlalchemy.engine import Connection
-from streamlit.testing.v1 import AppTest
 
 from src.config import ROOT
 from src.db.demo import seed_demo
@@ -31,7 +30,7 @@ def prepare(engine,tmp_path):
     return report['run_id']
 
 
-def test_concurrent_writer_is_rejected_while_reads_and_busy_ui_work(test_engine,tmp_path,monkeypatch):
+def test_concurrent_writer_is_rejected_while_reads_work(test_engine,tmp_path):
     run=prepare(test_engine,tmp_path)
     ready=threading.Event();release=threading.Event()
     def owner():
@@ -47,13 +46,6 @@ def test_concurrent_writer_is_rejected_while_reads_and_busy_ui_work(test_engine,
                 with pytest.raises(WorkflowBusy,match='Another import'):
                     action()
             assert len(load_dashboard(test_engine,run)['wells'])==2
-            monkeypatch.setenv('DATABASE_URL',test_engine.url.render_as_string(hide_password=False))
-            app=AppTest.from_file(str(ROOT/'app.py'))
-            app.query_params['dataset_mode']='PostGIS workflows'
-            app.run(timeout=10)
-            next(b for b in app.button if b.label=='Use demo dataset').click().run(timeout=10)
-            assert not app.exception
-            assert any('Another import' in warning.value for warning in app.warning)
         finally:
             release.set()
         future.result(timeout=5)

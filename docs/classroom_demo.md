@@ -1,20 +1,20 @@
 # Red Deer and Drayton Valley classroom demo
 
-**Status — 23 November 2026.** The offline Streamlit demo reads a 43,103-byte package of 56 actual November ST37 surface-hole records. It displays their published locations using verified NAD83 coordinates, with 12 synthetic features and simulated proximity results. [Workbook datum verification](st37_excel.md#verified-november-release-and-datum)
+**Status — 23 November 2026.** The offline Streamlit demo reads a 174,514-byte package with 56 actual November ST37 wells, 69 imported water features and eight synthetic features in other categories. The water distances use the downloaded Alberta Lake/River and Stream geometries. [Workbook datum verification](st37_excel.md#verified-november-release-and-datum) · [Water snapshot provenance](hydrography.md#project-database-status)
 
 Reference archive SHA-256: `cd3bb2b438775ec346d294745651907122789ee85896a95d242c514c75040a53`. The original Word design remains a reference; DESIGN.md remains the maintained project design.
 
 ## Agreed direction and interpretation
 
-The next release should demonstrate a small area around **Red Deer and Drayton Valley**, using **actual surface-hole well records already retained from ST37** and **clearly synthetic environmental features**. Keep the existing real-data import tools for optional later use. A classroom presentation must not require an Alberta-wide environmental download or send all 541,190 wells to the browser.
+The primary demonstration covers **Red Deer and Drayton Valley**, using **actual ST37 surface-hole locations and downloaded Alberta waterways**. Wetlands, protected areas, habitat and significance areas are labelled synthetic. The classroom app reads the prepared extract locally.
 
 **Course handoff clarification, 20 November 2026.** Use the course briefs already in the repository. The user selected Streamlit/Folium with an optional OpenStreetMap basemap to demonstrate GIS tasks. Show layer toggles, click-to-identify, metre-based buffers, a baseline and changed-threshold comparison, and an accessible map with matching table and exports. Document the projected CRS and how to reproduce the results offline. The preserved AIDA 2362 brief specifies QGIS. The Streamlit approach reflects the user's understanding of acceptable tooling, with instructor confirmation unverified. [AIDA 1145 brief](../aida-final-project-tyler-weinkauf/courses/AIDA-1145/README.md) · [AIDA 2362 brief](../aida-final-project-tyler-weinkauf/courses/AIDA-2362/README.md)
 
 The supplied `oilwell_environment_codex_starter.zip` is a reference, not a replacement project. Its `AGENTS.md`, README, start-here document, source/contract configuration, source-workflow/ST37 notes, synthetic generator, app and analysis SQL were inspected without executing the package. The ZIP's own demo invents both wells and surroundings: its included manifest reports 56 synthetic wells, 22 synthetic features and eight analytical categories. Those are starter-package claims, not newly verified outputs of this repository. Its `oilrisk` commands, database schema and source URLs must not be copied into this project as if already supported/verified.
 
-**Your instruction changes that starter:** the main showcase must retain actual ST37 well IDs, positions and supplied attributes. Only the demonstration environmental features are invented. The starter's requests for fake production rates or eventual Petrinex integration do not override the earlier decision to exclude production.
+The main showcase retains actual ST37 well IDs, positions and supplied attributes. New water distances use the same provincial imports as the opt-in PostGIS workflow. The original classroom package with synthetic water remains available by setting `CLASSROOM_DEMO_PATH` to `data/demo/classroom/demo.json`.
 
-Required banner and export wording:
+The earlier synthetic-water package keeps its illustrative banner and export wording.
 
 > Illustrative classroom demo: real AER ST37 well locations with synthetic environmental features. Distances and proximity bands describe the simulated features only. They do not describe actual environmental conditions, contamination, legal setbacks or the risk of these real wells.
 
@@ -32,7 +32,7 @@ This deliberately labelled illustrative mode is separate from both the existing 
 | Bounded real-water import/preview and raw-property lineage implemented | Preserve as optional real-source functionality. It is not a prerequisite for the synthetic-environment classroom path. |
 | Earlier runtime verification: 142 unit/PostGIS tests plus type/running-app checks | Baseline for the original PostGIS app. The released classroom dataset has its own verification below. |
 
-The app starts in **Classroom demo**. Select **PostGIS workflows** for the existing synthetic database fixture, water preview and verified-source tools.
+The app starts in **Classroom demo**. Switch to **ST37 well inventory** to browse the full workbook and inspect its stored water comparisons. [Streamlit and command-line workflows](ui_workflow.md)
 
 ## Well preservation and regional display
 
@@ -68,13 +68,13 @@ Preparation reads the retained CSV beside its ST37 report. The teacher's runtime
 
 ## Environmental features and presentation
 
-Use seeded synthetic **lines and polygons**, generated in EPSG:3400 around the retained, unchanged well points. Provide a 500 m environmental margin around each region so edge-well distances remain correct. Use a seed derived from the stable region ID, not its position in a loop: generating Drayton alone must match Drayton generated as part of Both.
+Layer 72 Lake/River polygons and eligible layer 107 Stream lines are read from the stored PostGIS imports. The build clips accepted geometries to a projected rectangle covering each study region and its 500 m search margin. It retains publisher IDs, feature codes, inventory IDs and coverage status. Distances are calculated in EPSG:3400 from the clipped, unsimplified geometries. The accepted stream codes are `STR-PER`, `CANAL`, `OXBOW-PER` and `DITCH`, matching the provincial comparison. Both water snapshots have quarantined features, so unmatched water results are unknown within 500 m. The four synthetic categories retain their deterministic regional geometry.
 
 The first classroom target uses the five existing categories:
 
 | Demonstration layer | Existing analytical category / label |
 |---|---|
-| Invented streams, waterbodies and optional seasonal water | `water`, with visible line/polygon/seasonal subtypes; one nearest-water result rather than double-counted scores |
+| Imported Alberta stream lines and waterbody polygons | `water` — nearest accepted feature across the two layers |
 | Invented wetland polygons | `wetland` — synthetic wetland scenario |
 | Invented protected-area polygons | `protected_area` — synthetic boundary, not a legal designation |
 | Invented critical-habitat polygons | `critical_habitat` — simulated habitat scenario, not an actual species location |
@@ -82,7 +82,9 @@ The first classroom target uses the five existing categories:
 
 The starter also proposes flood and ecological-occurrence categories. They are optional demo extensions, not prerequisites or automatically authorized real-data ingestion tasks. Ecological occurrences are **not** interchangeable with federal critical habitat. If added, use a scoped category registry and tests throughout validation, analysis, UI, exports and any persisted constraints. Real flood, ACIMS, ABMI/wetlands, crop rasters and province-wide imports remain deferred. Production remains outside scope, including fake production attached to real wells.
 
-Show licence/company filtering, click-to-inspect, 50/100/250/500 m settings, selected-well buffer, category toggles and a compact result table. Show a Baseline vs changed-threshold comparison identifying changed licence IDs/counts. All headings, popups, downloads and screenshots must distinguish actual well attributes from simulated environmental evidence. Use licence status as licence status; it is not verified operational status.
+Use **Buffer distance** to switch between **50 m**, **100 m**, **250 m** and **500 m**. The imported-water demo opens at 500 m with **Only show wells within the buffer** checked. Each setting includes observed distances at or below the selected radius. Uncheck the box to show all wells matching the other filters. The map, well table and downloads follow the same selection. Choose a well to display its buffer at the selected radius.
+
+The baseline comparison identifies well licences and counts that change at each distance. The map and exports label the imported water results and simulated categories. Licence status comes from the workbook.
 
 Classify from unrounded distances in metres, with inclusive thresholds. A well inside a synthetic polygon has distance zero. Missing synthetic input/coverage is unknown, not a healthy zero or a real-data assurance. Complete coverage means only that the generator supplied the declared synthetic scenario. An absent feature within 500 m does not mean the real well is environmentally safe.
 
@@ -94,30 +96,38 @@ From the repository root with the pinned Python 3.12 dependencies installed, lau
 .\.venv\Scripts\python.exe -m streamlit run app.py --server.address 127.0.0.1 --browser.gatherUsageStats false
 ```
 
-The app uses `data/demo/classroom/demo.json` by default. On this machine the file is prepared locally. For a clean checkout, place the permitted small JSON package at that path or set `CLASSROOM_DEMO_PATH` to its location before launch. Install dependencies before taking the machine offline. Leave the optional OpenStreetMap tiles off for offline maps.
+The app uses `data/demo/classroom/demo_imported_water.json` by default. For a clean checkout, place the permitted prepared package at that path or set `CLASSROOM_DEMO_PATH` to its location before launch. Install dependencies before going offline and leave the optional OpenStreetMap tiles off.
 
-The teacher archive is `outputs/classroom/st37-classroom.zip`. Extract it and follow `START.md`. It contains the app, pinned requirements, vendored assets and the prepared package. Two builds were byte-identical at 197,250 bytes, SHA-256 `87c4c44af5d26c4b0e5413c8df2da5f99650041931cf044976761eb0727b58e6`.
+The Streamlit process needs read access to the package. New JSON and teacher ZIP builds inherit permissions from their output folders on Windows. The app reports a file access error when those permissions prevent it from opening the package.
 
-Recreate the current package from the original preparation report and its adjacent inventory. Both input files are opened read-only.
+The revised teacher archive is `outputs/classroom/st37-classroom-imported-water.zip`. Extract it and follow `START.md`. It contains the app, pinned requirements, vendored assets and the prepared package. The earlier synthetic-water archive is `outputs/classroom/st37-classroom.zip`.
+
+Recreate the current package from the original preparation report, its adjacent inventory and the two stored water snapshots. The build uses read-only access to the inventory and PostGIS data.
 
 ```powershell
 $report = 'data/raw/st37/7b77926624ee1c2c7fb554d8426eab5ac5b1c6a17d7226fce6429cd2b3c1d8f4/report.json'
 $evidence = 'AER ST37 release 2026-11-03: exact workbook SHA-256 and all 541,190 coordinate pairs matched the same-release geodatabase. NAD83 projected points match within 0.000109 m. Evidence: docs/st37_excel.md and docs/evidence/st37_datum_2026-11-23.json.'
-.\.venv\Scripts\python.exe scripts\prepare_classroom_demo.py --report $report --coordinate-crs EPSG:4269 --crs-evidence $evidence --release-date 2026-11-03
+.\.venv\Scripts\python.exe scripts\prepare_classroom_demo.py --report $report --coordinate-crs EPSG:4269 --crs-evidence $evidence --release-date 2026-11-03 --waterbodies-import-id 9b833be4-ff85-5712-9b8a-7d34be2b761c --streams-import-id 502120a2-a315-56ae-94ac-4d59ebc8963f
 .\.venv\Scripts\python.exe scripts\package_classroom_demo.py
 ```
 
-The package keeps its checksum, source attribution, release date, native and analysis CRS, seed and region definitions. A failed build retains the prior package. Running preparation without coordinate evidence produces the reported-coordinate preview.
+The package keeps its checksum, source attribution, release date, native and analysis CRS, seed and region definitions. A failed build retains the prior package. Running preparation without water snapshot IDs targets the separate synthetic package. Without coordinate evidence that package contains a reported-coordinate preview.
 
 For the teacher handoff, include the permitted small package, app, dependencies and vendored assets. Keep AER attribution in the release and record the permission basis. See [source and permissions](st37_excel.md) and the [optional real-water workflow](hydrography.md).
 
 ## Verification and remaining work
 
+In the **Both** view, Edge verified 0, 1, 5 and 9 visible well markers at 50, 100, 250 and 500 m with imported waterways selected. Turning the buffer filter off showed all 56 wells. The selected well's circle followed the radius, and the 250 m GeoJSON contained the same five wells as the map.
+
+The imported-water package has 33 water features around Red Deer and 36 around Drayton Valley. All 56 well rows and eight synthetic non-water features match the earlier package. The nearest water distances agree with the provincial PostGIS comparisons for all 56 sampled wells. The nine observations within 500 m agree to within 0.000001 m. One of those wells is within 100 m, and the remaining wells without observed matches have unknown results because coverage is incomplete. Edge verified the three region views and the manifest, GeoJSON and map HTML exports with network requests blocked. The extracted teacher app loaded all three region views with an invalid database setting. The full suite passed 153 tests.
+
+On 23 November 2026, Streamlit at `localhost:8501` reported a Windows permission error on the verified JSON. Publishing the same bytes with inherited directory permissions restored access to the JSON and teacher ZIP. The JSON rebuilt byte for byte, and two new teacher archive builds matched each other. Edge and the Streamlit agent API verified 28 Red Deer wells, 28 Drayton Valley wells and 56 in Both. All 153 tests passed in disposable PostGIS.
+
 The retained package reproduced byte-for-byte. All 56 selected records matched the full inventory field by field, and the workbook and inventory hashes matched their recorded values. AppTest and the running Streamlit API verified 28 Red Deer wells and 56 in Both. The projected path was tested on declared-CRS fixtures against the shared 0/50/100/250/500/500.01 m boundaries, geometry interiors, ties and incomplete coverage.
 
 With a disposable PostGIS instance, `python -m pytest -q` passed 146 tests. A separate offline Edge run from an isolated copy used only the app and a small known-CRS test package. It verified two marker clicks, the selected-well buffer and matching CSV, GeoJSON, manifest and standalone HTML.
 
-For the Water scenario the number of sampled wells within each simulated distance is:
+For the earlier synthetic Water scenario the number of sampled wells within each simulated distance is:
 
 | Region | 50 m | 100 m | 250 m | 500 m |
 | --- | ---: | ---: | ---: | ---: |

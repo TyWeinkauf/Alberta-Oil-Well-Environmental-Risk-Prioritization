@@ -18,23 +18,27 @@ Developer diagnostics for the publisher endpoints are available through `scripts
 
 ### Import and compare
 
-Configure the project's private `.env` with its actual `DATABASE_URL` and open **PostGIS workflows → Waterways → Alberta waterbodies, streams and ST37**.
+Configure `DATABASE_URL` in the project's private `.env` or environment. Run the import commands when a provincial snapshot is needed.
 
-1. Click **Import Alberta waterbodies** to load the full polygon layer. The app reports progress, selects the imported snapshot and shows polygon and quarantine counts.
-2. Click **Import ST37 wells** to stage the retained workbook. Enter its documented geographic CRS and evidence in **Workbook coordinate evidence** when available. Leaving both fields blank stages the reported coordinates and well attributes. [ST37 staging](st37_excel.md#stage-well-information-before-environmental-analysis)
-3. Select the stored waterbody and ST37 snapshots and click **Run waterbody comparison**. The comparison becomes available when the selected ST37 snapshot has documented coordinates and both snapshots have accepted records. Read the threshold summary and look up a specific well by licence number.
+1. Run `python scripts/import_waterbodies.py` for the polygon inventory or `python scripts/import_waterbodies.py --layer streams` for the stream inventory. Each command prints the snapshot ID, accepted count and quarantine count.
+2. Stage the workbook with its documented geographic CRS and evidence. `scripts/import_st37.py` prints the full well snapshot ID. [ST37 staging](st37_excel.md#stage-well-information-before-environmental-analysis)
+3. Run `python scripts/compare_st37_waterbodies.py --st37-import-id WELL_UUID --water-import-id WATER_UUID` using the two snapshot IDs. The command stores and summarizes the comparison. In Streamlit, open **ST37 well inventory → Water proximity map** to browse it.
 
 The import reads a publisher count and the corresponding complete ID list. It requests and validates a geometry page at a time, stages rows through PostgreSQL COPY, and verifies the ID list and available edit timestamp again before publication. Valid polygons and source properties go to `screening.water_features` in EPSG:3400. Rejected records and their source payloads go to `screening.water_feature_rejects`. Publication commits a single snapshot after all records are accounted for. An unchanged import reuses its ID. The source responses are traceable in the stored manifest and local HTTP cache. The comparison and app read from PostGIS. The default guard is 2 million records with 64 MiB per response and a 16 GiB cumulative transfer ceiling. The service may change records during a download. Count, ID and available edit metadata checks guard publication, and the manifest records the responses used.
 
-Results are stored in `screening.st37_waterbody_proximity` and tied to both immutable import IDs by `screening.waterbody_comparisons`. PostGIS uses `ST_DWithin` to find accepted polygons within 500 m and `ST_Distance` to measure the nearest qualifying geometry. A well inside a polygon has distance zero. The summary reports inclusive matches at 50, 100, 250 and 500 m. If coverage is incomplete, unmatched wells have unknown results. Snapshot selections and licence searches read stored data. Each button runs the corresponding write action.
+Results are stored in `screening.st37_waterbody_proximity` and tied to both immutable import IDs by `screening.waterbody_comparisons`. PostGIS uses `ST_DWithin` to find accepted polygons within 500 m and `ST_Distance` to measure the nearest qualifying geometry. A well inside a polygon has distance zero. The summary reports inclusive matches at 50, 100, 250 and 500 m. If coverage is incomplete, unmatched wells have unknown results. Snapshot selections and licence searches read stored data.
 
 ### Browse shuffled well batches
 
-Open **ST37 well inventory → Water proximity map** and choose an **Imported water layer**. The same map is available in the stored comparison under **PostGIS workflows**. Use **Next batch** or **Previous batch** to cycle through non-overlapping shuffled batches of up to 10,000 well points. The 541,188 positions on or inside Alberta span 55 batches, with 1,188 wells in the last batch. The controls wrap at either end. Switching water layers keeps the same wells in view. [Boundary check and coordinate accuracy](st37_excel.md#alberta-boundary-and-distance-accuracy)
+Open **ST37 well inventory → Water proximity map** and choose an **Imported water layer**. **Buffer distance** selects 50, 100, 250 or 500 m. The map starts at 500 m, showing wells with an observed distance at or below that value. PostgreSQL applies the filter before choosing the shuffled batch. Use **Next batch** or **Previous batch** to cycle through groups of up to 10,000 wells. The page resets when you change the matching buffer or water layer.
 
-The map draws each batch's well locations and the nearest accepted water features recorded within 500 m. Click a point for its licence, named feature when available, and stored distance or coverage result. Enter the exact licence to zoom to a single well. Map geometries are displayed in WGS84, and water shapes are simplified for display with a 25 m tolerance. PostGIS measures distances on the full accepted geometry in EPSG:3400. The threshold summary still counts the full 541,190-well comparison.
+Uncheck **Only show wells within the buffer** to browse all 541,188 mappable positions in 55 batches. The same unfiltered batch stays in view when you switch layers. Threshold summaries count the full 541,190-well comparison, including the two records flagged by the boundary audit. [Boundary check and coordinate accuracy](st37_excel.md#alberta-boundary-and-distance-accuracy)
+
+The map draws each batch's well locations and the nearest accepted water features recorded within 500 m. Click a point for its licence, water feature and stored distance or coverage result. An exact licence search shows the selected well and its buffer at the chosen radius, regardless of its distance to water. Map geometries are displayed in WGS84, and water shapes are simplified for display with a 25 m tolerance. PostGIS measures distances on the full accepted geometry in EPSG:3400.
 
 On 23 November 2026, Edge loaded OpenStreetMap tiles, cycled from the first batch to the last and back, and showed the same well position for licence `0321984` on both water layers. The stored distances of **195.26 m to Checker Lake** and **199.29 m to the Gregoire River** matched an independent PostGIS `ST_Distance` calculation using the imported geometries.
+
+On 24 November 2026, read-only queries verified buffer counts at all four distances. The audited map contains 57,367 stream matches and 71,941 waterbody matches at 500 m. One of the waterbody matches in the full comparison falls outside the Alberta boundary. Edge verified the buffer changes, two non-overlapping 10,000-point stream batches and the buffer around an exact licence result.
 
 ### Project database status
 
@@ -51,11 +55,11 @@ All **149 tests passed** with a disposable PostgreSQL 17/PostGIS database. The S
 
 ## Province-wide layer 107 streams
 
-In the same Streamlit panel, click **Import Alberta streams**. This loads every published line record from **Stream (20K), layer 107** into an independent PostGIS snapshot. The live publisher count and reconciled ID list contained **143,570 records** on 20 November 2026, and the first ten records matched their requested IDs. Alberta publishes this line layer in NAD83 / Alberta 10-TM Forest with the Open Government Licence – Alberta. [Official layer-107 metadata](https://geospatial.alberta.ca/titan/rest/services/environment/base_water_feature/MapServer/107)
+Run `python scripts/import_waterbodies.py --layer streams` to load **Stream (20K), layer 107** into an independent PostGIS snapshot. The live publisher count and reconciled ID list contained **143,570 records** on 20 November 2026, and the first ten records matched their requested IDs. Alberta publishes this line layer in NAD83 / Alberta 10-TM Forest with the Open Government Licence – Alberta. [Official layer-107 metadata](https://geospatial.alberta.ca/titan/rest/services/environment/base_water_feature/MapServer/107)
 
 The live button import published snapshot `502120a2-a315-56ae-94ac-4d59ebc8963f`. PostGIS reconciled **143,568 LineStrings** and **two retained invalid geometry records** to the full publisher count. Coverage is labelled incomplete.
 
-To compare streams with wells, select the stream snapshot as the **Alberta hydrography snapshot** and click **Run stream comparison** after choosing a datum-verified ST37 snapshot. The comparison evaluates perennial stream, canal, oxbow and ditch codes (`STR-PER`, `CANAL`, `OXBOW-PER`, `DITCH`) at the same four thresholds. The live count for those codes also totalled 143,570. All publisher attributes and validated lines remain in the inventory.
+Pass the stream snapshot ID as `--water-import-id` when running `scripts/compare_st37_waterbodies.py`. The comparison evaluates perennial stream, canal, oxbow and ditch codes (`STR-PER`, `CANAL`, `OXBOW-PER`, `DITCH`) at the same four thresholds. The live count for those codes also totalled 143,570. All publisher attributes and validated lines remain in the inventory.
 
 ## Verified sources and selection
 
@@ -70,19 +74,15 @@ Official metadata and bounded queries were checked on **10 November 2026**. [Bas
 
 These are full-base layers, rather than update-only hydrography. Explicit predicates exclude arbitrary manual/DEM flow connectors and omit icefields, quarry and dugout polygons from the default selection. Map renderer symbols are not assumed to filter query results. This is a documented screening choice; excluded water types may still matter. Layer scale does not establish survey accuracy or a regulatory setback.
 
-## Regional imports in Streamlit
+## Regional imports
 
 Fill the project's ignored `.env` with actual PostgreSQL/PostGIS connection details, then run:
 
 ```powershell
-.\.venv\Scripts\python.exe -m streamlit run app.py
+.\.venv\Scripts\python.exe scripts\import_hydrography.py
 ```
 
-Open **PostGIS workflows → Waterways → Import waterways**, then enable **Preview imported waterways**. The default imports `config/study_area.live.yml` (Drayton Valley) plus a projected **500 m margin**. **Include seasonal waterways** adds verified optional water sources. **Recheck water source updates** rechecks cached inputs. Preview shows actual lines and polygons, source codes and a downloadable manifest, with optional OpenStreetMap tiles.
-
-The control works before an analyzed well dataset exists. Imports occur only on button clicks; preview rerenders never re-import/download. The water preview is independent of synthetic well results. The normal **Run full pipeline** action uses the same water catalogue entries when the remaining core sources are ready. A private `SOURCE_CATALOG_PATH` takes precedence; copy verified water entries into it deliberately if using one.
-
-The preview retains the import selected by your last successful button action, including when switching back to an older cached base inventory after a seasonal import. The seasonal checkbox controls the independent inventory import. For seasonal sources in a full analytical run, explicitly enable those entries in your private source catalogue too.
+The default region is Drayton Valley plus a projected 500 m margin. Use `--include-seasonal` to add verified optional sources, `--refresh` to recheck cached inputs, or `--study-area` to choose a region definition. The verified multi-source pipeline uses the configured catalogue when all its required sources are ready. [Source configuration](data_access.md)
 
 The regional import guards against excess counts and fails without truncation. It applies the configured study area and feature-type selection.
 

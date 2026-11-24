@@ -8,7 +8,6 @@ import pytest
 import yaml
 from shapely.geometry import LineString, Polygon
 from sqlalchemy import text
-from streamlit.testing.v1 import AppTest
 
 from src.config import ROOT, Source, SourceCatalog, load_source_catalog, load_study_area
 from src.production.store import refresh_production
@@ -86,22 +85,6 @@ def test_local_files_load_spatial_and_verified_production_without_network(test_e
     assert len(view['verified'])==1 and view['verified'][0]['volume']=='12.50'
     assert a['validation']['link_status_counts']=={'verified':1,'facility':1}
     assert a['acquisition']['downloaded_at']=='2026-11-08T00:00:00+00:00'
-    monkeypatch.setenv('DATABASE_URL',test_engine.url.render_as_string(hide_password=False))
-    monkeypatch.setenv('SOURCE_CATALOG_PATH',str(file_catalog))
-    app=AppTest.from_file(str(ROOT/'app.py'), default_timeout=30)
-    app.query_params['dataset_mode']='PostGIS workflows'
-    app.run()
-    assert not app.exception
-    assert not next(b for b in app.button if b.label=='Run full pipeline').disabled
-    assert not next(b for b in app.button if b.label=='Refresh production').disabled
-    app.selectbox(key='detail_choice').select(dashboard['wells'][0]['well_pk']).run()
-    assert not app.exception
-    next(t for t in app.text_input if t.label=='Production start month').input('2026-09')
-    next(t for t in app.text_input if t.label=='Production end month').input('2026-09')
-    app.run()
-    next(b for b in app.button if b.label=='Refresh production').click().run()
-    assert not app.exception
-    assert len(app.get('vega_lite_chart'))==1
     with test_engine.connect() as conn:
         assert conn.execute(text('SELECT count(*) FROM screening.pipeline_runs')).scalar_one()==1
         assert conn.execute(text('SELECT count(*) FROM screening.production_batches')).scalar_one()==1

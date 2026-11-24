@@ -5,7 +5,7 @@ from streamlit.testing.v1 import AppTest
 from src.config import ROOT, load_study_area
 from src.sources.hydrography import import_waterways, latest_water_import, water_features
 from src.sources.http import HttpCache
-from tests.hydro_helpers import hydro_service
+from tests.hydro_helpers import hydro_service, water_controls_app
 
 pytestmark = pytest.mark.integration
 
@@ -65,8 +65,7 @@ def test_app_can_import_and_preview_water_before_wells_without_reimporting_on_re
             calls.append(kwargs)
             return run(engine, catalog, tmp_path, include_optional=kwargs['include_optional'])
         monkeypatch.setattr(water_ui, 'import_waterways', importer)
-        app = AppTest.from_file(str(ROOT/'app.py'))
-        app.query_params['dataset_mode'] = 'PostGIS workflows'
+        app = AppTest.from_function(water_controls_app)
         app.run(timeout=30)
         assert not app.exception
         app.button(key='import_waterways').click().run(timeout=30)
