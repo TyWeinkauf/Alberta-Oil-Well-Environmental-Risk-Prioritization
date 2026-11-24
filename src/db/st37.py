@@ -39,14 +39,16 @@ def documented_st37_crs(coordinate_crs, crs_evidence):
 
 @serialized_workflow
 def import_st37_workbook(engine, workbook: Path, raw_root: Path, *,
-                         coordinate_crs=None, crs_evidence=None, progress=lambda _: None):
+                         coordinate_crs=None, crs_evidence=None, release_date=None,
+                         progress=lambda _: None):
     """Prepare or reuse the retained workbook and stage its complete inventory."""
     coordinate_crs = documented_st37_crs(coordinate_crs, crs_evidence)
     area = load_study_area(ROOT / 'config/study_area.live.yml')
     report = retained_st37_report(workbook, area, raw_root, progress=progress)
     progress('Staging the complete ST37 inventory in PostGIS')
     return import_st37(engine, report, license_note=ST37_LICENSE_NOTE,
-                       coordinate_crs=coordinate_crs, crs_evidence=crs_evidence)
+                       coordinate_crs=coordinate_crs, crs_evidence=crs_evidence,
+                       release_date=release_date)
 
 
 @serialized_workflow

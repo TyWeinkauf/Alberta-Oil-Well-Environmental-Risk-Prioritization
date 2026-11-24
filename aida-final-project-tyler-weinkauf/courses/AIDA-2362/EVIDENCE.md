@@ -1,5 +1,13 @@
 # AIDA 2362 — GIS evidence index
 
+## November classroom release candidate
+
+The fictional reclamation screening team uses one surface-hole point per AER licence in two bounded study areas to see which locations enter a simulated water-proximity shortlist. The November ST37 sample contains 28 wells per region. NAD83 (EPSG:4269) supplies the preserved input coordinates, EPSG:3400 supplies metres, and WGS84 supplies displayed and GeoJSON coordinates. The maps show a scale bar. Use the regional view and zoom to the well to inspect its buffer. [Region extents, data and GIS methods](../../../docs/classroom_demo.md) · [Datum and geometry checks](../../../docs/st37_excel.md#verified-november-release-and-datum)
+
+With Water selected, the 500 m baseline includes 5 of 56 wells and the 100 m comparison includes 2. Red Deer changes from 2 to 1 and Drayton Valley from 3 to 1. Three licences leave the shortlist (`0016125`, `0173144`, `0430751`). The portable map, its exact CSV equivalent, regional screenshots and sensitivity manifest preserve the selected categories and threshold. The threshold changes who would be reviewed in this exercise. [Sensitivity results](../../../docs/classroom_demo.md#verification-and-remaining-work)
+
+The sample is deterministic and limited to two regions. It does not estimate prevalence across Alberta or reflect production, contamination, habitat, real hydrography, legal setbacks, community impact or Indigenous jurisdiction. Real locations remain public AER source records. Keep the demo educational and review real conditions with qualified reviewers and the relevant authorities before any operational use. The project used Codex for implementation and verification. The course's required student AI declaration, peer review and confirmation of the Streamlit/Folium alternative remain open. [AER terms](https://www.aer.ca/copyright-and-disclaimer) · [Course brief](README.md)
+
 **Classroom build, 20 November 2026.** The app opens the actual regional ST37 records in a preview. A declared-CRS test scenario verifies metre distances, selected-well buffers, baseline comparison and matching map/table exports. The browser test ran with external network access blocked from a copy that held only app files and the fixture package. The retained workbook datum is still required for the actual-well map and sensitivity export. [Classroom verification](../../../docs/classroom_demo.md#verification-and-remaining-work)
 
 **Current scope revision:** Petrinex/monthly production is excluded. AER well locations/attributes and environmental layers remain required; retained production evidence below is historical/optional and does not require a download. See [download checklist](../../../docs/download_inputs.md).

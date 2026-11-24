@@ -1,0 +1,77 @@
+{
+  "verified_local_date": "2026-11-23",
+  "raw_import_id": "73363997-10a0-5817-9546-57cdf2b2b1a5",
+  "projected_import_id": "4bb2ac73-df0b-5698-9295-c86028ced168",
+  "counts": {
+    "joined_rows": 541190,
+    "projected_distinct_licences": 541190,
+    "raw_staged_geometries": 0,
+    "valid_projected_geometries": 541190,
+    "projected_rejects": 0,
+    "projected_warning_rows": 6,
+    "changed_source_rows": 0
+  },
+  "comparisons": [
+    {
+      "summary": {
+        "comparison_id": "3313a0f2-629c-54e9-9686-a9e0f8c3d27c",
+        "st37_import_id": "4bb2ac73-df0b-5698-9295-c86028ced168",
+        "water_import_id": "9b833be4-ff85-5712-9b8a-7d34be2b761c",
+        "well_count": 541190,
+        "coverage_status": "incomplete",
+        "feature_count": 127189,
+        "quarantined_count": 38,
+        "scope": "alberta_layer_72",
+        "within_50": 1495,
+        "within_100": 5378,
+        "within_250": 28642,
+        "within_500": 71942,
+        "no_feature_within_500": 0,
+        "unknown_within_500": 469248,
+        "no_polygon_within_500": 0
+      },
+      "exact_licence_lookup": {
+        "well_licence_number": "0016125",
+        "observed_distance_m": null,
+        "coverage_status": "incomplete",
+        "result_state": "unknown_incomplete_coverage"
+      },
+      "observed_licence_lookup": {
+        "well_licence_number": "0000121",
+        "observed_distance_m": 39.907000769980996,
+        "coverage_status": "incomplete",
+        "result_state": "observed_match"
+      }
+    },
+    {
+      "summary": {
+        "comparison_id": "5be2b7cd-071c-5ce0-bd10-289a323238b0",
+        "st37_import_id": "4bb2ac73-df0b-5698-9295-c86028ced168",
+        "water_import_id": "502120a2-a315-56ae-94ac-4d59ebc8963f",
+        "well_count": 541190,
+        "coverage_status": "incomplete",
+        "feature_count": 143568,
+        "quarantined_count": 2,
+        "scope": "alberta_layer_107",
+        "within_50": 1831,
+        "within_100": 7390,
+        "within_250": 27380,
+        "within_500": 57367,
+        "no_feature_within_500": 0,
+        "unknown_within_500": 483823
+      },
+      "exact_licence_lookup": {
+        "well_licence_number": "0016125",
+        "observed_distance_m": null,
+        "coverage_status": "incomplete",
+        "result_state": "unknown_incomplete_coverage"
+      },
+      "observed_licence_lookup": {
+        "well_licence_number": "0000060",
+        "observed_distance_m": 47.94760306767835,
+        "coverage_status": "incomplete",
+        "result_state": "observed_match"
+      }
+    }
+  ]
+}

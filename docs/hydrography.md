@@ -28,9 +28,24 @@ The import reads a publisher count and the corresponding complete ID list. It re
 
 Results are stored in `screening.st37_waterbody_proximity` and tied to both immutable import IDs by `screening.waterbody_comparisons`. PostGIS uses `ST_DWithin` to find accepted polygons within 500 m and `ST_Distance` to measure the nearest qualifying geometry. A well inside a polygon has distance zero. The summary reports inclusive matches at 50, 100, 250 and 500 m. If coverage is incomplete, unmatched wells have unknown results. Snapshot selections and licence searches read stored data. Each button runs the corresponding write action.
 
+### Browse shuffled well batches
+
+Open a stored comparison and use **Next batch** or **Previous batch** under **ST37 wells and water features**. The app shuffles the selected well snapshot for the session and splits it into non-overlapping batches of up to 10,000 points. The 541,190-well snapshot has 55 batches. The last batch contains 1,190 wells, and the controls wrap at either end. Switching between waterbody and stream comparisons for the same well snapshot keeps the same well batch.
+
+The map draws each batch's well locations and the nearest accepted water features recorded within 500 m. Click a point for the original licence and its stored distance or coverage result. Water shapes are simplified for display. The full comparison supplies the summary counts and exact licence lookup.
+
+On 23 November 2026, SQL and Edge checks against project PostGIS verified 10,000 points in batches 1 and 2 and 1,190 in batch 55, with no repeated wells across those batches. The browser rendered the same batch against stream lines and waterbody polygons. `python -m pytest -q` passed all 149 tests in a disposable PostGIS database.
+
 ### Project database status
 
-Both live imports completed in the project database through Streamlit on **20 November 2026**. The layer-72 snapshot `9b833be4-ff85-5712-9b8a-7d34be2b761c` accounts for all **127,227** publisher records. PostGIS contains **127,189 valid polygons** and **38 quarantined records** with their invalid geometry payloads. The snapshot records incomplete coverage. The ST37 snapshot `73363997-10a0-5817-9546-57cdf2b2b1a5` contains **541,190 distinct licences** with the reported coordinates. The actual comparison awaits the workbook’s geographic datum.
+The 20 November imports preserved raw ST37 snapshot `73363997-10a0-5817-9546-57cdf2b2b1a5` and layer-72 snapshot `9b833be4-ff85-5712-9b8a-7d34be2b761c`. Layer 72 accounts for all **127,227** publisher records as **127,189 valid polygons** and **38 quarantined records**. On 23 November the Streamlit buttons created projected ST37 snapshot `4bb2ac73-df0b-5698-9295-c86028ced168` and ran both provincial comparisons. The snapshot has **541,190 valid EPSG:3400 points** and preserves every licence, source coordinate and attribute from the raw import. [ST37 datum and release](st37_excel.md#verified-november-release-and-datum)
+
+| Stored comparison | Within 50 m | Within 100 m | Within 250 m | Within 500 m | Unknown within 500 m |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Layer 72 waterbodies `3313a0f2-629c-54e9-9686-a9e0f8c3d27c` | 1,495 | 5,378 | 28,642 | 71,942 | 469,248 |
+| Layer 107 streams `5be2b7cd-071c-5ce0-bd10-289a323238b0` | 1,831 | 7,390 | 27,380 | 57,367 | 483,823 |
+
+Each comparison has one result per licence. The limits are inclusive and count observed matches in the accepted geometries. Both source snapshots record incomplete coverage, so unmatched wells remain unknown. An exact text lookup confirmed leading-zero licences in the stored results. [SQL reconciliation and comparison evidence](evidence/postgis_hydrography_2026-11-23.json)
 
 All **149 tests passed** with a disposable PostgreSQL 17/PostGIS database. The Streamlit checks cover the import and comparison buttons, the threshold summary, a leading-zero licence lookup, failed-refresh recovery, datum gating and read-only reruns.
 
@@ -92,4 +107,4 @@ Actual Drayton Valley imports were validated in a **separate temporary database*
 
 Repeats reuse the same IDs/counts. SQL verifies valid EPSG:3400 geometry, zero arbitrary flow connectors and zero published screening runs. Rejected layer-72 `OBJECTID=249048`, `RIV-MAJ` has a source ring self-intersection. It is quarantined without silent repair. Its absence is not evidence that no river is nearby; coverage stays incomplete until the gap is defensibly resolved.
 
-The project database holds the provincial inventories tracked above. The full multi-source screening workflow still needs the workbook datum and verified protected-area and habitat inputs. [Data inventory](../aida-final-project-tyler-weinkauf/shared-resources/data-inventory.md) · [Design tracker](../DESIGN.md#remaining-work-in-order)
+The project database holds the provincial inventories and water-only comparisons above. The full multi-source screening workflow still needs verified protected-area and habitat inputs. [Data inventory](../aida-final-project-tyler-weinkauf/shared-resources/data-inventory.md) · [Design tracker](../DESIGN.md#remaining-work-in-order)

@@ -1,0 +1,103 @@
+{
+  "checked_at_local_date": "2026-11-23",
+  "package_id": "be309ddb88b070ae8e12aec2187f4da254d064f27000abe6b7b39a7f7242c219",
+  "original_workbook_and_inventory_unchanged": true,
+  "compared_well_rows": 56,
+  "regional_and_combined_results_equal": true,
+  "browser": "Microsoft Edge via Playwright, remote HTTP requests blocked",
+  "browser_requested_remote_hosts": [],
+  "app_and_export_count": 56,
+  "teacher_zip_rebuild_identical": true,
+  "package_rebuild_identical": true,
+  "company_and_category_filters_checked": true,
+  "counts_water_by_region_and_threshold_m": {
+    "red_deer": {
+      "50": 1,
+      "100": 1,
+      "250": 2,
+      "500": 2
+    },
+    "drayton_valley": {
+      "50": 1,
+      "100": 1,
+      "250": 2,
+      "500": 3
+    },
+    "both": {
+      "50": 2,
+      "100": 2,
+      "250": 4,
+      "500": 5
+    }
+  },
+  "sensitivity": {
+    "baseline_m": 500,
+    "baseline_matched": 5,
+    "baseline_unknown": 0,
+    "changed_count": 3,
+    "changed_m": 100,
+    "changed_matched": 2,
+    "changed_unknown": 0,
+    "changed_well_ids": [
+      "0016125",
+      "0173144",
+      "0430751"
+    ]
+  },
+  "course_candidate_packages": {
+    "AIDA-1145-classroom-candidate.zip": {
+      "size_bytes": 223721,
+      "sha256": "860c8fd43ad16346227745673ec4dcbbcfac32b406b95bba950cd373c0afa266"
+    },
+    "AIDA-2362-classroom-candidate.zip": {
+      "size_bytes": 691764,
+      "sha256": "3f0dbab3a3bea7202b4b1358292f7cb80bd80c6db6e084a4a7f5f86134af466d"
+    }
+  },
+  "artifacts": {
+    "st37-classroom.zip": {
+      "size_bytes": 197250,
+      "sha256": "87c4c44af5d26c4b0e5413c8df2da5f99650041931cf044976761eb0727b58e6"
+    },
+    "demo.json": {
+      "size_bytes": 43103,
+      "sha256": "f7b05b3cef74d4c7f63257131e650faa8ec76743be084de8ce126c96ae8c571d"
+    },
+    "both-regions-map.png": {
+      "size_bytes": 44603,
+      "sha256": "bd3d3687d2cbd6d02af90faaa35a9c8aa94271e26d63e7fe21d652e8a82d5d64"
+    },
+    "classroom_manifest.json": {
+      "size_bytes": 3320,
+      "sha256": "6e075814c50b5cbfbd4e46095b9e66aa409f6a433199f8525570f0ad3be5d134"
+    },
+    "classroom_map.html": {
+      "size_bytes": 442303,
+      "sha256": "4612a234b6f0190265cba340070c2cac3d5fccbcf3883cd772d2bdc6352a94b4"
+    },
+    "classroom_wells.csv": {
+      "size_bytes": 43391,
+      "sha256": "e38c070873d7fbae5971e7fb9a0bf196d169f20788565851a489042f32608ad8"
+    },
+    "classroom_wells.geojson": {
+      "size_bytes": 111896,
+      "sha256": "74f4f2a2c0c8a40692ce4ebc8ad663a3e3a7d59da0e503e3497c917fda6ac758"
+    },
+    "drayton-valley-map.png": {
+      "size_bytes": 171804,
+      "sha256": "4b4bdd173f832be8329d6ad0d24ece5ba8f7597959e5580816f50ad9f26218ab"
+    },
+    "drayton-valley-table.csv": {
+      "size_bytes": 22107,
+      "sha256": "96eb088757a5f4670d9db5d0132ec5a5f7b2a5be1ada8025e57a84102900a946"
+    },
+    "red-deer-map.png": {
+      "size_bytes": 144748,
+      "sha256": "a16268377a939bec3e9f988603125b92e690c385bd26f5921099fec73230a513"
+    },
+    "red-deer-table.csv": {
+      "size_bytes": 21806,
+      "sha256": "119d06a32d96d0268bba0af66b2542b8c9d5d253b204618609f8547a7eaf9ec8"
+    }
+  }
+}

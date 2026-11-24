@@ -1,5 +1,25 @@
 # Data dictionary
 
+## Classroom selection CSV
+
+The classroom export `classroom_wells.csv` has one row per visible sampled ST37 surface-hole licence. The manifest supplies the region and filter settings shared by the CSV, WGS84 GeoJSON and standalone map.
+
+| Columns | Type and interpretation |
+| --- | --- |
+| `run_id`, `source_well_id`, `source_row` | Package digest, original text licence key with leading zeros, and integer Excel row number |
+| `region`, `licensee_name`, `lsd_text`, `status` | Region name and source licensee, legal location and licence status text |
+| `source_latitude`, `source_longitude`, `source_crs` | Original source values in NAD83 degrees with their verified CRS identifier |
+| `latitude`, `longitude` | WGS84 display coordinates in degrees |
+| `Licence_Status_Date`, `Ground_Elevation`, `Spud_Date`, `Most_Recent_Final_Drill_Date`, `Energy_Devlpmt_Category_Type`, `quality_warnings` | Source representations, with blank optional values and preserved warning entries |
+| `uwi_if_available`, `operator_name_if_verified` | Optional text fields. The retained workbook supplies neither field. |
+| `distance_m`, `observed_min_distance_m`, `band` | Simulated nearest selected feature distances in EPSG:3400 metres and the resulting category of proximity. A blank distance can indicate no qualifying feature within 500 m. |
+| `threshold_m`, `matches_threshold`, `within_50`, `within_100`, `within_250`, `within_500`, `coverage_complete` | Selected threshold, inclusive boolean match flags and scenario coverage. An unknown match flag is blank. |
+| `selected_categories`, `mode`, `well_provenance`, `environment_provenance`, `source_credit`, `disclaimer` | Semicolon-delimited categories and interpretation/attribution text |
+
+Licence and date strings should be imported as text when using a spreadsheet. See the [workbook schema](st37_excel.md#actual-schema-and-meaning), [classroom results](classroom_demo.md#verification-and-remaining-work) and [CSV export implementation](../src/exports/selection.py).
+
+## PostGIS tables
+
 All project tables are in `screening`. Geometry storage is EPSG:3400; output maps will transform to EPSG:4326 in later phases. Table/column definitions and constraints are authoritative in the numbered files under `sql/migrations/`.
 
 | Table | Grain / keys | Important fields |

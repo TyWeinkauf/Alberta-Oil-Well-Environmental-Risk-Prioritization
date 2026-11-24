@@ -10,7 +10,8 @@ from streamlit.testing.v1 import AppTest
 from src.config import ROOT, load_study_area
 from src.db.st37 import import_st37
 from src.db.waterbodies import (
-    compare_st37_waterbodies, latest_province_waterbodies, waterbody_comparison_summary, waterbody_result,
+    compare_st37_waterbodies, latest_province_waterbodies, waterbody_comparison_summary,
+    waterbody_map_batch, waterbody_result,
 )
 from src.sources.http import HttpCache
 from src.sources.hydrography import latest_water_import
@@ -62,14 +63,35 @@ def test_province_pages_preserve_every_id_then_compare_verified_wells(test_engin
     assert match['observed_distance_m'] == 0 and match['nearest_source_feature_id'] == '10'
     unmatched = waterbody_result(test_engine, comparison, '0000013')
     assert unmatched['result_state'] == 'unknown_incomplete_coverage'
+    pages = [waterbody_map_batch(test_engine, comparison, seed=123, offset=index, limit=1) for index in (0, 1)]
+    assert waterbody_map_batch(test_engine, comparison, seed=123, limit=1) == pages[0]
+    assert waterbody_map_batch(test_engine, comparison, seed=123, offset=2, limit=1) == ([], [])
+    assert sorted(wells[0]['well_licence_number'] for wells, _ in pages) == ['0000012', '0000013']
+    for wells, features in pages:
+        point = wells[0]
+        assert point['geometry']['type'] == 'Point'
+        if point['well_licence_number'] == '0000012':
+            assert point['observed_distance_m'] == 0
+            assert [feature['source_feature_id'] for feature in features] == ['10']
+            assert features[0]['geometry']['type'] == 'Polygon'
+        else:
+            assert point['observed_distance_m'] is None and features == []
+    with pytest.raises(ValueError, match='10,000'):
+        waterbody_map_batch(test_engine, comparison, seed=123, limit=10_001)
     with test_engine.connect() as conn:
         assert conn.execute(text('SELECT count(*) FROM screening.pipeline_runs')).scalar_one() == 0
     monkeypatch.setenv('DATABASE_URL', test_engine.url.render_as_string(hide_password=False))
+    monkeypatch.setattr(waterbody_workflow, 'WELL_MAP_BATCH_SIZE', 1)
     app = AppTest.from_file(str(ROOT / 'app.py'), default_timeout=20)
     app.query_params['dataset_mode'] = 'PostGIS workflows'
     app.run()
     app.checkbox(key='province_water_comparison').check().run()
     assert not app.exception and any('2 ST37 wells' in element.value for element in app.caption)
+    assert any('Batch 1 of 2 · Showing 1 of 2 wells' in element.value for element in app.caption)
+    app.button(key='province_map_next').click().run()
+    assert not app.exception and any('Batch 2 of 2 · Showing 1 of 2 wells' in element.value for element in app.caption)
+    app.button(key='province_map_next').click().run()
+    assert any('Batch 1 of 2 · Showing 1 of 2 wells' in element.value for element in app.caption)
     app.text_input(key='province_water_licence').input('0000012').run()
     assert not app.exception
     assert any('well_licence_number' in frame.value and frame.value['well_licence_number'].tolist() == ['0000012']
@@ -113,6 +135,7 @@ def test_app_buttons_load_inputs_and_compare_with_read_only_reruns(test_engine, 
         app.text_input(key='st37_coordinate_crs').input('EPSG:4326').run()
         assert app.button(key='import_st37_workbook').disabled
         app.text_area(key='st37_crs_evidence').input('Declared WGS84 for the test workbook').run()
+        app.date_input(key='st37_release_date').set_value('2026-11-03').run()
         assert app.button(key='compare_waterbodies').disabled
         assert len(app.session_state.actions) == 2
         app.button(key='import_st37_workbook').click().run()
@@ -138,6 +161,8 @@ def test_app_buttons_load_inputs_and_compare_with_read_only_reruns(test_engine, 
         assert any('1 ST37 wells' in element.value for element in app.caption)
         with test_engine.connect() as conn:
             assert conn.execute(text('SELECT count(*) FROM screening.st37_imports')).scalar_one() == 2
+            assert conn.execute(text('SELECT release_date::text FROM screening.st37_imports WHERE import_id=:id'),
+                                {'id': well_id}).scalar_one() == '2026-11-03'
             assert conn.execute(text('SELECT count(*) FROM screening.water_imports')).scalar_one() == 1
             assert conn.execute(text('SELECT count(*) FROM screening.waterbody_comparisons')).scalar_one() == 1
 

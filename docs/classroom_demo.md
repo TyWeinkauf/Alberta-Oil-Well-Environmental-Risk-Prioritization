@@ -1,6 +1,6 @@
 # Red Deer and Drayton Valley classroom demo
 
-**Status — 20 November 2026.** The offline Streamlit well preview is available from a prepared 27,214-byte package. It has 56 actual ST37 surface-hole records and preserves their source coordinate values. The app's illustrative geometry, distances and exports have a separate documented-CRS path. The retained Excel datum remains open.
+**Status — 23 November 2026.** The offline Streamlit demo reads a 43,103-byte package of 56 actual November ST37 surface-hole records. It displays their published locations using verified NAD83 coordinates, with 12 synthetic features and simulated proximity results. [Workbook datum verification](st37_excel.md#verified-november-release-and-datum)
 
 Reference archive SHA-256: `cd3bb2b438775ec346d294745651907122789ee85896a95d242c514c75040a53`. The original Word design remains a reference; DESIGN.md remains the maintained project design.
 
@@ -20,7 +20,7 @@ Required banner and export wording:
 
 This deliberately labelled illustrative mode is separate from both the existing fully synthetic regression fixture and an all-real screening run. A network/source failure must never silently replace real environmental data with invented features.
 
-## What is already done
+## Earlier implementation evidence
 
 | Existing evidence | Implication for the demo |
 |---|---|
@@ -30,11 +30,11 @@ This deliberately labelled illustrative mode is separate from both the existing 
 | Streamlit map, stable well selection, licence/company filters, details, exports and metre-based threshold logic tested | Reuse the working components through a small offline dataset adapter. |
 | Vendored Leaflet/jQuery assets and no-tile rendering already work | Preserve these; the starter's default online tiles/plugins would not improve offline reliability. |
 | Bounded real-water import/preview and raw-property lineage implemented | Preserve as optional real-source functionality. It is not a prerequisite for the synthetic-environment classroom path. |
-| Latest retained runtime verification: 142 unit/PostGIS tests plus type/running-app checks | Historical baseline for the current app. New two-region classroom acceptance still needs implementation and fresh verification. |
+| Earlier runtime verification: 142 unit/PostGIS tests plus type/running-app checks | Baseline for the original PostGIS app. The released classroom dataset has its own verification below. |
 
 The app starts in **Classroom demo**. Select **PostGIS workflows** for the existing synthetic database fixture, water preview and verified-source tools.
 
-## Well preservation and proposed regional display
+## Well preservation and regional display
 
 Retain these existing inputs unchanged:
 
@@ -44,13 +44,13 @@ Retain these existing inputs unchanged:
 
 A read-only scan of that inventory on 10 November found:
 
-| Region | Working bounding box `[west, south, east, north]` | Preview candidates | Preview sample |
+| Region | WGS84 bounding box `[west, south, east, north]` | Candidates | Sample |
 |---|---|---:|---:|
 | Red Deer | `[-113.88, 52.22, -113.74, 52.32]` | 105 | 28 |
 | Drayton Valley | `[-115.08, 53.20, -114.94, 53.30]` | 477 | 28 |
 | Both | Two separate rectangles, not their combined enclosing rectangle | 582 | 56 |
 
-The Drayton rectangle preserves the existing pilot. The Red Deer rectangle centers the preview on the classroom study area. The preview counts come from the reported decimal-degree coordinates. With CRS evidence, preparation transforms the original coordinates to WGS84 for region membership before projection to EPSG:3400 metres. Final datum-aware counts remain open under 7.1.
+The Drayton rectangle preserves the existing pilot. The Red Deer rectangle centers the classroom study area. With the verified November workbook CRS (EPSG:4269), preparation transforms the original coordinates to WGS84 for region membership and uses EPSG:3400 for metre distances. Datum-aware counts are 105 for Red Deer and 477 for Drayton Valley. [Workbook datum verification](st37_excel.md#verified-november-release-and-datum)
 
 The 28-per-region limit is a presentation setting in `config/demo_regions.yml`. Preparation ranks eligible original licence IDs by seeded SHA-256 per region, independent of the synthetic feature generator. The app reports candidate, sampled and visible counts. The package keeps selected IDs, workbook values, warning annotations and source hashes.
 
@@ -96,16 +96,18 @@ From the repository root with the pinned Python 3.12 dependencies installed, lau
 
 The app uses `data/demo/classroom/demo.json` by default. On this machine the file is prepared locally. For a clean checkout, place the permitted small JSON package at that path or set `CLASSROOM_DEMO_PATH` to its location before launch. Install dependencies before taking the machine offline. Leave the optional OpenStreetMap tiles off for offline maps.
 
-The local archive `outputs/classroom/st37-classroom-preview.zip` contains the app, pinned requirements, vendored assets, the 56-well preview and `START.md`. Its extracted copy launched with the current Windows Python 3.12 environment and showed 28 Red Deer or 56 combined records. The archive is 172,748 bytes with SHA-256 `37659b13a9245ee82fd700f6a85cbc7b4e1214cdd6f533ac1369e32ef3a9b203`.
+The teacher archive is `outputs/classroom/st37-classroom.zip`. Extract it and follow `START.md`. It contains the app, pinned requirements, vendored assets and the prepared package. Two builds were byte-identical at 197,250 bytes, SHA-256 `87c4c44af5d26c4b0e5413c8df2da5f99650041931cf044976761eb0727b58e6`.
 
 Recreate the current package from the original preparation report and its adjacent inventory. Both input files are opened read-only.
 
 ```powershell
 $report = 'data/raw/st37/7b77926624ee1c2c7fb554d8426eab5ac5b1c6a17d7226fce6429cd2b3c1d8f4/report.json'
-.\.venv\Scripts\python.exe scripts\prepare_classroom_demo.py --report $report
+$evidence = 'AER ST37 release 2026-11-03: exact workbook SHA-256 and all 541,190 coordinate pairs matched the same-release geodatabase. NAD83 projected points match within 0.000109 m. Evidence: docs/st37_excel.md and docs/evidence/st37_datum_2026-11-23.json.'
+.\.venv\Scripts\python.exe scripts\prepare_classroom_demo.py --report $report --coordinate-crs EPSG:4269 --crs-evidence $evidence --release-date 2026-11-03
+.\.venv\Scripts\python.exe scripts\package_classroom_demo.py
 ```
 
-Once the workbook's geographic CRS has been verified, supply both `--coordinate-crs` and `--crs-evidence` to the same preparation command. The resulting package activates the synthetic layer controls, buffers, threshold comparison, GeoJSON and standalone map. The package keeps its checksum, source attribution, native and analysis CRS, seed and region definitions. A failed build retains the prior package.
+The package keeps its checksum, source attribution, release date, native and analysis CRS, seed and region definitions. A failed build retains the prior package. Running preparation without coordinate evidence produces the reported-coordinate preview.
 
 For the teacher handoff, include the permitted small package, app, dependencies and vendored assets. Keep AER attribution in the release and record the permission basis. See [source and permissions](st37_excel.md) and the [optional real-water workflow](hydrography.md).
 
@@ -115,4 +117,16 @@ The retained package reproduced byte-for-byte. All 56 selected records matched t
 
 With a disposable PostGIS instance, `python -m pytest -q` passed 146 tests. A separate offline Edge run from an isolated copy used only the app and a small known-CRS test package. It verified two marker clicks, the selected-well buffer and matching CSV, GeoJSON, manifest and standalone HTML.
 
-Final classroom acceptance requires the actual workbook datum, a projected regional package, screenshots and a sensitivity result from that package, and separate course handoffs. [Phase 7 progress](../DESIGN.md#13-phased-codex-implementation-plan) · [Course milestones](../aida-final-project-tyler-weinkauf/project-progress.md)
+For the Water scenario the number of sampled wells within each simulated distance is:
+
+| Region | 50 m | 100 m | 250 m | 500 m |
+| --- | ---: | ---: | ---: | ---: |
+| Red Deer | 1 | 1 | 2 | 2 |
+| Drayton Valley | 1 | 1 | 2 | 3 |
+| Both | 2 | 2 | 4 | 5 |
+
+Changing from 500 m to 100 m removes three wells from the simulated shortlist (`0016125`, `0173144`, `0430751`). The shortlist illustrates threshold sensitivity on this sampled scenario. Its counts apply to the generated water shapes. [Phase 7 progress](../DESIGN.md#13-phased-codex-implementation-plan) · [Course milestones](../aida-final-project-tyler-weinkauf/project-progress.md)
+
+The final classroom check launched the extracted teacher ZIP on Windows using installed Python 3.12 dependencies. Microsoft Edge ran with external HTTP requests blocked and requested no remote hosts. The browser verified the three region views, 100 m and 250 m thresholds, two marker clicks and buffers, and matching CSV, GeoJSON, manifest and standalone HTML. The running Streamlit API checked company and category filters. Both regional CSVs matched their rows in the combined export. `python -m pytest -q` passed all 149 tests with a disposable PostgreSQL/PostGIS database. [Checksums and counts](evidence/classroom_2026-11-23.json)
+
+The separate classroom review candidates are `outputs/classroom/AIDA-1145-classroom-candidate.zip` and `outputs/classroom/AIDA-2362-classroom-candidate.zip`. The first contains the analysis-ready table, release lineage and validation. The second contains the map, screenshots and matching tables. Each contains the teacher ZIP. The AIDA 2362 brief specifies QGIS and instructor confirmation of the Streamlit/Folium alternative remains open. [AIDA 1145 evidence](../aida-final-project-tyler-weinkauf/courses/AIDA-1145/EVIDENCE.md) · [AIDA 2362 evidence](../aida-final-project-tyler-weinkauf/courses/AIDA-2362/EVIDENCE.md)

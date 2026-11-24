@@ -3,6 +3,7 @@ import hashlib
 import json
 import os
 import tempfile
+from datetime import date
 from pathlib import Path
 
 from src.config import ROOT
@@ -108,7 +109,8 @@ def decode_package(contents: bytes) -> dict:
 
 
 def prepare_package(report_path: Path, config: DemoRegions, output: Path, *,
-                    coordinate_crs: str | None = None, crs_evidence: str | None = None) -> dict:
+                    coordinate_crs: str | None = None, crs_evidence: str | None = None,
+                    release_date: date | None = None) -> dict:
     """Read the retained inventory snapshot. Publish the new package in one replacement."""
     report_path, output = report_path.resolve(), output.resolve()
     if output.suffix.lower() != '.json' or output == report_path:
@@ -142,7 +144,8 @@ def prepare_package(report_path: Path, config: DemoRegions, output: Path, *,
             'workbook_sha256': source['sha256'], 'inventory_sha256': inventory_hash,
             'inventory_report_sha256': hashlib.sha256(report_bytes).hexdigest(),
             'inventory_identity': report['identity'], 'inventory_wells': report['accepted_rows'],
-            'release_date': source.get('release_date'), 'downloaded_at': source.get('downloaded_at'),
+            'release_date': release_date.isoformat() if release_date else source.get('release_date'),
+            'downloaded_at': source.get('downloaded_at'),
             'provenance': WELL_PROVENANCE,
         },
         'generator_version': GENERATOR_VERSION,
@@ -177,9 +180,10 @@ def dashboard_for(package: dict, region_ids: tuple[str, ...]) -> dict:
         points = projected_wells(group['wells'], coordinate['crs']) if coordinate else {}
         for row in group['wells']:
             raw = row['raw']
-            source_coordinates = (raw['SH_Actual_Longitude'], raw['SH_Actual_Latitude'])
+            source_longitude, source_latitude = raw['SH_Actual_Longitude'], raw['SH_Actual_Latitude']
             longitude, latitude = (
-                to_display.transform(*map(float, source_coordinates), errcheck=True) if to_display else (None, None)
+                to_display.transform(float(source_longitude), float(source_latitude), errcheck=True)
+                if to_display else (None, None)
             )
             point = points.get(row['source_row'])
             dashboard['wells'].append({
@@ -188,7 +192,7 @@ def dashboard_for(package: dict, region_ids: tuple[str, ...]) -> dict:
                 'lsd_text': raw['Licence_Surface_Location_Label'], 'status': raw['Licence_Status'],
                 'operator_name_if_verified': None, 'uwi_if_available': None,
                 'longitude': longitude, 'latitude': latitude,
-                'source_longitude': source_coordinates[0], 'source_latitude': source_coordinates[1],
+                'source_longitude': source_longitude, 'source_latitude': source_latitude,
                 'source_crs': coordinate['crs'] if coordinate else None,
                 'analysis_x': point.x if point else None, 'analysis_y': point.y if point else None,
                 'source_credit': SOURCE_CREDIT, 'well_provenance': WELL_PROVENANCE,

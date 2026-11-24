@@ -1,6 +1,7 @@
 """Create a small, reproducible classroom package from a retained ST37 report and inventory."""
 import argparse
 import json
+from datetime import date
 from pathlib import Path
 
 from _bootstrap import run_cli
@@ -17,9 +18,12 @@ def main():
     parser.add_argument('--output', type=Path, default=DEFAULT_PACKAGE)
     parser.add_argument('--coordinate-crs', help='Verified geographic EPSG CRS of the workbook columns')
     parser.add_argument('--crs-evidence', help='Publisher metadata or written confirmation for the workbook datum')
+    parser.add_argument('--release-date', type=date.fromisoformat,
+                        help='Verified publisher release date (YYYY-MM-DD)')
     args = parser.parse_args()
     package = prepare_package(args.report, load_regions(args.regions), args.output,
-                              coordinate_crs=args.coordinate_crs, crs_evidence=args.crs_evidence)
+                              coordinate_crs=args.coordinate_crs, crs_evidence=args.crs_evidence,
+                              release_date=args.release_date)
     print(json.dumps({
         'path': str(args.output.resolve()), 'bytes': args.output.stat().st_size,
         'package_id': package['package_id'], 'readiness': package['manifest']['readiness'],

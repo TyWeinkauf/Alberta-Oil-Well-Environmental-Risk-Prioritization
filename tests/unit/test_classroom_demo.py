@@ -1,6 +1,7 @@
 """Classroom package, metre-analysis and no-DB app regression checks."""
 import csv
 import json
+from datetime import date
 from pathlib import Path
 
 import pytest
@@ -81,13 +82,15 @@ def projected_package(source_inventory, tmp_path):
     _, _, report = source_inventory
     output = tmp_path / 'known-crs.json'
     package = prepare_package(report, load_regions(), output,
-                              coordinate_crs='EPSG:4326', crs_evidence='Declared datum of synthetic test fixture')
+                              coordinate_crs='EPSG:4326', crs_evidence='Declared datum of synthetic test fixture',
+                              release_date=date(2026, 11, 3))
     return package, output
 
 
 def test_standalone_and_both_regions_agree(projected_package):
     package, output = projected_package
     data = decode_package(output.read_bytes())
+    assert data['manifest']['source']['release_date'] == '2026-11-03'
     both = dashboard_for(data, REGION_IDS)
     assert len(both['proximity']) == 5 * len(both['wells'])
     for key in REGION_IDS:

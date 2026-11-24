@@ -1,0 +1,69 @@
+{
+  "date_checked": "2026-11-23",
+  "publisher": "Alberta Energy Regulator",
+  "publisher_index": "https://www.aer.ca/providing-information/data-and-reports/statistical-reports?page=0",
+  "release_date": "2026-11-03",
+  "original_downloaded_at": null,
+  "inventory_sha256": "acee23f2655e8036aa9bc6d34d45c153328b534602e3f05ed1307d7417c3251e",
+  "workbook_sha256": "5b7139f06817b3458689bb82a3219c963165e3e671373e493222d948bb08e4f4",
+  "excel": {
+    "url": "https://static.aer.ca/prd/documents/sts/st37/ST_37_Excel.zip",
+    "etag": "0x8DF3AACBFF63E3C",
+    "size_bytes": 184243719,
+    "directory_range": "184112647-184243718",
+    "member": "ST_37_Excel/ST37_SH.xlsx",
+    "member_range": "125670470-164074251",
+    "member_bytes": 38596313,
+    "member_crc32": "9b281058",
+    "member_sha256": "5b7139f06817b3458689bb82a3219c963165e3e671373e493222d948bb08e4f4"
+  },
+  "geodatabase": {
+    "url": "https://static.aer.ca/prd/documents/sts/st37/ST_37_GeoDB.zip",
+    "etag": "0x8DF3AACDF71C08C",
+    "size_bytes": 1325997112,
+    "directory_range": "1325866040-1325997111",
+    "catalog_range": "0-100814",
+    "layer_range": "254177092-284847612",
+    "layer_file": "ST_37_Wells.gdb/a00000056.gdbtable",
+    "layer_file_crc32": "7aa1e86a",
+    "layer": "ST37_Surface_Hole_NAD83_10TM_AEP_Forest",
+    "geometry_crs": "EPSG:3400",
+    "geometry_base_crs": "EPSG:4269",
+    "valid_points": 541190,
+    "catalog_sha256": "c557c79cf85655efc55fa8ff7dbe9cc0fe82333c155ca5e621f42f17543a969e",
+    "layer_sha256": "c3432e32b6ecb297b55e30d48de1feb307235e93da26f0cc8273f70f4beb8c6e"
+  },
+  "coordinate_fields": [
+    "SH_Actual_Latitude",
+    "SH_Actual_Longitude"
+  ],
+  "join": "Exact textual Well_Licence_Number",
+  "licences_matched": 541190,
+  "max_field_difference_degrees": {
+    "SH_Actual_Latitude": 0.0,
+    "SH_Actual_Longitude": 0.0
+  },
+  "records_equal_to_14_decimal_places": 541190,
+  "coordinate_residual_m": {
+    "0": 4.311596685070163e-08,
+    "25": 2.8186833283099583e-05,
+    "50": 4.009552082083587e-05,
+    "95": 6.245035342928898e-05,
+    "99": 7.152570739495325e-05,
+    "100": 0.000108669221789701
+  },
+  "coordinate_transform": "Alberta 10-degree TM (Forest) (with axis order normalized for visualization)",
+  "over_0.2_m": 0,
+  "over_1_m": 0,
+  "over_10_m": 0,
+  "region_residuals": {
+    "red_deer": {
+      "candidates": 105,
+      "max_m": 6.52116210700112e-05
+    },
+    "drayton_valley": {
+      "candidates": 477,
+      "max_m": 6.892825668307551e-05
+    }
+  }
+}

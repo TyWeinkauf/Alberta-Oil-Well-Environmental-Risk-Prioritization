@@ -8,6 +8,12 @@ The publisher [ST37 page](https://www.aer.ca/data-and-performance-reports/statis
 
 **Publisher check, 20 November 2026.** The user supplied the current ST37 product page. It confirms monthly distribution and directs readers to the ZIP metadata. The linked guide lists the workbook's latitude and longitude fields under the projected surface-hole geodatabase layer. The page and guide leave the retained workbook's release month and native coordinate datum unresolved. The local network could not retrieve the Excel archive directory via a bounded range request. [AER ST37](https://www.aer.ca/data-and-performance-reports/statistical-reports/st37) · [ST37 reference guide, page 3](https://www.aer.ca/prd/documents/sts/st37/ST37_ReferenceGuide.pdf#page=3)
 
+## Verified November release and datum
+
+On 23 November 2026, bounded HTTPS range requests recovered the AER Excel ZIP directory and its single surface-hole member. The decompressed `ST37_SH.xlsx` matches the retained workbook at all 38,596,313 bytes by SHA-256. AER's index lists this monthly update on 3 November 2026, which also matches the date on the exact ZIP member. The retained workbook's original download time is still unknown. [AER statistical reports index](https://www.aer.ca/providing-information/data-and-reports/statistical-reports?page=0) · [Range and checksum evidence](evidence/st37_datum_2026-11-23.json)
+
+The paired November geodatabase's catalog documents NAD83 lineage for the ST37 surface-hole locations. Inspection found 541,190 valid points in EPSG:3400 with NAD83 geographic base CRS EPSG:4269. An exact string join on `Well_Licence_Number` matched every retained row and both coordinate fields exactly. Projecting the workbook columns from EPSG:4269 to EPSG:3400 reproduced all publisher point geometries within **0.000109 m**. This verifies the workbook coordinate interpretation against the corresponding publisher geometry. The residual measures agreement between formats. Ground position accuracy requires independent survey evidence. [AER ST37 distributions](https://www.aer.ca/data-and-performance-reports/statistical-reports/st37) · [Comparison evidence](evidence/st37_datum_2026-11-23.json)
+
 ## Actual schema and meaning
 
 Worksheet: `ST37_Surface_Holes`. Every source field is retained in the inventory CSV and in each database row's `raw_payload`.
@@ -28,7 +34,7 @@ Worksheet: `ST37_Surface_Holes`. Every source field is retained in the inventory
 
 No UWI or verified operator is supplied by this sheet. These values remain unavailable. The source has 3,509 distinct licensee names. Status spellings `Re-Entered` (2,703 records) and `Re-entered` (2 records) are retained separately. Optional missingness: 14,808 ground elevations, 59,053 spud dates and 59,297 final-drill dates. Licence-status dates range from 1900-01-01 to 2030-04-04. Six records have date-review flags: one future licence-status date, five possible 1900-01-01 licence-status placeholders, and one possible 1900-01-01 final-drill placeholder (one record has two flags). These flags preserve source values and do not reject otherwise usable locations. Read the generated warning CSV and report for the exact examples.
 
-The workbook has **no embedded spatial CRS, publisher release date or original download timestamp**. Do not infer those from the filename, file modification time or worksheet coordinates. The surface-hole guide's projected layer name does not prove the geographic datum of the Excel columns. AER's [well application guidance](https://dds.aer.ca/eas.net/webhelp/schedule_4_well_detail.htm) describes NAD83 surface coordinates, but product-specific metadata remains the preferred confirmation for this Excel release. Do not assign EPSG:3400 directly to latitude/longitude, or silently label them WGS84.
+The workbook has no embedded spatial CRS, publisher release date or original download timestamp. The paired publisher comparison above establishes **EPSG:4269** for the retained workbook's latitude and longitude. The pipeline projects those geographic values to EPSG:3400 for metre-based analysis.
 
 ## Prepare without a database
 
@@ -50,7 +56,7 @@ Outputs are under ignored `data/raw/st37/<identity>/`:
 
 Extraction uses read-only Excel streaming and one small CSV pass to reject every occurrence of global duplicate IDs. The original workbook is hashed before/after reading and never modified. Outputs publish atomically; repeat preparation verifies/reuses immutable bytes. Default caps are 1,000,000 source rows and 10,000 pilot records. A changed original, study area, quality date or preparation version creates a new identity. Runtime limits for ordinary GIS/CSV ingestion remain unchanged.
 
-The provisional pilot selection compares the source longitude/latitude numbers with the configured WGS84 envelope. Final datum-aware inclusion must be checked after CRS confirmation; candidates are not claimed as authoritative geographic coverage. Neither source verification nor the normal full-pipeline gates are enabled automatically.
+The original pilot CSV used the reported longitude and latitude values to select candidates. Classroom preparation now explicitly transforms from EPSG:4269 to WGS84 for regional inclusion. The normal full-pipeline gates still require verified environmental sources and coverage.
 
 ## Configure the application database
 
@@ -68,9 +74,7 @@ In Streamlit, open **PostGIS workflows → Waterways → Alberta waterbodies, st
 
 This creates migration `005_st37_inventory.sql` and transactionally loads all source rows into **`screening.st37_surface_holes`**, with provenance in **`screening.st37_imports`**. The new tables are separate from the published `screening.wells` dataset. The importer retains invalid rows with errors and leaves their geometry null. Date warnings are stored separately from rejection reasons. Without verified datum evidence **every geometry stays null**, while well attributes and original coordinate values are available for inspection.
 
-Once publisher metadata confirms the geographic datum, enter **Workbook coordinate CRS** and **Publisher datum evidence** under **Workbook coordinate evidence**, then click **Import ST37 wells** again. The importer projects valid points to EPSG:3400 and checks counts, SRID and validity. The new declaration creates a distinct inventory snapshot.
-
-Publisher release and original download dates remain open until supported by source evidence.
+For the verified November workbook, enter `EPSG:4269` under **Workbook coordinate CRS**, the paired-archive evidence above under **Publisher datum evidence**, and `2026/11/03` under **Publisher release date**. Click **Import ST37 wells**. The importer projects valid points to EPSG:3400 and checks counts, SRID and validity. The declaration creates a distinct inventory snapshot. Keep the original download date unset.
 
 The import uses the database-wide workflow lock, streams rows with PostgreSQL COPY, validates checksums before and after loading, verifies counts before commit, and rolls back on failure. Repeating the same input and declaration reuses its import ID. The app lists imports by snapshot and keeps coordinate evidence with the selected data in PostGIS.
 
@@ -78,7 +82,7 @@ For the full multi-source screening workflow, configure the bounded `pilot.csv` 
 
 ## Verification
 
-The project database now contains the actual ST37 inventory loaded by the **Import ST37 wells** button on 20 November 2026. Import `73363997-10a0-5817-9546-57cdf2b2b1a5` was checked in PostGIS for **541,190 rows and distinct licences**, six date-warning rows and zero rejects. Coordinates are stored as reported with geometry pending workbook datum.
+The **Import ST37 wells** button staged raw import `73363997-10a0-5817-9546-57cdf2b2b1a5` on 20 November 2026. On 23 November it published projected import `4bb2ac73-df0b-5698-9295-c86028ced168` with the verified `EPSG:4269` declaration and `2026-11-03` release date. A read-only SQL join on `source_row` reconciled **541,190 rows and distinct licences** in the two snapshots. It found zero changes in the original licence IDs, coordinates, raw attributes or warnings. The raw import has zero geometries, and the projected import has 541,190 valid EPSG:3400 points, six warning rows and zero rejects. [Water comparisons](hydrography.md#project-database-status)
 
 All **136 unit/PostGIS integration tests passed** on Windows PostgreSQL 17.11/PostGIS 3.6.2. Tests cover leading-zero IDs, complete accounting, global duplicates, formula/numeric-ID rejection, malformed coordinates/dates, quality warnings, changed originals, immutable reuse/corruption, schema drift, fail-without-truncation limits, retained rejects/raw attributes, geometry projection, idempotency, no screening publication and failed-import rollback. Tests use synthetic records in a separate database ending in `_test`; they never reset the user's database.
 

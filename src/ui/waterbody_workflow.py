@@ -1,19 +1,23 @@
 """Explicit Streamlit actions for provincial hydrography and retained ST37 wells."""
 from datetime import datetime, timezone
+from secrets import randbits
 from uuid import UUID
 
 import pandas as pd
 import streamlit as st
+from sqlalchemy.exc import SQLAlchemyError
 
 from src.config import ROOT
 from src.db.st37 import import_st37_workbook
 from src.db.waterbodies import (
-    compare_st37_waterbodies, find_waterbody_comparison, waterbody_comparison_summary,
+    WELL_MAP_BATCH_SIZE, compare_st37_waterbodies, find_waterbody_comparison, waterbody_comparison_summary,
+    waterbody_map_batch,
     waterbody_result, waterbody_workflow_snapshots,
 )
 from src.db.workflow import WorkflowBusy
 from src.sources.waterbodies import PROVINCE_STREAM_SCOPE, import_province_streams, import_province_waterbodies
 from src.spatial.classification import THRESHOLDS
+from src.ui.map import build_waterbody_batch_map
 
 ST37_WORKBOOK = ROOT / 'aida-final-project-tyler-weinkauf/courses/AIDA-1145/data/ST37_SH.xlsx'
 ST37_RAW_ROOT = ROOT / 'data/raw/st37'
@@ -87,9 +91,10 @@ def show_waterbody_workflow(engine):
     with well_controls:
         workbook_exists = ST37_WORKBOOK.is_file()
         with st.expander('Workbook coordinate evidence'):
-            st.caption('Leave both fields blank to stage the reported well coordinates. Enter the CRS and its evidence to enable distances.')
+            st.caption('Leave both coordinate fields blank to stage the reported well coordinates. Enter the CRS and its evidence to enable distances.')
             crs = st.text_input('Workbook coordinate CRS', key='st37_coordinate_crs').strip()
             evidence = st.text_area('Publisher datum evidence', key='st37_crs_evidence').strip()
+            release_date = st.date_input('Publisher release date (optional)', value=None, key='st37_release_date')
         well_requested = st.button('Import ST37 wells', key='import_st37_workbook', type='primary',
                                    disabled=st.session_state.busy or not workbook_exists or bool(crs) != bool(evidence))
         if workbook_exists:
@@ -118,6 +123,7 @@ def show_waterbody_workflow(engine):
             'Import ST37 wells',
             lambda progress: import_st37_workbook(engine, ST37_WORKBOOK, ST37_RAW_ROOT,
                                                   coordinate_crs=crs or None, crs_evidence=evidence or None,
+                                                  release_date=release_date.isoformat() if release_date else None,
                                                   progress=progress),
             lambda row: f'ST37 inventory ready · {row["accepted"]:,} accepted wells',
         )
@@ -170,8 +176,58 @@ def cached_province_summary(_engine, database_identity, comparison_id):
     return waterbody_comparison_summary(_engine, comparison_id)
 
 
+@st.cache_data(max_entries=4, show_spinner=False)
+def cached_comparison_map(_engine, database_identity, comparison_id, seed, offset, limit,
+                          coverage_incomplete, basemap):
+    wells, water = waterbody_map_batch(_engine, comparison_id, seed, offset, limit)
+    if not wells:
+        return None, 0, 0
+    view = build_waterbody_batch_map(wells, water, coverage_incomplete=coverage_incomplete, basemap=basemap)
+    return view.get_root().render(), len(wells), sum(row['observed_distance_m'] is not None for row in wells)
+
+
+def shift_map_batch(step, batches):
+    st.session_state.province_map_batch = (st.session_state.province_map_batch + step) % batches
+
+
+@st.fragment
+def show_comparison_map(engine, database_identity, summary):
+    st.subheader('ST37 wells and water features')
+    if st.session_state.get('province_map_well_snapshot') != summary['st37_import_id']:
+        st.session_state.province_map_well_snapshot = summary['st37_import_id']
+        st.session_state.province_map_seed = randbits(32)
+        st.session_state.province_map_batch = 0
+    batches = (summary['well_count'] + WELL_MAP_BATCH_SIZE - 1) // WELL_MAP_BATCH_SIZE
+    previous, next_batch, tiles = st.columns([1, 1, 2], vertical_alignment='center')
+    previous.button('Previous batch', key='province_map_previous', on_click=shift_map_batch,
+                    args=(-1, batches), disabled=batches == 1)
+    next_batch.button('Next batch', key='province_map_next', on_click=shift_map_batch,
+                      args=(1, batches), disabled=batches == 1)
+    basemap = tiles.checkbox('Show OpenStreetMap basemap (online)', key='province_map_basemap')
+    page = st.session_state.province_map_batch
+    incomplete = summary['coverage_status'] == 'incomplete'
+    try:
+        with st.spinner('Loading well batch…'):
+            html, count, matched = cached_comparison_map(
+                engine, database_identity, summary['comparison_id'], st.session_state.province_map_seed,
+                page * WELL_MAP_BATCH_SIZE, WELL_MAP_BATCH_SIZE, incomplete, basemap)
+    except SQLAlchemyError:
+        st.warning('This map batch could not be read from PostGIS.')
+        return
+    if html is None:
+        st.info('No stored well points in this batch.')
+        return
+    st.caption(f'Batch {page + 1:,} of {batches:,} · Showing {count:,} of {summary["well_count"]:,} wells · '
+               f'{matched:,} observed matches within 500 m')
+    st.iframe(html, height=520, alt='Current shuffled ST37 well batch and nearest observed water features')
+    gray = 'unknown within 500 m' if incomplete else 'no feature within 500 m'
+    st.caption(f'Well colors by stored distance: red ≤50 m, orange >50–100 m, yellow >100–250 m, '
+               f'blue >250–500 m, gray {gray}. Teal shapes are the nearest accepted features for this batch.')
+
+
 def show_stored_comparison(engine, comparison_id):
-    summary = cached_province_summary(engine, engine.url.render_as_string(hide_password=True), comparison_id)
+    database_identity = engine.url.render_as_string(hide_password=True)
+    summary = cached_province_summary(engine, database_identity, comparison_id)
     feature = 'layer-107 stream line' if summary['scope'] == PROVINCE_STREAM_SCOPE else 'layer-72 polygon'
     st.caption(f'{summary["well_count"]:,} ST37 wells · comparison {comparison_id}')
     if summary['coverage_status'] == 'incomplete':
@@ -188,3 +244,4 @@ def show_stored_comparison(engine, comparison_id):
             st.dataframe(pd.DataFrame([result]), hide_index=True, alt='Stored ST37 waterbody proximity for the selected licence')
         else:
             st.info('No matching licence in this comparison. Include any leading zeros.')
+    show_comparison_map(engine, database_identity, summary)
