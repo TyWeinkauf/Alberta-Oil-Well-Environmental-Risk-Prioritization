@@ -3,6 +3,7 @@
   "publisher": "Alberta Energy Regulator",
   "publisher_index": "https://www.aer.ca/providing-information/data-and-reports/statistical-reports?page=0",
   "release_date": "2026-11-03",
+  "crs_evidence": "AER ST37 release 2026-11-03: exact workbook SHA-256 and all 541,190 coordinate pairs matched the same-release geodatabase. NAD83 projected points match within 0.000109 m. Evidence: docs/st37_excel.md and docs/evidence/st37_datum_2026-11-23.json.",
   "original_downloaded_at": null,
   "inventory_sha256": "acee23f2655e8036aa9bc6d34d45c153328b534602e3f05ed1307d7417c3251e",
   "workbook_sha256": "5b7139f06817b3458689bb82a3219c963165e3e671373e493222d948bb08e4f4",

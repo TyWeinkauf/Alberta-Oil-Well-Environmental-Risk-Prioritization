@@ -100,26 +100,16 @@ def well_choice(row):
 
 def show_st37_import(engine, snapshot_key):
     workbook_exists = ST37_WORKBOOK.is_file()
-    with st.expander('Workbook coordinate evidence'):
-        st.caption('Leave both coordinate fields blank to stage the reported well coordinates. Enter the CRS and its evidence to enable distances.')
-        crs = st.text_input('Workbook coordinate CRS', key='st37_coordinate_crs').strip()
-        evidence = st.text_area('Publisher datum evidence', key='st37_crs_evidence').strip()
-        release_date = st.date_input('Publisher release date (optional)', value=None, key='st37_release_date')
     requested = st.button('Import ST37 wells', key='import_st37_workbook', type='primary',
-                          disabled=st.session_state.busy or not workbook_exists or bool(crs) != bool(evidence))
+                          disabled=st.session_state.busy or not workbook_exists)
     if workbook_exists:
         st.caption(f'Workbook {ST37_WORKBOOK.name} from the course data folder.')
     else:
         st.info('Place ST37_SH.xlsx in the AIDA 1145 data folder to enable the import.')
-    if bool(crs) != bool(evidence):
-        st.caption('Enter both coordinate fields or leave both blank.')
     if requested:
         result = run_action(
             'Import ST37 wells',
-            lambda progress: import_st37_workbook(engine, ST37_WORKBOOK, ST37_RAW_ROOT,
-                                                  coordinate_crs=crs or None, crs_evidence=evidence or None,
-                                                  release_date=release_date.isoformat() if release_date else None,
-                                                  progress=progress),
+            lambda progress: import_st37_workbook(engine, ST37_WORKBOOK, ST37_RAW_ROOT, progress=progress),
             lambda row: f'ST37 inventory ready · {row["accepted"]:,} accepted wells',
         )
         if result:

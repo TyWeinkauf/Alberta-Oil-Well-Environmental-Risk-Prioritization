@@ -1,6 +1,5 @@
 """Province inventory, transactional rejection handling and ST37/PostGIS comparison."""
 import json
-from datetime import date
 from pathlib import Path
 from uuid import UUID
 
@@ -9,6 +8,7 @@ from sqlalchemy import text
 from streamlit.testing.v1 import AppTest
 
 from src.config import ROOT, load_study_area
+from src.db import st37
 from src.db.st37 import import_st37
 from src.db.waterbodies import (
     compare_st37_waterbodies, latest_province_waterbodies, st37_water_comparisons, waterbody_comparison_summary,
@@ -197,10 +197,14 @@ def test_app_buttons_load_inputs_and_compare_with_read_only_reruns(test_engine, 
         for entry in relocated['artifacts'].values():
             entry['path'] = str(tmp_path / 'old-workspace' / Path(entry['path']).name)
         report_path.write_text(json.dumps(relocated), encoding='utf-8')
-        app.text_input(key='st37_coordinate_crs').input('EPSG:4326').run()
-        assert app.button(key='import_st37_workbook').disabled
-        app.text_area(key='st37_crs_evidence').input('Declared WGS84 for the test workbook').run()
-        app.date_input(key='st37_release_date').set_value(date(2026, 11, 3)).run()
+        evidence_path = tmp_path / 'datum.json'
+        evidence_path.write_text(json.dumps({
+            'workbook_sha256': relocated['source']['sha256'],
+            'geodatabase': {'geometry_base_crs': 'EPSG:4326'},
+            'crs_evidence': 'Declared WGS84 for the test workbook',
+            'release_date': '2026-11-03',
+        }), encoding='utf-8')
+        monkeypatch.setattr(st37, 'ST37_DATUM_EVIDENCE', evidence_path)
         assert app.button(key='compare_waterbodies').disabled
         assert len(app.session_state.actions) == 2
         app.button(key='import_st37_workbook').click().run()
@@ -226,8 +230,9 @@ def test_app_buttons_load_inputs_and_compare_with_read_only_reruns(test_engine, 
         assert any('1 ST37 wells' in element.value for element in app.caption)
         with test_engine.connect() as conn:
             assert conn.execute(text('SELECT count(*) FROM screening.st37_imports')).scalar_one() == 2
-            assert conn.execute(text('SELECT release_date::text FROM screening.st37_imports WHERE import_id=:id'),
-                                {'id': well_id}).scalar_one() == '2026-11-03'
+            declaration = conn.execute(text('''SELECT coordinate_crs, crs_evidence, release_date::text
+                FROM screening.st37_imports WHERE import_id=:id'''), {'id': well_id}).one()
+            assert declaration == ('EPSG:4326', 'Declared WGS84 for the test workbook', '2026-11-03')
             assert conn.execute(text('SELECT count(*) FROM screening.water_imports')).scalar_one() == 1
             assert conn.execute(text('SELECT count(*) FROM screening.waterbody_comparisons')).scalar_one() == 1
 

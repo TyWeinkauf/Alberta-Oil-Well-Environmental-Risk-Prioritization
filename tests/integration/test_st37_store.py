@@ -27,6 +27,8 @@ def test_app_imports_and_browses_st37_without_a_water_snapshot(test_engine, tmp_
     app.query_params['dataset_mode'] = 'ST37 well inventory'
     app.run()
     assert not app.exception and not app.error and not app.dataframe
+    assert not app.sidebar.expander and not app.sidebar.text_input
+    assert not app.sidebar.text_area and not app.sidebar.date_input
     with test_engine.connect() as conn:
         assert conn.execute(text("SELECT to_regnamespace('screening')")).scalar_one() is None
 

@@ -10,7 +10,7 @@ Sources inaccessible to ChatGPT/Codex may be accessible through APIs or download
 | Verified Alberta waterways | Use **Waterways** in Streamlit for the bounded regional inventory or the full layer-72 polygon import. [Verification and limits](hydrography.md) |
 | Direct download URL | HTTP cache plus GIS-file readers. Production CSV/ZIP remains optional legacy code. |
 | User-downloaded local files | Explicit `local_path` for GIS files or coordinate-mapped well CSV. No network request is made for a local entry, even when its publisher URL is recorded. |
-| ST37 surface-hole Excel | Click **Import ST37 wells** to prepare and stage the retained workbook. Geometry requires documented coordinate evidence. [Excel workflow](st37_excel.md) |
+| ST37 surface-hole Excel | Click **Import ST37 wells** to prepare and stage the retained workbook. The app uses the recorded datum when the workbook matches the verified AER release. [Excel workflow](st37_excel.md) |
 
 All routes require verified source terms, field mappings and coverage/attribution evidence before enabling entries. Official compatibility is still unverified. Local files use the same validation, quarantine, atomic load as remote inputs. Failed imports preserve earlier results.
 

@@ -36,6 +36,8 @@ Section 13 tracks implementation work; section 12 tracks acceptance checks; sect
 
 **Map legends — 2026-11-24.** Classroom demo and ST37 show color swatches along the right edge of the map for well proximity bands and the water feature symbol where applicable. The classroom HTML download includes the legend.
 
+**ST37 sidebar — 2026-11-25.** The import button uses the recorded NAD83 datum and release date when the workbook checksum matches the verified AER release. Other workbooks load as attribute-only inventories. [ST37 staging](docs/st37_excel.md#stage-well-information-before-environmental-analysis)
+
 ## 1. Scope, success criteria and guardrails
 
 **Current classroom scope — 2026-11-10 (D.3 / Phase 7):** The supplied starter's AGENTS.md is reference material. Its fully invented wells and production values do not replace the user's retained ST37 records or reinstate production. The primary demonstration may deliberately compare actual well points with synthetic environmental geometries only in an explicitly labelled illustrative mode; its results describe invented scenarios, not conditions or risk at the real wells. Keep original inputs, inventories, database records and the existing fully synthetic fixture/all-real workflows. Full environmental ingestion is optional and is not required to present the classroom demo. Implementation instructions and limits are in docs/classroom_demo.md.
@@ -214,6 +216,7 @@ Requested province-wide waterbody acceptance:
 - [x] The project database holds an accounted-for layer-107 snapshot with 143,568 accepted lines and 2 retained rejects.
 - [x] The datum-verified ST37 snapshot has stored layer-72 and layer-107 comparisons in project PostGIS, with stable licence lookup and explicit incomplete coverage.
 - [x] The dedicated ST37 inventory imports and browses the Excel workbook independently of water data. Verified original workbook values, pagination, validation messages and an exact leading-zero licence lookup.
+- [x] The ST37 sidebar imports the verified workbook without manual coordinate inputs. A different workbook can still be staged for review without projected points.
 - [x] Workbook records shows observed water distance and proximity band. Exact zero indicates an intersection. The band reports no match within 500 m when the search finds none.
 - [x] Workbook filters, including the observed water proximity band, combine across the full selected snapshot, repaginate from page 1 and apply to exact licence searches.
 - [x] The ST37 map cycles through non-overlapping shuffled batches of at most 10,000 well points. Browser checks verified both water layers, returning to a previous batch and the final 1,188-point Alberta batch.
@@ -294,6 +297,7 @@ Update individual steps as work progresses; split a step into smaller rows when 
 | 4.3m3 | Filter ST37 Workbook records by licensee, licence status and energy development category | Complete | 2026-11-24 | `src/db/st37.py` applies bound filter values before paging. Edge and the Streamlit agent API verified searchable dropdowns, 15,366 real matches under three filters, two 100-row pages and exact licence `0016815`. AppTest verified page reset, an empty combination and retained quarantined rows. The full suite passed 153 tests. |
 | 4.3m4 | Filter ST37 Workbook records by water proximity band | Complete | 2026-11-24 | `src/db/st37.py` and `src/ui/waterbody_workflow.py` use the same latest stored comparisons for the filter and table. Project PostGIS verified 3,316 wells in ≤50 m and 419,878 with no match within 500 m. Edge verified multi-select, counts and pagination reset. Integration tests verified combined filters, exact licence lookup and unavailable results. All 153 tests passed. |
 | 4.3n | Add well marker legends to the Classroom demo and ST37 maps | Complete | 2026-11-24 | `src/ui/map.py` uses the marker palette in a shared Leaflet legend. Edge verified both live maps, the narrow ST37 view, classroom well clicks and the offline HTML download. The Streamlit agent API and type checker passed. All 153 tests passed. |
+| 4.3o | Remove manual ST37 coordinate evidence controls from the sidebar | Complete | 2026-11-25 | `src/ui/waterbody_workflow.py` displays the import button. `src/db/st37.py` applies the recorded CRS and release only on a workbook checksum match. Project PostGIS and the saved receipt verified the declaration resolves to existing snapshot `4bb2ac73`. Edge and the Streamlit agent API verified both views and the simplified sidebar. The full suite passed 153 tests, including checksum-matched projection and attribute-only staging. |
 | D.1 | Convert design to Markdown and establish ongoing tracking | Complete | 2026-11-08 | This document preserves all 16 design sections and tables; tracking instructions are in AGENTS.md. |
 | D.2 | Clarify runtime/API/download access independently of cloud discovery limits | Complete | 2026-11-08 | User clarification recorded; src/sources/files.py, pipeline.py and scripts/inspect_production.py inspected. docs/data_access.md distinguishes current remote acquisition/local inspection from full local import tracked separately in 4.2c. |
 | 0.1 | Inspect repository and retain course structure | Complete | 2026-11-08 | Existing README, charter, scope matrix, progress record, both course briefs and design inspected; course structure retained. |
@@ -351,6 +355,7 @@ Update individual steps as work progresses; split a step into smaller rows when 
 
 | Date | Step / phase | Update |
 |---|---|---|
+| 2026-11-25 | 4.3o complete | Removed the coordinate evidence form. Verified one-click staging and both inventory views with the saved AER datum. |
 | 2026-11-24 | 4.3n complete | Replaced map color captions with legends in both views and verified the downloaded classroom map offline. |
 | 2026-11-24 | 4.3m4 complete | Added the water proximity band dropdown and verified full-snapshot filtering from the nearest stored water results. |
 | 2026-11-24 | 4.3m3 complete | Added the three workbook dropdowns and verified their combinations, counts, paging and exact licence lookup against project PostGIS. |

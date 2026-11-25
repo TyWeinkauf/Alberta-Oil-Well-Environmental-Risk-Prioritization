@@ -17,6 +17,7 @@ from src.sources.st37 import FIELDS, finite_number, parse_date, read_prepared_st
 from src.spatial.classification import THRESHOLDS
 
 ST37_LICENSE_NOTE = 'AER ST37 surface-hole workbook for educational noncommercial use. AER source attribution retained.'
+ST37_DATUM_EVIDENCE = ROOT / 'docs/evidence/st37_datum_2026-11-23.json'
 ST37_INVENTORY_PAGE_SIZE = 100
 ST37_INVENTORY_FILTER_FIELDS = ('licensee_name', 'licence_status', 'energy_development_category')
 ST37_INVENTORY_OPTION_LIMIT = 4_000
@@ -119,17 +120,24 @@ def documented_st37_crs(coordinate_crs, crs_evidence):
 
 
 @serialized_workflow
-def import_st37_workbook(engine, workbook: Path, raw_root: Path, *,
-                         coordinate_crs=None, crs_evidence=None, release_date=None,
-                         progress=lambda _: None):
-    """Prepare or reuse the retained workbook and stage its complete inventory."""
-    coordinate_crs = documented_st37_crs(coordinate_crs, crs_evidence)
+def import_st37_workbook(engine, workbook: Path, raw_root: Path, *, progress=lambda _: None):
+    """Stage the retained workbook using the recorded datum only for the verified release."""
     area = load_study_area(ROOT / 'config/study_area.live.yml')
-    report = retained_st37_report(workbook, area, raw_root, progress=progress)
+    report_path = retained_st37_report(workbook, area, raw_root, progress=progress)
+    report = read_prepared_st37(report_path)
+    try:
+        datum = json.loads(ST37_DATUM_EVIDENCE.read_bytes())
+    except FileNotFoundError:
+        datum = {}
+    declaration = {}
+    if report['source']['sha256'] == datum.get('workbook_sha256'):
+        declaration = {
+            'coordinate_crs': datum['geodatabase']['geometry_base_crs'],
+            'crs_evidence': datum['crs_evidence'],
+            'release_date': datum['release_date'],
+        }
     progress('Staging the complete ST37 inventory in PostGIS')
-    return import_st37(engine, report, license_note=ST37_LICENSE_NOTE,
-                       coordinate_crs=coordinate_crs, crs_evidence=crs_evidence,
-                       release_date=release_date)
+    return import_st37(engine, report_path, license_note=ST37_LICENSE_NOTE, **declaration)
 
 
 @serialized_workflow
