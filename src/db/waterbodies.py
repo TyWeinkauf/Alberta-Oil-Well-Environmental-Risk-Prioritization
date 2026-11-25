@@ -4,7 +4,7 @@ from uuid import NAMESPACE_URL, UUID, uuid5
 from sqlalchemy import text
 
 from src.db.migrations import migrate
-from src.db.st37 import st37_import_snapshots
+from src.db.st37 import st37_import_snapshots, st37_well_conditions
 from src.db.workflow import serialized_workflow
 from src.sources.waterbodies import PROVINCE_SCOPE, PROVINCE_SCOPES, PROVINCE_STREAM_SCOPE
 
@@ -132,38 +132,53 @@ def waterbody_comparison_summary(engine, comparison_id: UUID) -> dict:
         return summary
 
 
-def waterbody_buffer_count(engine, comparison_id: UUID, threshold_m: int,
-                           excluded_rows: tuple[int, ...] = ()) -> int:
-    """Count observed matches among the wells eligible for the map."""
+def map_well_selection(comparison_id: UUID, excluded_rows: tuple[int, ...], max_distance_m: int | None,
+                       filters: dict[str, list[str]] | None, licence: str = '') -> tuple[str, dict]:
+    well_conditions, params = st37_well_conditions(filters, licence)
+    conditions = ['p.comparison_id=:id']
+    params['id'] = comparison_id
+    if well_conditions:
+        conditions.append(f'''p.source_row IN (
+            SELECT well.source_row FROM screening.waterbody_comparisons c
+            JOIN screening.st37_surface_holes well ON well.import_id=c.st37_import_id
+            WHERE c.comparison_id=:id AND {' AND '.join(well_conditions)}
+        )''')
+    if excluded_rows:
+        conditions.append('p.source_row<>ALL(:excluded_rows)')
+        params['excluded_rows'] = list(excluded_rows)
+    if max_distance_m is not None:
+        conditions.append('p.observed_distance_m<=:max_distance_m')
+        params['max_distance_m'] = max_distance_m
+    return ' AND '.join(conditions), params
+
+
+def waterbody_buffer_count(engine, comparison_id: UUID, threshold_m: int | None,
+                           excluded_rows: tuple[int, ...] = (), *,
+                           filters: dict[str, list[str]] | None = None) -> int:
+    """Count map wells matching the attributes and optional distance threshold."""
+    selection, params = map_well_selection(comparison_id, excluded_rows, threshold_m, filters)
     with engine.connect() as conn:
-        return conn.execute(text('''SELECT count(*) FROM screening.st37_waterbody_proximity
-            WHERE comparison_id=:id AND observed_distance_m<=:threshold
-                AND source_row<>ALL(CAST(:excluded_rows AS integer[]))'''),
-            {'id': comparison_id, 'threshold': threshold_m, 'excluded_rows': list(excluded_rows)}).scalar_one()
+        return conn.execute(text(f'''SELECT count(*) FROM screening.st37_waterbody_proximity p
+            WHERE {selection}'''), params).scalar_one()
 
 
 def waterbody_map_batch(engine, comparison_id: UUID, seed: int, offset: int = 0,
                         limit: int = WELL_MAP_BATCH_SIZE, *, licence: str = '',
                         excluded_rows: tuple[int, ...] = (),
-                        max_distance_m: int | None = None) -> tuple[list[dict], list[dict]]:
+                        max_distance_m: int | None = None,
+                        filters: dict[str, list[str]] | None = None) -> tuple[list[dict], list[dict]]:
     """Read a shuffled page or an exact licence and its matching display geometries."""
     if offset < 0 or not 1 <= limit <= WELL_MAP_BATCH_SIZE:
         raise ValueError('A map batch must contain between 1 and 10,000 wells')
+    selection, params = map_well_selection(comparison_id, excluded_rows, max_distance_m, filters, licence)
     with engine.connect() as conn:
         # Page the narrow proximity rows before loading well attributes or geometries.
-        licence_filter = '''AND p.source_row IN (
-            SELECT s.source_row FROM screening.waterbody_comparisons c
-            JOIN screening.st37_surface_holes s ON s.import_id=c.st37_import_id
-            WHERE c.comparison_id=:id AND s.well_licence_number=:licence
-        )''' if licence else ''
-        boundary_filter = 'AND p.source_row <> ALL(:excluded_rows)' if excluded_rows else ''
-        distance_filter = 'AND p.observed_distance_m<=:max_distance_m' if max_distance_m is not None else ''
         projected_coordinates = ', ST_X(s.geom) AS analysis_x, ST_Y(s.geom) AS analysis_y' if licence else ''
         wells = [dict(row) for row in conn.execute(text(f'''WITH batch AS MATERIALIZED (
                 SELECT p.source_row, p.observed_distance_m, p.nearest_source_feature_id,
                     CAST(md5(CAST(:seed AS text) || ':' || p.source_row) AS uuid) AS shuffle_key
                 FROM screening.st37_waterbody_proximity p
-                WHERE p.comparison_id=:id {licence_filter} {boundary_filter} {distance_filter}
+                WHERE {selection}
                 ORDER BY shuffle_key, p.source_row LIMIT :limit OFFSET :offset
             )
             SELECT s.source_row, s.well_licence_number, b.observed_distance_m, b.nearest_source_feature_id,
@@ -172,8 +187,7 @@ def waterbody_map_batch(engine, comparison_id: UUID, seed: int, offset: int = 0,
             JOIN screening.waterbody_comparisons c ON c.comparison_id=:id
             JOIN screening.st37_surface_holes s ON s.import_id=c.st37_import_id AND s.source_row=b.source_row
             ORDER BY b.shuffle_key, b.source_row'''),
-            {'id': comparison_id, 'seed': seed, 'offset': offset, 'limit': limit, 'licence': licence,
-             'excluded_rows': list(excluded_rows), 'max_distance_m': max_distance_m}).mappings()]
+            params | {'seed': seed, 'offset': offset, 'limit': limit}).mappings()]
         feature_ids = sorted({row['nearest_source_feature_id'] for row in wells
                               if row['nearest_source_feature_id'] is not None})
         if not feature_ids:
@@ -189,10 +203,14 @@ def waterbody_map_batch(engine, comparison_id: UUID, seed: int, offset: int = 0,
         return wells, water
 
 
-def waterbody_result(engine, comparison_id: UUID, licence: str) -> dict | None:
+def waterbody_result(engine, comparison_id: UUID, licence: str, *,
+                     filters: dict[str, list[str]] | None = None) -> dict | None:
+    if not (licence := licence.strip()):
+        return None
+    conditions, params = st37_well_conditions(filters, licence)
     with engine.connect() as conn:
-        row = conn.execute(text('''SELECT s.well_licence_number,s.licensee_name,s.licence_status,
-            s.legal_location,s.surface_latitude,s.surface_longitude,i.coordinate_crs,
+        row = conn.execute(text(f'''SELECT well.well_licence_number,well.licensee_name,well.licence_status,
+            well.legal_location,well.surface_latitude,well.surface_longitude,i.coordinate_crs,
             p.nearest_source_feature_id,b.name AS nearest_waterbody,b.feature_type_code,
             p.observed_distance_m,w.coverage_status,
             CASE WHEN p.observed_distance_m IS NOT NULL THEN 'observed_match'
@@ -202,10 +220,10 @@ def waterbody_result(engine, comparison_id: UUID, licence: str) -> dict | None:
             FROM screening.waterbody_comparisons c
             JOIN screening.water_imports w ON w.import_id=c.water_import_id
             JOIN screening.st37_imports i ON i.import_id=c.st37_import_id
-            JOIN screening.st37_surface_holes s ON s.import_id=c.st37_import_id
-            JOIN screening.st37_waterbody_proximity p ON p.comparison_id=c.comparison_id AND p.source_row=s.source_row
+            JOIN screening.st37_surface_holes well ON well.import_id=c.st37_import_id
+            JOIN screening.st37_waterbody_proximity p ON p.comparison_id=c.comparison_id AND p.source_row=well.source_row
             LEFT JOIN screening.water_features b ON b.import_id=w.import_id
                 AND b.source_key=w.manifest->>'source_key' AND b.source_feature_id=p.nearest_source_feature_id
-            WHERE c.comparison_id=:id AND s.well_licence_number=:licence'''),
-            {'id': comparison_id, 'licence': licence.strip(), 'streams': PROVINCE_STREAM_SCOPE}).mappings().one_or_none()
+            WHERE c.comparison_id=:id AND {' AND '.join(conditions)}'''),
+            params | {'id': comparison_id, 'streams': PROVINCE_STREAM_SCOPE}).mappings().one_or_none()
         return dict(row) if row is not None else None

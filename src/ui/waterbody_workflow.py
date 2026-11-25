@@ -37,6 +37,7 @@ WORKBOOK_FILTER_LABELS = {
     'licence_status': 'Licence status',
     'energy_development_category': 'Energy development category',
 }
+MAP_FILTER_LABELS = {'licensee_name': 'Company (licensee)', 'licence_status': 'Licence status'}
 
 
 def audited_outside_rows(snapshot_id: UUID) -> tuple[int, ...]:
@@ -128,7 +129,7 @@ def workbook_water_columns(result: dict | None) -> dict:
 
 
 @st.cache_data(max_entries=24, show_spinner=False)
-def cached_workbook_filter_options(_engine, database_identity, snapshot_id, field, search=''):
+def cached_st37_filter_options(_engine, database_identity, snapshot_id, field, search=''):
     return st37_inventory_filter_options(_engine, snapshot_id, field, search)
 
 
@@ -137,22 +138,28 @@ def cached_workbook_match_count(_engine, database_identity, snapshot_id, filters
     return st37_inventory_count(_engine, snapshot_id, filters, water_comparison_ids=comparison_ids)
 
 
-def workbook_filters(engine, database_identity, snapshot_id, comparison_ids):
+def st37_attribute_filters(engine, database_identity, snapshot_id, fields_and_columns, key_prefix):
     filters = {}
-    columns = st.columns(len(WORKBOOK_FILTER_LABELS) + 1)
-    for column, (field, label) in zip(columns, WORKBOOK_FILTER_LABELS.items()):
-        key = f'st37_filter_{field}_{snapshot_id}'
-        options = cached_workbook_filter_options(engine, database_identity, snapshot_id, field)
+    for (field, label), column in fields_and_columns:
+        key = f'{key_prefix}_{field}_{snapshot_id}'
+        options = cached_st37_filter_options(engine, database_identity, snapshot_id, field)
         if len(options) > ST37_INVENTORY_OPTION_LIMIT:
             search = column.text_input(f'Search {label.lower()}', key=f'{key}_search', live='300ms').strip()
-            found = cached_workbook_filter_options(engine, database_identity, snapshot_id, field, search) if search else []
+            found = cached_st37_filter_options(engine, database_identity, snapshot_id, field, search) if search else []
             if len(found) > ST37_INVENTORY_OPTION_LIMIT:
                 column.caption('Narrow the search to see all matching options.')
             blank = {''} if '' in options else set()
             options = sorted(set(found[:ST37_INVENTORY_OPTION_LIMIT]) | set(st.session_state.get(key, ())) | blank)
         values = column.multiselect(label, options, key=key, format_func=lambda value: value or '(Blank)', placeholder='All')
         if values:
-            filters[field] = values
+            filters[field] = sorted(values)
+    return filters
+
+
+def workbook_filters(engine, database_identity, snapshot_id, comparison_ids):
+    columns = st.columns(len(WORKBOOK_FILTER_LABELS) + 1)
+    filters = st37_attribute_filters(engine, database_identity, snapshot_id,
+                                     zip(WORKBOOK_FILTER_LABELS.items(), columns), 'st37_filter')
     bands = columns[-1].multiselect(
         'Water proximity band', list(WORKBOOK_WATER_BANDS) if comparison_ids else ['unavailable'],
         key=f'st37_filter_water_band_{snapshot_id}', format_func=WORKBOOK_WATER_BANDS.__getitem__, placeholder='All',
@@ -160,6 +167,48 @@ def workbook_filters(engine, database_identity, snapshot_id, comparison_ids):
     if bands:
         filters['water_band'] = bands
     return filters
+
+
+def inventory_licence():
+    return st.text_input('Well licence number', key='st37_inventory_licence',
+                         help='Enter the complete licence, including any leading zeros.').strip()
+
+
+def clear_st37_map_filters(snapshot_id, default_layer_id):
+    for field in MAP_FILTER_LABELS:
+        key = f'st37_map_{field}_{snapshot_id}'
+        st.session_state[key] = []
+        st.session_state.pop(f'{key}_search', None)
+    st.session_state.st37_inventory_licence = ''
+    st.session_state.st37_inventory_water = default_layer_id
+    st.session_state.st37_map_threshold = THRESHOLDS[-1]
+    st.session_state.st37_map_matches_only = True
+    st.session_state.province_map_batch = 0
+
+
+def map_buffer_controls(licence):
+    st.session_state.setdefault('st37_map_threshold', THRESHOLDS[-1])
+    st.session_state.setdefault('st37_map_matches_only', True)
+    threshold = st.segmented_control('Buffer distance', THRESHOLDS, required=True,
+                                     format_func=lambda metres: f'{metres} m', key='st37_map_threshold') or THRESHOLDS[-1]
+    matches_only = st.checkbox('Only show wells within the buffer', key='st37_map_matches_only',
+                               disabled=bool(licence), help='Filters the shuffled batches by observed distance to the selected water layer.')
+    return threshold, matches_only
+
+
+def show_st37_water_map(engine, snapshot_id, comparisons):
+    database_identity = engine.url.render_as_string(hide_password=True)
+    with st.sidebar:
+        st.header('Filters')
+        fields = [(field, st.sidebar) for field in MAP_FILTER_LABELS.items()]
+        filters = st37_attribute_filters(engine, database_identity, snapshot_id, fields, 'st37_map')
+        licence = inventory_licence()
+        water = snapshot_select('Imported water layer', 'st37_inventory_water', comparisons, water_choice)
+        buffer = map_buffer_controls(licence)
+        st.button('Clear filters', key='st37_map_clear', on_click=clear_st37_map_filters,
+                  args=(snapshot_id, comparisons[0]['import_id']))
+    show_stored_comparison(engine, water['comparison_id'], licence=licence, basemap_default=True,
+                           filters=filters, buffer=buffer)
 
 
 def show_st37_inventory(engine):
@@ -181,8 +230,6 @@ def show_st37_inventory(engine):
                f'{snapshot["quarantined_count"]:,} quarantined · '
                f'release {snapshot["release_date"] or "unknown"} · '
                f'{snapshot["coordinate_crs"] or "coordinate datum pending"}')
-    licence = st.text_input('Well licence number', key='st37_inventory_licence',
-                            help='Enter the complete licence, including any leading zeros.').strip()
     try:
         comparisons = st37_water_comparisons(engine, snapshot['import_id']) if snapshot['coordinate_crs'] else []
     except SQLAlchemyError:
@@ -192,9 +239,8 @@ def show_st37_inventory(engine):
         view = st.radio('Inventory view', ['Water proximity map', 'Workbook records'], horizontal=True,
                         key='st37_inventory_view')
         if view == 'Water proximity map':
-            water = snapshot_select('Imported water layer', 'st37_inventory_water', comparisons, water_choice)
             try:
-                show_stored_comparison(engine, water['comparison_id'], licence=licence, basemap_default=True)
+                show_st37_water_map(engine, snapshot['import_id'], comparisons)
             except (SQLAlchemyError, ValueError):
                 st.warning('The selected water comparison could not be read from PostGIS.')
             return
@@ -202,6 +248,7 @@ def show_st37_inventory(engine):
         st.caption('Create a stored water comparison with `scripts/compare_st37_waterbodies.py` to enable the map.')
     else:
         st.caption('The water proximity map requires a documented workbook coordinate CRS.')
+    licence = inventory_licence()
     latest_by_layer: dict[str, UUID] = {}
     for comparison in comparisons:
         latest_by_layer.setdefault(comparison['scope'], comparison['comparison_id'])
@@ -278,9 +325,9 @@ def show_st37_inventory(engine):
 
 
 def water_choice(row):
-    unit = 'stream lines' if row['scope'] == PROVINCE_STREAM_SCOPE else 'waterbody polygons'
-    return (f'{row["imported_at"].astimezone(timezone.utc):%Y-%m-%d %H:%M UTC} · {row["feature_count"]:,} {unit} · '
-            f'{row["coverage_status"]} coverage · {str(row["import_id"])[:8]}')
+    layer = 'Stream lines' if row['scope'] == PROVINCE_STREAM_SCOPE else 'Waterbody polygons'
+    return (f'{layer} · {row["feature_count"]:,} · {row["coverage_status"]} coverage · '
+            f'{row["imported_at"].astimezone(timezone.utc):%Y-%m-%d %H:%M UTC} · {str(row["import_id"])[:8]}')
 
 
 def show_waterbody_workflow(engine):
@@ -359,9 +406,9 @@ def cached_province_summary(_engine, database_identity, comparison_id):
 
 @st.cache_data(max_entries=4, show_spinner=False)
 def cached_comparison_map(_engine, database_identity, comparison_id, seed, offset, limit,
-                          coverage_incomplete, basemap, licence, excluded_rows, threshold, max_distance):
+                          coverage_incomplete, basemap, licence, excluded_rows, threshold, max_distance, filters):
     wells, water = waterbody_map_batch(_engine, comparison_id, seed, offset, limit, licence=licence,
-                                        excluded_rows=excluded_rows, max_distance_m=max_distance)
+                                        excluded_rows=excluded_rows, max_distance_m=max_distance, filters=filters)
     if not wells:
         return None, 0, 0
     view = build_waterbody_batch_map(wells, water, coverage_incomplete=coverage_incomplete, basemap=basemap,
@@ -373,8 +420,8 @@ def cached_comparison_map(_engine, database_identity, comparison_id, seed, offse
 
 
 @st.cache_data(max_entries=24, show_spinner=False)
-def cached_buffer_count(_engine, database_identity, comparison_id, threshold, excluded_rows):
-    return waterbody_buffer_count(_engine, comparison_id, threshold, excluded_rows)
+def cached_map_count(_engine, database_identity, comparison_id, max_distance, excluded_rows, filters):
+    return waterbody_buffer_count(_engine, comparison_id, max_distance, excluded_rows, filters=filters)
 
 
 def shift_map_batch(step, batches):
@@ -382,7 +429,7 @@ def shift_map_batch(step, batches):
 
 
 @st.fragment
-def show_comparison_map(engine, database_identity, summary, licence, basemap_default):
+def show_comparison_map(engine, database_identity, summary, licence, basemap_default, filters, buffer):
     st.subheader('ST37 wells and water features')
     if basemap_default:
         st.caption('The map displays well positions in WGS84. PostGIS measures straight-line distance in EPSG:3400 metres. '
@@ -394,28 +441,29 @@ def show_comparison_map(engine, database_identity, summary, licence, basemap_def
                    'Workbook records retains the original coordinates for review.')
     if not well_count:
         return
-    threshold = st.segmented_control('Buffer distance', THRESHOLDS, default=THRESHOLDS[-1], required=True,
-                                     format_func=lambda metres: f'{metres} m', key='st37_map_threshold') or THRESHOLDS[-1]
-    matches_only = st.checkbox('Only show wells within the buffer', value=True, key='st37_map_matches_only',
-                               disabled=bool(licence), help='Filters the shuffled batches by observed distance to the selected water layer.')
+    threshold, matches_only = buffer if buffer is not None else map_buffer_controls(licence)
     max_distance = threshold if matches_only and not licence else None
     if st.session_state.get('province_map_well_snapshot') != summary['st37_import_id']:
         st.session_state.province_map_well_snapshot = summary['st37_import_id']
         st.session_state.province_map_seed = randbits(32)
         st.session_state.province_map_batch = 0
     if not licence:
-        batch_filter = (summary['comparison_id'], max_distance) if max_distance is not None else None
+        batch_filter = (summary['comparison_id'] if max_distance is not None else None, max_distance, filters)
         if st.session_state.get('province_map_batch_filter') != batch_filter:
             st.session_state.province_map_batch_filter = batch_filter
             st.session_state.province_map_batch = 0
     try:
-        if max_distance is not None:
-            well_count = cached_buffer_count(engine, database_identity, summary['comparison_id'], threshold, outside)
+        if not licence and (max_distance is not None or filters):
+            well_count = cached_map_count(engine, database_identity, summary['comparison_id'], max_distance, outside, filters)
     except SQLAlchemyError:
-        st.warning('The buffer match count could not be read from PostGIS.')
+        st.warning('The map match count could not be read from PostGIS.')
         return
     if not well_count:
-        st.info(f'No observed well matches within {threshold} m for this water layer.')
+        if filters:
+            suffix = f' within {threshold} m' if max_distance is not None else ''
+            st.info(f'No wells match the selected filters{suffix}.')
+        else:
+            st.info(f'No observed well matches within {threshold} m for this water layer.')
         return
     batches = (well_count + WELL_MAP_BATCH_SIZE - 1) // WELL_MAP_BATCH_SIZE
     page = st.session_state.province_map_batch
@@ -435,7 +483,7 @@ def show_comparison_map(engine, database_identity, summary, licence, basemap_def
             html, count, matched = cached_comparison_map(
                 engine, database_identity, summary['comparison_id'], st.session_state.province_map_seed,
                 0 if licence else page * WELL_MAP_BATCH_SIZE, WELL_MAP_BATCH_SIZE, incomplete, basemap,
-                licence, outside, threshold, max_distance)
+                licence, outside, threshold, max_distance, filters)
     except SQLAlchemyError:
         st.warning('This map batch could not be read from PostGIS.')
         return
@@ -455,7 +503,7 @@ def show_comparison_map(engine, database_identity, summary, licence, basemap_def
     st.iframe(html, height=520, alt=alt)
 
 
-def show_stored_comparison(engine, comparison_id, *, licence=None, basemap_default=False):
+def show_stored_comparison(engine, comparison_id, *, licence=None, basemap_default=False, filters=None, buffer=None):
     database_identity = engine.url.render_as_string(hide_password=True)
     summary = cached_province_summary(engine, database_identity, comparison_id)
     feature = 'layer-107 stream line' if summary['scope'] == PROVINCE_STREAM_SCOPE else 'layer-72 polygon'
@@ -465,9 +513,12 @@ def show_stored_comparison(engine, comparison_id, *, licence=None, basemap_defau
     if licence is None:
         licence = st.text_input('ST37 licence number', key='province_water_licence').strip()
     if licence:
-        result = waterbody_result(engine, comparison_id, licence)
+        result = waterbody_result(engine, comparison_id, licence, filters=filters)
         if result is None:
-            st.info('No matching licence in this comparison. Include any leading zeros.')
+            if filters:
+                st.info('No well matches the exact licence and selected filters.')
+            else:
+                st.info('No matching licence in this comparison. Include any leading zeros.')
             return
         st.dataframe(pd.DataFrame([result]), hide_index=True, alt='Stored water proximity for the selected ST37 licence',
                      column_order=['well_licence_number', 'nearest_waterbody', 'observed_distance_m', 'result_state',
@@ -477,7 +528,9 @@ def show_stored_comparison(engine, comparison_id, *, licence=None, basemap_defau
                      column_config={'well_licence_number': 'Well licence', 'nearest_waterbody': 'Water feature name',
                                     'observed_distance_m': st.column_config.NumberColumn('Observed distance (m)', format='%.2f'),
                                     'result_state': 'Coverage result'})
-    show_comparison_map(engine, database_identity, summary, licence, basemap_default)
+    show_comparison_map(engine, database_identity, summary, licence, basemap_default, filters, buffer)
+    if filters:
+        st.caption('Threshold totals for the full comparison')
     st.dataframe(pd.DataFrame([
         {'Threshold (m)': metres, 'Observed matches': summary[f'within_{metres}']} for metres in THRESHOLDS
     ]), hide_index=True, alt=f'Observed ST37 matches to {feature} features by threshold')

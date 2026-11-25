@@ -49,8 +49,8 @@ def test_province_pages_preserve_every_id_then_compare_verified_wells(test_engin
             reject = conn.execute(text('SELECT source_feature_id,payload FROM screening.water_feature_rejects')).one()
             assert reject.source_feature_id == '12' and reject.payload['_source_properties']['FEATURE_TYPE'] == 'RESERVOIR'
     workbook = write_workbook(tmp_path / 'st37.xlsx', [
-        synthetic_row('0000012'), synthetic_row('0000013', SH_Actual_Latitude=53.29),
-        synthetic_row('0000014', SH_Actual_Latitude=53.2525),
+        synthetic_row('0000012'), synthetic_row('0000013', SH_Actual_Latitude=53.29, Licence_Status='Suspended'),
+        synthetic_row('0000014', SH_Actual_Latitude=53.2525, Licensee='Another Licensee'),
         synthetic_row('0000015', SH_Actual_Longitude='invalid'),
     ])
     preparation = prepare_st37(workbook, load_study_area(), tmp_path / 'st37')
@@ -93,6 +93,13 @@ def test_province_pages_preserve_every_id_then_compare_verified_wells(test_engin
     assert waterbody_buffer_count(test_engine, comparison, 50, excluded) == 0
     assert not waterbody_map_batch(test_engine, comparison, seed=123, excluded_rows=excluded, max_distance_m=50)[0]
     assert waterbody_map_batch(test_engine, comparison, seed=123, licence='0000012', excluded_rows=excluded) == ([], [])
+    company_filter = {'licensee_name': ['Synthetic Licensee']}
+    assert waterbody_buffer_count(test_engine, comparison, 500, filters=company_filter) == 1
+    assert waterbody_buffer_count(test_engine, comparison, None, filters=company_filter) == 2
+    filtered, _ = waterbody_map_batch(test_engine, comparison, seed=123, filters=company_filter, max_distance_m=500)
+    assert [well['well_licence_number'] for well in filtered] == ['0000012']
+    assert waterbody_map_batch(test_engine, comparison, seed=123, licence='0000014', filters=company_filter) == ([], [])
+    assert waterbody_result(test_engine, comparison, '0000014', filters=company_filter) is None
     for wells, features in pages:
         point = wells[0]
         assert point['geometry']['type'] == 'Point'
@@ -120,6 +127,20 @@ def test_province_pages_preserve_every_id_then_compare_verified_wells(test_engin
     assert any('Batch 1 of 2 · Showing 1 of 2 wells' in element.value for element in app.caption)
     app.button(key='province_map_next').click().run()
     assert not app.exception and any('Batch 2 of 2 · Showing 1 of 2 wells' in element.value for element in app.caption)
+    assert [item.label for item in app.sidebar.multiselect] == ['Company (licensee)', 'Licence status']
+    app.sidebar.multiselect[0].set_value(['Synthetic Licensee']).run()
+    assert any('Batch 1 of 1 · Showing 1 of 1 wells' in element.value for element in app.caption)
+    app.sidebar.multiselect[1].set_value(['Suspended']).run()
+    assert any('No wells match the selected filters within 500 m' in element.value for element in app.info)
+    app.sidebar.checkbox(key='st37_map_matches_only').uncheck().run()
+    assert any('Batch 1 of 1 · Showing 1 of 1 wells · 0 observed matches' in element.value for element in app.caption)
+    app.sidebar.text_input(key='st37_inventory_licence').input('0000014').run()
+    assert any('No well matches the exact licence and selected filters' in element.value for element in app.info)
+    app.sidebar.button(key='st37_map_clear').click().run()
+    assert all(not item.value for item in app.sidebar.multiselect)
+    assert app.sidebar.text_input(key='st37_inventory_licence').value == ''
+    assert app.sidebar.checkbox(key='st37_map_matches_only').value
+    assert any('Batch 1 of 2 · Showing 1 of 2 wells' in element.value for element in app.caption)
     app.segmented_control(key='st37_map_threshold').set_value(50).run()
     assert any('Batch 1 of 1 · Showing 1 of 1 wells' in element.value for element in app.caption)
     app.checkbox(key='st37_map_matches_only').uncheck().run()

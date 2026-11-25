@@ -46,11 +46,10 @@ def st37_inventory_filter_options(engine: Engine, import_id: UUID, field: str, s
             {'id': import_id, 'search': search, 'limit': ST37_INVENTORY_OPTION_LIMIT + 1}).scalars())
 
 
-def inventory_selection(import_id: UUID, filters: dict[str, list[str]] | None, licence: str,
-                        water_comparison_ids: tuple[UUID, ...]) -> tuple[str, dict]:
-    source = 'screening.st37_surface_holes AS well'
-    conditions = ['well.import_id=:id']
-    params: dict = {'id': import_id}
+def st37_well_conditions(filters: dict[str, list[str]] | None, licence: str = '') -> tuple[list[str], dict]:
+    """Build bound attribute conditions for an ST37 row aliased as well."""
+    conditions = []
+    params: dict = {}
     if licence:
         conditions.append('well.well_licence_number=:licence')
         params['licence'] = licence
@@ -60,6 +59,15 @@ def inventory_selection(import_id: UUID, filters: dict[str, list[str]] | None, l
             match = f'well.{field}=ANY(:{field})'
             conditions.append(f'({match} OR well.{field} IS NULL)' if '' in values else match)
             params[field] = values
+    return conditions, params
+
+
+def inventory_selection(import_id: UUID, filters: dict[str, list[str]] | None, licence: str,
+                        water_comparison_ids: tuple[UUID, ...]) -> tuple[str, dict]:
+    source = 'screening.st37_surface_holes AS well'
+    well_conditions, params = st37_well_conditions(filters, licence)
+    conditions = ['well.import_id=:id', *well_conditions]
+    params['id'] = import_id
     bands = (filters or {}).get('water_band')
     if bands:
         params['water_bands'] = bands

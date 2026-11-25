@@ -38,6 +38,8 @@ Section 13 tracks implementation work; section 12 tracks acceptance checks; sect
 
 **ST37 sidebar — 2026-11-25.** The import button uses the recorded NAD83 datum and release date when the workbook checksum matches the verified AER release. Other workbooks load as attribute-only inventories. [ST37 staging](docs/st37_excel.md#stage-well-information-before-environmental-analysis)
 
+**ST37 map filters — 2026-11-25.** The sidebar brings company, licence status, exact licence, water layer and buffer controls together. Company and status filter the full stored comparison before each shuffled batch. [Map filters](docs/hydrography.md#browse-shuffled-well-batches)
+
 ## 1. Scope, success criteria and guardrails
 
 **Current classroom scope — 2026-11-10 (D.3 / Phase 7):** The supplied starter's AGENTS.md is reference material. Its fully invented wells and production values do not replace the user's retained ST37 records or reinstate production. The primary demonstration may deliberately compare actual well points with synthetic environmental geometries only in an explicitly labelled illustrative mode; its results describe invented scenarios, not conditions or risk at the real wells. Keep original inputs, inventories, database records and the existing fully synthetic fixture/all-real workflows. Full environmental ingestion is optional and is not required to present the classroom demo. Implementation instructions and limits are in docs/classroom_demo.md.
@@ -221,6 +223,7 @@ Requested province-wide waterbody acceptance:
 - [x] Workbook filters, including the observed water proximity band, combine across the full selected snapshot, repaginate from page 1 and apply to exact licence searches.
 - [x] The ST37 map cycles through non-overlapping shuffled batches of at most 10,000 well points. Browser checks verified both water layers, returning to a previous batch and the final 1,188-point Alberta batch.
 - [x] The ST37 map buffers select 50, 100, 250 or 500 m and apply to both stored water comparisons. The buffer filter preserves the batch cap and province boundary audit, and licence lookup draws the selected radius.
+- [x] The ST37 map combines company and licence status filters before choosing a batch. Exact licence lookup honours both filters and Clear filters restores batch 1 and the default buffer and layer.
 - [x] ST37 markers grow at close zoom, and a click near the visible edge opens the well's licence popup.
 - [x] The ST37 inventory opens an OpenStreetMap water comparison and centres on the reported position of a searched licence. Both imported layers show the nearest accepted feature and its stored distance. The audited provincial map excludes the two reported positions outside Alberta and preserves them in workbook review.
 
@@ -298,6 +301,7 @@ Update individual steps as work progresses; split a step into smaller rows when 
 | 4.3m4 | Filter ST37 Workbook records by water proximity band | Complete | 2026-11-24 | `src/db/st37.py` and `src/ui/waterbody_workflow.py` use the same latest stored comparisons for the filter and table. Project PostGIS verified 3,316 wells in ≤50 m and 419,878 with no match within 500 m. Edge verified multi-select, counts and pagination reset. Integration tests verified combined filters, exact licence lookup and unavailable results. All 153 tests passed. |
 | 4.3n | Add well marker legends to the Classroom demo and ST37 maps | Complete | 2026-11-24 | `src/ui/map.py` uses the marker palette in a shared Leaflet legend. Edge verified both live maps, the narrow ST37 view, classroom well clicks and the offline HTML download. The Streamlit agent API and type checker passed. All 153 tests passed. |
 | 4.3o | Remove manual ST37 coordinate evidence controls from the sidebar | Complete | 2026-11-25 | `src/ui/waterbody_workflow.py` displays the import button. `src/db/st37.py` applies the recorded CRS and release only on a workbook checksum match. Project PostGIS and the saved receipt verified the declaration resolves to existing snapshot `4bb2ac73`. Edge and the Streamlit agent API verified both views and the simplified sidebar. The full suite passed 153 tests, including checksum-matched projection and attribute-only staging. |
+| 4.3p | Add classroom-style filters to the ST37 water proximity map | Complete | 2026-11-25 | `src/ui/waterbody_workflow.py` groups the map controls in the sidebar. `src/db/waterbodies.py` applies the same bound filters to the count, batch and licence queries. Project PostGIS and Edge verified 1,419 stream matches and 1,839 polygon matches at 250 m for abandoned Canadian Natural Resources Limited wells. Edge and AppTest verified batch reset. AppTest verified no-match behavior, exact lookup and clearing the filters. The full 153-test suite and the six targeted integration tests passed. |
 | D.1 | Convert design to Markdown and establish ongoing tracking | Complete | 2026-11-08 | This document preserves all 16 design sections and tables; tracking instructions are in AGENTS.md. |
 | D.2 | Clarify runtime/API/download access independently of cloud discovery limits | Complete | 2026-11-08 | User clarification recorded; src/sources/files.py, pipeline.py and scripts/inspect_production.py inspected. docs/data_access.md distinguishes current remote acquisition/local inspection from full local import tracked separately in 4.2c. |
 | 0.1 | Inspect repository and retain course structure | Complete | 2026-11-08 | Existing README, charter, scope matrix, progress record, both course briefs and design inspected; course structure retained. |
@@ -355,6 +359,7 @@ Update individual steps as work progresses; split a step into smaller rows when 
 
 | Date | Step / phase | Update |
 |---|---|---|
+| 2026-11-25 | 4.3p complete | Added sidebar map filters and verified the filtered population against both stored water comparisons. |
 | 2026-11-25 | 4.3o complete | Removed the coordinate evidence form. Verified one-click staging and both inventory views with the saved AER datum. |
 | 2026-11-24 | 4.3n complete | Replaced map color captions with legends in both views and verified the downloaded classroom map offline. |
 | 2026-11-24 | 4.3m4 complete | Added the water proximity band dropdown and verified full-snapshot filtering from the nearest stored water results. |
