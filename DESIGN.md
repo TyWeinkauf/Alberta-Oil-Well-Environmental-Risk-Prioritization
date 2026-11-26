@@ -40,6 +40,10 @@ Section 13 tracks implementation work; section 12 tracks acceptance checks; sect
 
 **ST37 map filters — 2026-11-25.** The sidebar brings company, licence status, exact licence, water layer and buffer controls together. Company and status filter the full stored comparison before each shuffled batch. [Map filters](docs/hydrography.md#browse-shuffled-well-batches)
 
+**Licensee filter removal — 2026-11-26.** Classroom demo, the ST37 water map and Workbook records now offer licence status and well-number lookup without licensee selection. The running app and rebuilt teacher ZIP were verified. Licensee remains a source attribute in well records and exports.
+
+**Workbook records privacy — 2026-11-26.** The Workbook records table excludes licensee names from the data sent to the browser. The running app verified paging and exact licence lookup. The original ST37 workbook and stored inventory retain the source values. [Licensee privacy in the app](docs/st37_excel.md#licensee-privacy-in-the-app)
+
 ## 1. Scope, success criteria and guardrails
 
 **Current classroom scope — 2026-11-10 (D.3 / Phase 7):** The supplied starter's AGENTS.md is reference material. Its fully invented wells and production values do not replace the user's retained ST37 records or reinstate production. The primary demonstration may deliberately compare actual well points with synthetic environmental geometries only in an explicitly labelled illustrative mode; its results describe invented scenarios, not conditions or risk at the real wells. Keep original inputs, inventories, database records and the existing fully synthetic fixture/all-real workflows. Full environmental ingestion is optional and is not required to present the classroom demo. Implementation instructions and limits are in docs/classroom_demo.md.
@@ -50,7 +54,7 @@ Section 13 tracks implementation work; section 12 tracks acceptance checks; sect
 
 - Primary user: environmental reclamation screening analyst. The output identifies wells for further investigation, not verified environmental hazards.
 - One-click “Run pipeline” from Streamlit; progress, stage statuses, failures and audit summary visible. Cached reruns; production is outside the current scope.
-- Selectable Alberta study area (start with small configured bounding box or region), company filter, environmental-layer filter and four proximity thresholds.
+- Selectable Alberta study area (start with small configured bounding box or region), licence status filter, environmental-layer filter and four proximity thresholds.
 - Click a well marker to see ID, licensee, reported operator/producer where supported, LSD/legal location if present, well status, closest environmental feature by category, with missing attributes explicitly unavailable.
 - Export CSV/GeoJSON results, map screenshot or HTML where feasible, validation report, provenance manifest, and run metadata.
 - No QGIS dependency. GIS calculations in PostGIS/GeoPandas; OpenStreetMap is the basemap only.
@@ -164,7 +168,7 @@ Bands are mutually exclusive for display, but boolean within_X flags are cumulat
 
 ### Sidebar
 
-- Study region selector, producer/licensee searchable multiselect, well status, environmental category checkboxes, distance threshold selector (50/100/250/500 m), available AER attribute filters.
+- Study region selector, licence status filter, well licence lookup, environmental category controls, distance threshold selector (50/100/250/500 m), and available AER attribute filters.
 - Buttons: Run full pipeline, Use demo dataset, Clear filters, Export current selection. Disable expensive actions while a run is active.
 
 ### Main screen
@@ -202,13 +206,14 @@ Classroom acceptance:
 - [x] The two-region preview preserves all 56 sampled records field for field. Source hashes, byte-identical rebuild and offline preview launch are verified.
 - [x] Explicit illustrative mode starts without DATABASE_URL/PostGIS, live APIs, original Excel or the province-wide CSV after the small package is prepared. The normal `localhost` launch was reverified after restoring package read access.
 - [x] Deterministic region/sample/environment seeds reproduce the same data. Selecting one region produces the same regional records as Both.
-- [x] Mode, region, company, category, threshold, well selection, buffer, map/table and exports agree. The sample cap limits each region to 28 wells.
+- [x] Mode, region, licence status, category, threshold, well selection, buffer, map/table and exports agree. The sample cap limits each region to 28 wells.
 - [x] Synthetic environmental labels and simulated-result warnings persist in UI, exports and presentation evidence. Real-source gates and known coverage warnings are preserved.
 - [x] Offline teacher-package, boundary and sensitivity verification passed. Commands, permitted regional subset, attribution and separate classroom review candidates are recorded in docs/classroom_demo.md.
 - [x] The default offline classroom package uses the 69 imported water features and retains the 56 original sampled wells. Its water distances match the provincial PostGIS comparisons. Browser exports preserve water provenance and incomplete coverage.
 - [x] The buffer control selects 50, 100, 250 or 500 m and defaults to matching wells in the imported-water demo. Browser marker and download counts agree, and the all-wells option restores the other filtered wells.
 - [x] The app menu contains Classroom demo and ST37 well inventory. The former workflow URL opens the classroom demo, and the ST37 inventory can still browse both stored imported-water comparisons.
 - [x] Both maps show a well proximity legend with readable band and coverage labels. The classroom's standalone HTML retains its legend offline.
+- [x] Classroom demo, the ST37 water map and Workbook records have no licensee filter. The running app and AppTest verified the remaining choices and licence lookup.
 
 Requested province-wide waterbody acceptance:
 
@@ -220,10 +225,11 @@ Requested province-wide waterbody acceptance:
 - [x] The dedicated ST37 inventory imports and browses the Excel workbook independently of water data. Verified original workbook values, pagination, validation messages and an exact leading-zero licence lookup.
 - [x] The ST37 sidebar imports the verified workbook without manual coordinate inputs. A different workbook can still be staged for review without projected points.
 - [x] Workbook records shows observed water distance and proximity band. Exact zero indicates an intersection. The band reports no match within 500 m when the search finds none.
+- [x] Workbook records excludes licensee names from the table payload for browsed pages and exact licence lookup. The stored source values are retained.
 - [x] Workbook filters, including the observed water proximity band, combine across the full selected snapshot, repaginate from page 1 and apply to exact licence searches.
 - [x] The ST37 map cycles through non-overlapping shuffled batches of at most 10,000 well points. Browser checks verified both water layers, returning to a previous batch and the final 1,188-point Alberta batch.
 - [x] The ST37 map buffers select 50, 100, 250 or 500 m and apply to both stored water comparisons. The buffer filter preserves the batch cap and province boundary audit, and licence lookup draws the selected radius.
-- [x] The ST37 map combines company and licence status filters before choosing a batch. Exact licence lookup honours both filters and Clear filters restores batch 1 and the default buffer and layer.
+- [x] The ST37 map applies the licence status filter before choosing a batch. Exact licence lookup honours the status filter and Clear filters restores batch 1 and the default buffer and layer.
 - [x] ST37 markers grow at close zoom, and a click near the visible edge opens the well's licence popup.
 - [x] The ST37 inventory opens an OpenStreetMap water comparison and centres on the reported position of a searched licence. Both imported layers show the nearest accepted feature and its stored distance. The audited provincial map excludes the two reported positions outside Alberta and preserves them in workbook review.
 
@@ -251,7 +257,7 @@ Phase 1–3 evidence: fixture metadata/validation, known distances, stable marke
 | 4 | Real AER and provincial/federal adapters, caching and provenance | Bounded real-data runs and requested province-wide hydrography inventories | In progress | 2026-11-23 | The requested provincial inventories and both stored ST37 comparisons are verified in project PostGIS. The optional full multi-source pilot still needs verified protected-area and habitat inputs. |
 | 5 | AER well attributes and detail integration | Actual well/licence/location attributes render with correct meaning and unavailable fields | In progress | 2026-11-23 | Verified workbook release and NAD83. The actual classroom map renders preserved well attributes and unavailable fields. Original download timestamp and the full real-source detail/export path remain open. |
 | 6 | Performance, run recovery, documentation and course evidence | Fresh-clone classroom demo and separate deliverable folders | In progress | 2026-11-23 | Built separate course review candidates and verified the offline teacher ZIP. Final committed checkout, feedback, presentation and submissions remain open. |
-| 7 | Two-region classroom showcase using real ST37 wells and clearly sourced environmental layers | Small reproducible files; no DB/network required at classroom runtime; stable selection, distance/coverage labels, source preservation and teacher handoff proved | Complete | 2026-11-23 | Verified the 56-well offline package with 69 imported water features. The buffer selector, map and exports agree, and the teacher ZIP includes the updated controls. |
+| 7 | Two-region classroom showcase using real ST37 wells and clearly sourced environmental layers | Small reproducible files; no DB/network required at classroom runtime; stable selection, distance/coverage labels, source preservation and teacher handoff proved | Complete | 2026-11-26 | The current teacher ZIP includes the revised filters and the verified 56-well package with 69 imported water features. The extracted app passed the offline classroom checks in step 7.10. |
 
 ### Remaining work in order
 
@@ -278,6 +284,7 @@ Update individual steps as work progresses; split a step into smaller rows when 
 | 7.7 | Optional synthetic flood/ecological-occurrence extensions | Not started | 2026-11-10 | Stretch scope only after core demo works and scoped category/accounting/constraint audit; ecological occurrences are not federal critical habitat. No new real dataset or production ingestion is needed. |
 | 7.8 | Use downloaded streams and waterbodies in the default classroom package | Complete | 2026-11-23 | `scripts/prepare_classroom_demo.py` built a 174,514-byte package with 33 Red Deer and 36 Drayton Valley water features from the existing PostGIS imports. All 56 wells matched the earlier sample. Nine observed distances within 500 m matched PostGIS to within 0.000001 m. Edge verified the three region views and labelled exports with outbound requests blocked. The extracted teacher ZIP ran with an invalid database setting. All 153 tests passed. |
 | 7.9 | Switch the classroom map between well buffer distances | Complete | 2026-11-23 | `src/ui/classroom.py` exposes the four choices and starts with only wells within 500 m in the imported-water demo. Edge and the Streamlit agent API verified 0/1/5/9 wells in Both at 50/100/250/500 m and 56 with filtering off. Edge verified the selected well's radius and a matching five-well GeoJSON export at 250 m. The teacher ZIP was rebuilt and all 153 tests passed. |
+| 7.10 | Remove the classroom licensee filter | Complete | 2026-11-26 | `src/ui/classroom.py` and `src/ui/model.py` remove licensee selection from app filters and export selection metadata. AppTest verified licence status and well-number filtering. The running Streamlit app showed five wells in Both at 250 m. The rebuilt teacher ZIP contains the identical data package and its extracted app showed 9, 5 and 56 wells at 500 m, 250 m and with buffer filtering off using an invalid database setting. |
 | 4.2g | Adapt supplied Alberta hydrography importer into the app and shared PostGIS workflow | Complete | 2026-11-10 | scripts/import_hydrography.py, src/sources/hydrography.py, src/ui/water.py, migration 006 and verified water catalogue. All 142 tests/type checks pass; actual base/seasonal inventory repeats and running-app import/preview/warning pass in a separate validation DB. Filters exclude arbitrary connectors; one polygon quarantined. docs/hydrography.md and docs/evidence/hydrography_2026-11-10.json retain proof. |
 | 4.2g1 | Verify water source layers, fields, CRS, terms and feature-type predicates | Complete | 2026-11-10 | Fresh official metadata/count/ID/GeoJSON requests verify layers 72/107/76/108, native EPSG:3400, OBJECTID/NAME/FEATURE_TYPE and explicit OGL-Alberta note. Core 72/107 enabled; optional sources remain opt-in. Predicates/properties lineage and metadata hashes retained. |
 | 4.3c | Load waterways into user database and resolve actual pilot water-coverage gap | In progress | 2026-11-20 | Temporary regional validation: 33 default features (5 polygons/28 lines), 121 seasonal (5/116), same-ID repeats and valid EPSG:3400. RIV-MAJ polygon 249048 has a source ring self-intersection. The province-wide polygon import is tracked under 4.3e1. |
@@ -302,6 +309,8 @@ Update individual steps as work progresses; split a step into smaller rows when 
 | 4.3n | Add well marker legends to the Classroom demo and ST37 maps | Complete | 2026-11-24 | `src/ui/map.py` uses the marker palette in a shared Leaflet legend. Edge verified both live maps, the narrow ST37 view, classroom well clicks and the offline HTML download. The Streamlit agent API and type checker passed. All 153 tests passed. |
 | 4.3o | Remove manual ST37 coordinate evidence controls from the sidebar | Complete | 2026-11-25 | `src/ui/waterbody_workflow.py` displays the import button. `src/db/st37.py` applies the recorded CRS and release only on a workbook checksum match. Project PostGIS and the saved receipt verified the declaration resolves to existing snapshot `4bb2ac73`. Edge and the Streamlit agent API verified both views and the simplified sidebar. The full suite passed 153 tests, including checksum-matched projection and attribute-only staging. |
 | 4.3p | Add classroom-style filters to the ST37 water proximity map | Complete | 2026-11-25 | `src/ui/waterbody_workflow.py` groups the map controls in the sidebar. `src/db/waterbodies.py` applies the same bound filters to the count, batch and licence queries. Project PostGIS and Edge verified 1,419 stream matches and 1,839 polygon matches at 250 m for abandoned Canadian Natural Resources Limited wells. Edge and AppTest verified batch reset. AppTest verified no-match behavior, exact lookup and clearing the filters. The full 153-test suite and the six targeted integration tests passed. |
+| 4.3q | Remove licensee filters from the ST37 water map and Workbook records | Complete | 2026-11-26 | `src/ui/waterbody_workflow.py` and `src/db/st37.py` remove licensee from the filter widgets and supported query fields. The running Streamlit app verified both filter lists, a 50 m water map buffer and exact workbook lookup. AppTest verified batch reset, workbook paging and retained source values in disposable PostGIS. `python -m pytest -q --tb=short` passed all 153 tests. `ty check` passed for edited Python files. |
+| 4.3r | Remove the Licensee column from ST37 Workbook records | Complete | 2026-11-26 | `src/ui/waterbody_workflow.py` excludes the field before building the dataframe. The running Streamlit app verified the first two 100-row pages and an exact licence lookup, including licence status, water distance and band. AppTest verified the omitted column and retained PostGIS source values. `python -m pytest -q --tb=short` passed all 153 tests in disposable PostGIS, and `ty check` passed for the edited Python files. |
 | D.1 | Convert design to Markdown and establish ongoing tracking | Complete | 2026-11-08 | This document preserves all 16 design sections and tables; tracking instructions are in AGENTS.md. |
 | D.2 | Clarify runtime/API/download access independently of cloud discovery limits | Complete | 2026-11-08 | User clarification recorded; src/sources/files.py, pipeline.py and scripts/inspect_production.py inspected. docs/data_access.md distinguishes current remote acquisition/local inspection from full local import tracked separately in 4.2c. |
 | 0.1 | Inspect repository and retain course structure | Complete | 2026-11-08 | Existing README, charter, scope matrix, progress record, both course briefs and design inspected; course structure retained. |
@@ -359,6 +368,8 @@ Update individual steps as work progresses; split a step into smaller rows when 
 
 | Date | Step / phase | Update |
 |---|---|---|
+| 2026-11-26 | 4.3r complete | Removed licensee names from the Workbook records table payload. Verified paging and exact licence lookup in the running app and source retention in PostGIS integration tests. |
+| 2026-11-26 | 7.10 and 4.3q complete | Removed licensee selection from the classroom and ST37 views. Verified remaining filters and licence lookup in the running app, passed 153 tests and verified the extracted teacher ZIP. |
 | 2026-11-25 | 4.3p complete | Added sidebar map filters and verified the filtered population against both stored water comparisons. |
 | 2026-11-25 | 4.3o complete | Removed the coordinate evidence form. Verified one-click staging and both inventory views with the saved AER datum. |
 | 2026-11-24 | 4.3n complete | Replaced map color captions with legends in both views and verified the downloaded classroom map offline. |
@@ -446,6 +457,8 @@ You are implementing the attached Alberta Oil Well Environmental Screening desig
 - [x] Import every published record from Alberta Base Water Feature layer 72 for the requested PostGIS water-only comparison — user direction and publisher layer verification 2026-11-20.
 - [x] Use Streamlit buttons for loading project data and running the waterbody comparison — historical direction and UI verification 2026-11-20. The current public route was revised on 2026-11-24.
 - [x] Remove the legacy PostGIS workflows page and retain the classroom and ST37 inventory views — user direction and browser verification 2026-11-24.
+- [x] Remove licensee filters from the classroom and ST37 inventory views — user direction and running-app verification 2026-11-26.
+- [x] Omit licensee names from the ST37 Workbook records table — user direction and table payload verification 2026-11-26.
 - [x] Import the full published layer 107 as a provincial stream inventory and use the documented stream, canal, oxbow and ditch codes for distance analysis.
 - [x] Finalize Red Deer region bounds, deterministic 28-well sample cap per region, seeds and small-package limits. Datum-aware extraction and repeat verified 2026-11-23.
 - [x] Verify no-DB/no-network classroom runtime and illustrative provenance and labels in the UI, calculations, exports and teacher package. Offline browser and running-app checks passed 2026-11-23.

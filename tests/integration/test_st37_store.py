@@ -36,6 +36,7 @@ def test_app_imports_and_browses_st37_without_a_water_snapshot(test_engine, tmp_
     assert not app.exception and not app.error
     table = app.dataframe[0].value
     assert len(table) == 100 and table['Well_Licence_Number'].iloc[0] == '0000001'
+    assert 'Licensee' not in table.columns
     assert table['Water proximity band'].eq('Unavailable').all()
     assert table['Observed water distance (m)'].isna().all()
     assert any('101 workbook rows · 100 accepted · 1 quarantined' in caption.value for caption in app.caption)
@@ -45,27 +46,29 @@ def test_app_imports_and_browses_st37_without_a_water_snapshot(test_engine, tmp_
     assert last['Validation errors']
 
     snapshot_id = app.session_state.st37_inventory_snapshot
-    assert st37_inventory_filter_options(test_engine, snapshot_id, 'licensee_name', 'aNoThEr') == ['Another Licensee']
-    licensees, statuses, categories, bands = app.multiselect
-    licensee_key, status_key, category_key, band_key = licensees.key, statuses.key, categories.key, bands.key
-    assert licensee_key is not None and status_key is not None and category_key is not None and band_key is not None
-    assert bands.options == ['Unavailable']
-    bands.set_value(['unavailable']).run()
-    assert len(app.dataframe[0].value) == 100
-    app.multiselect(key=licensee_key).set_value(['Another Licensee']).run()
+    assert st37_inventory_filter_options(test_engine, snapshot_id, 'licence_status', 'sUsPeN') == ['Suspended']
+    with pytest.raises(ValueError, match='Unknown ST37 workbook filter'):
+        st37_inventory_filter_options(test_engine, snapshot_id, 'licensee_name')
+    assert [widget.label for widget in app.multiselect] == ['Licence status', 'Energy development category', 'Water proximity band']
+    statuses, categories, bands = app.multiselect
+    status_key, category_key, band_key = statuses.key, categories.key, bands.key
+    assert status_key is not None and category_key is not None and band_key is not None
+    statuses.set_value(['Suspended']).run()
     assert app.number_input[0].value == 1
-    assert app.dataframe[0].value['Well_Licence_Number'].tolist() == ['0000001', '0000101']
-    assert any('2 matching workbook records' in caption.value for caption in app.caption)
-    app.multiselect(key=status_key).set_value(['Issued']).run()
-    app.multiselect(key=category_key).set_value(['Synthetic category']).run()
-    assert not app.dataframe and any('No workbook records match the selected filters' in alert.value for alert in app.info)
+    assert app.dataframe[0].value['Well_Licence_Number'].tolist() == ['0000001']
+    assert app.dataframe[0].value['Licence_Status'].tolist() == ['Suspended']
     app.multiselect(key=category_key).set_value(['Alternate category']).run()
+    assert not app.dataframe and any('No workbook records match the selected filters' in alert.value for alert in app.info)
+    app.multiselect(key=status_key).set_value(['Issued']).run()
+    assert app.multiselect(key=band_key).options == ['Unavailable']
+    app.multiselect(key=band_key).set_value(['unavailable']).run()
     assert app.dataframe[0].value['Well_Licence_Number'].tolist() == ['0000101']
     app.text_input(key='st37_inventory_licence').input('0000001').run()
     assert not app.dataframe and any('match the licence and selected filters' in alert.value for alert in app.info)
     app.text_input(key='st37_inventory_licence').input('0000101').run()
     assert app.dataframe[0].value['Well_Licence_Number'].tolist() == ['0000101']
-    for key in (licensee_key, status_key, category_key, band_key):
+    assert 'Licensee' not in app.dataframe[0].value.columns
+    for key in (status_key, category_key, band_key):
         app.multiselect(key=key).set_value([]).run()
 
     app.text_input(key='st37_inventory_licence').input('0000007').run()
@@ -75,6 +78,9 @@ def test_app_imports_and_browses_st37_without_a_water_snapshot(test_engine, tmp_
     with test_engine.connect() as conn:
         assert conn.execute(text('SELECT count(*) FROM screening.st37_imports')).scalar_one() == 1
         assert conn.execute(text('SELECT count(*) FROM screening.water_imports')).scalar_one() == 0
+        retained = conn.execute(text('''SELECT licensee_name, raw_payload->>'Licensee'
+            FROM screening.st37_surface_holes WHERE well_licence_number = '0000001' ''')).one()
+        assert retained == ('Another Licensee', 'Another Licensee')
 
 
 def test_st37_inventory_keeps_rejects_preserves_ids_and_reuses_import_without_publishing(test_engine, tmp_path):

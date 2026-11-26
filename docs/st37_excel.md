@@ -78,13 +78,19 @@ Replace the password, role, host, port and database as needed. URL-encode specia
 
 Launch the app and select **ST37 well inventory** under **Dataset mode**. The verified November snapshot already has stored comparisons, so **Water proximity map** opens by default. Choose waterbody polygons or stream lines under **Imported water layer** and select a **Buffer distance**. The map starts with wells within 500 m of the selected layer. Uncheck **Only show wells within the buffer** to browse the full mapped inventory in batches. Enter the full **Well licence number**, including leading zeros, to zoom to a specific well and draw its selected buffer. [Map controls](hydrography.md#browse-shuffled-well-batches)
 
-Select **Workbook records** to inspect the source coordinates and attributes. Use **Page** to browse 100 rows at a time or keep a licence entered to review the original row for that well. Snapshots without a stored comparison open directly to workbook records. Quarantined rows include their validation errors.
+Select **Workbook records** to inspect reported coordinates and well attributes. Use **Page** to browse 100 rows at a time or enter a licence to review that well. Snapshots without a stored comparison open directly to workbook records. Quarantined rows include their validation errors.
 
-Use **Licensee**, **Licence status**, **Energy development category** and **Water proximity band** to filter the selected snapshot. You can select multiple values in each dropdown. The results match any selected value within a dropdown and all populated dropdowns together. Filter changes return to page 1. An exact licence search also uses the selected filters. The water dropdown uses the same nearest accepted match as the table and includes **No match within 500 m** for compared wells with no accepted match.
+Use **Licence status**, **Energy development category** and **Water proximity band** to filter the selected snapshot. You can select multiple values in each dropdown. The results match any selected value within a dropdown and all populated dropdowns together. Filter changes return to page 1. An exact licence search also uses the selected filters. The water dropdown uses the same nearest accepted match as the table and includes **No match within 500 m** for compared wells with no accepted match.
 
 **Observed water distance (m)** and **Water proximity band** appear beside the licence. The table uses the closest accepted match from the latest stored comparison for each available water layer. An exact distance of 0 m means the point touches or lies inside an accepted water feature. **No match within 500 m** describes the search over accepted features, with no measured distance. Rows without a stored result show **Unavailable**.
 
 Use **Import ST37 wells** in the sidebar to load the retained `ST37_SH.xlsx` into a fresh PostgreSQL/PostGIS database. Create water comparisons from saved snapshot IDs using the comparison command. [Import and compare](hydrography.md#import-and-compare)
+
+## Licensee privacy in the app
+
+To reduce exposure of names associated with wells, the app removed the licensee dropdowns from **Classroom demo**, **Water proximity map** and **Workbook records**. ST37 queries no longer support filtering by licensee. Users can still find a well by licence number and filter by licence status.
+
+In **Workbook records**, the app excludes the `Licensee` field on the server before building the table sent to the browser. This applies to every page and to exact licence lookups. The original ST37 workbook and PostGIS inventory retain the field for provenance. The classroom well table, details and data exports also include the source field.
 
 ## Stage well information before environmental analysis
 

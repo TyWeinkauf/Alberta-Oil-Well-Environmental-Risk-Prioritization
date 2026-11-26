@@ -25,6 +25,8 @@ For each row, choose one status: **Not started**, **In progress**, **Ready for f
 
 **Map legends — 24 November 2026.** The live Classroom demo and ST37 maps and the classroom HTML download include a legend for the well colors and water feature symbol. Edge verified the live and offline views. [Classroom map controls](../docs/classroom_demo.md)
 
+**Filter revision — 26 November 2026.** Removed the licensee dropdowns from Classroom demo and the ST37 inventory. The running app and rebuilt teacher ZIP passed filter checks. [Implementation evidence](../DESIGN.md#implementation-steps) · [Teacher ZIP](../docs/classroom_demo.md#launch-the-classroom-mode)
+
 See [the Markdown design and implementation tracker](../DESIGN.md#13-phased-codex-implementation-plan) for phase and step status. Update it when implementation work starts or completes. The course checkpoints in this file require their own evidence and are not automatically completed by environment setup.
 
 ## How to ask for feedback

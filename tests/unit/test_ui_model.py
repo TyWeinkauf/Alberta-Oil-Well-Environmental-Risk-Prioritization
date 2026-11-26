@@ -33,11 +33,11 @@ def test_filters_table_and_exports_use_identical_ids_and_values():
     data = dashboard()
     rows = filtered_wells(data,['water'],50,matches_only=True)
     assert [r['source_well_id'] for r in rows]==['SYNTHETIC-1']
-    assert filtered_wells(data,['water'],50,companies=['Company 2'],matches_only=True)==[]
-    company = filtered_wells(data,['water'],companies=['Company 2'])
-    assert len(company)==1
-    assert company[0]['band']=='within_250m'
-    assert len(filtered_wells(data,['water'],statuses=['Not available from this source']))==1
+    missing_status = ['Not available from this source']
+    assert filtered_wells(data, ['water'], 50, statuses=missing_status, matches_only=True) == []
+    without_status = filtered_wells(data, ['water'], statuses=missing_status)
+    assert [row['source_well_id'] for row in without_status] == ['SYNTHETIC-2']
+    assert without_status[0]['band'] == 'within_250m'
     csv_rows = list(csv.DictReader(io.StringIO(csv_bytes(rows).decode('utf-8-sig'))))
     geo = json.loads(geojson_bytes(rows,{'threshold_m':50}))
     assert csv_rows[0]['source_well_id']==geo['features'][0]['properties']['source_well_id']==table_records(rows)[0]['source_well_id']

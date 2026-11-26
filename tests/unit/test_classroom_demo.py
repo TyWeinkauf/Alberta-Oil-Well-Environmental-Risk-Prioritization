@@ -29,6 +29,7 @@ def source_inventory(tmp_path):
             (53.25, -115.0, 'Quarantined'),
         ], start=1)
     ]
+    rows[3]['Licence_Status'] = 'Suspended'
     rows[-1]['Licence_Status_Date'] = 'bad date'
     workbook = write_workbook(tmp_path / 'fixture.xlsx', rows)
     report = prepare_st37(workbook, load_study_area(), tmp_path / 'inventory')
@@ -152,6 +153,7 @@ def test_streamlit_modes_without_database(source_inventory, projected_package, t
         assert not app.exception and app.metric[2].value == '3'
         assert app.selectbox(key='dataset_mode').options == ['Classroom demo', 'ST37 well inventory']
         assert app.selectbox(key='dataset_mode').value == 'Classroom demo'
+        assert [widget.label for widget in app.sidebar.multiselect] == ['Licence status']
         assert any('coordinate datum is pending' in alert.value for alert in app.info)
         assert not app.get('component_instance')
         monkeypatch.setenv('CLASSROOM_DEMO_PATH', str(output))
@@ -163,8 +165,13 @@ def test_streamlit_modes_without_database(source_inventory, projected_package, t
         app.radio(key='classroom_region').set_value('both').run()
         assert not app.exception and app.metric[2].value == '5'
         assert app.selectbox(key='classroom_inspect').value is None
+        assert [widget.label for widget in app.sidebar.multiselect] == ['Licence status', 'Synthetic environmental layers']
+        app.multiselect(key='classroom_statuses').set_value(['Suspended']).run()
+        assert app.metric[2].value == '1'
         app.text_input(key='classroom_licence').input('0000004').run()
         assert not app.exception and app.metric[2].value == '1'
+        app.multiselect(key='classroom_statuses').set_value(['Issued']).run()
+        assert app.metric[2].value == '0'
 
     def missing_database_url():
         raise ValueError('PostGIS deliberately unavailable in the classroom test')

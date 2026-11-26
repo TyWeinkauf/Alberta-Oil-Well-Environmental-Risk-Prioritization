@@ -19,7 +19,7 @@ from src.spatial.classification import THRESHOLDS
 ST37_LICENSE_NOTE = 'AER ST37 surface-hole workbook for educational noncommercial use. AER source attribution retained.'
 ST37_DATUM_EVIDENCE = ROOT / 'docs/evidence/st37_datum_2026-11-23.json'
 ST37_INVENTORY_PAGE_SIZE = 100
-ST37_INVENTORY_FILTER_FIELDS = ('licensee_name', 'licence_status', 'energy_development_category')
+ST37_INVENTORY_FILTER_FIELDS = ('licence_status', 'energy_development_category')
 ST37_INVENTORY_OPTION_LIMIT = 4_000
 
 

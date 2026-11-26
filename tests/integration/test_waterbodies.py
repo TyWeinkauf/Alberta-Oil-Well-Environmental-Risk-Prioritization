@@ -93,13 +93,13 @@ def test_province_pages_preserve_every_id_then_compare_verified_wells(test_engin
     assert waterbody_buffer_count(test_engine, comparison, 50, excluded) == 0
     assert not waterbody_map_batch(test_engine, comparison, seed=123, excluded_rows=excluded, max_distance_m=50)[0]
     assert waterbody_map_batch(test_engine, comparison, seed=123, licence='0000012', excluded_rows=excluded) == ([], [])
-    company_filter = {'licensee_name': ['Synthetic Licensee']}
-    assert waterbody_buffer_count(test_engine, comparison, 500, filters=company_filter) == 1
-    assert waterbody_buffer_count(test_engine, comparison, None, filters=company_filter) == 2
-    filtered, _ = waterbody_map_batch(test_engine, comparison, seed=123, filters=company_filter, max_distance_m=500)
-    assert [well['well_licence_number'] for well in filtered] == ['0000012']
-    assert waterbody_map_batch(test_engine, comparison, seed=123, licence='0000014', filters=company_filter) == ([], [])
-    assert waterbody_result(test_engine, comparison, '0000014', filters=company_filter) is None
+    status_filter = {'licence_status': ['Issued']}
+    assert waterbody_buffer_count(test_engine, comparison, 500, filters=status_filter) == 2
+    assert waterbody_buffer_count(test_engine, comparison, None, filters=status_filter) == 2
+    filtered, _ = waterbody_map_batch(test_engine, comparison, seed=123, filters=status_filter, max_distance_m=500)
+    assert {well['well_licence_number'] for well in filtered} == {'0000012', '0000014'}
+    assert waterbody_map_batch(test_engine, comparison, seed=123, licence='0000013', filters=status_filter) == ([], [])
+    assert waterbody_result(test_engine, comparison, '0000013', filters=status_filter) is None
     for wells, features in pages:
         point = wells[0]
         assert point['geometry']['type'] == 'Point'
@@ -127,10 +127,10 @@ def test_province_pages_preserve_every_id_then_compare_verified_wells(test_engin
     assert any('Batch 1 of 2 · Showing 1 of 2 wells' in element.value for element in app.caption)
     app.button(key='province_map_next').click().run()
     assert not app.exception and any('Batch 2 of 2 · Showing 1 of 2 wells' in element.value for element in app.caption)
-    assert [item.label for item in app.sidebar.multiselect] == ['Company (licensee)', 'Licence status']
-    app.sidebar.multiselect[0].set_value(['Synthetic Licensee']).run()
-    assert any('Batch 1 of 1 · Showing 1 of 1 wells' in element.value for element in app.caption)
-    app.sidebar.multiselect[1].set_value(['Suspended']).run()
+    assert [item.label for item in app.sidebar.multiselect] == ['Licence status']
+    app.sidebar.multiselect[0].set_value(['Issued']).run()
+    assert any('Batch 1 of 2 · Showing 1 of 2 wells' in element.value for element in app.caption)
+    app.sidebar.multiselect[0].set_value(['Suspended']).run()
     assert any('No wells match the selected filters within 500 m' in element.value for element in app.info)
     app.sidebar.checkbox(key='st37_map_matches_only').uncheck().run()
     assert any('Batch 1 of 1 · Showing 1 of 1 wells · 0 observed matches' in element.value for element in app.caption)

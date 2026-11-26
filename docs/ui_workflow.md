@@ -8,7 +8,7 @@ The classroom demo opens the prepared local package with real ST37 wells and imp
 
 ## ST37 well inventory
 
-The inventory uses the configured `DATABASE_URL`. Import the retained ST37 workbook from the sidebar or select an existing snapshot. For snapshots with stored water comparisons, select the imported water layer and a buffer distance, then browse matching wells in shuffled batches. Search by full licence to draw that well's buffer. Use **Workbook records** for the original worksheet values. [Inventory setup and coordinate accuracy](st37_excel.md#browse-the-workbook-in-streamlit)
+The inventory uses the configured `DATABASE_URL`. Import the retained ST37 workbook from the sidebar or select an existing snapshot. For snapshots with stored water comparisons, select the imported water layer and a buffer distance, then browse matching wells in shuffled batches. Search by full licence to draw that well's buffer. Use **Workbook records** to review reported well attributes. [Inventory setup and coordinate accuracy](st37_excel.md#browse-the-workbook-in-streamlit)
 
 ## Database operations
 

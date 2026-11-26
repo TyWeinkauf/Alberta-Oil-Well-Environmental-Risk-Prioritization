@@ -33,11 +33,10 @@ WORKBOOK_WATER_BANDS = {
     'within_500m': '>250–500 m', 'none_within_500m': 'No match within 500 m', 'unavailable': 'Unavailable',
 }
 WORKBOOK_FILTER_LABELS = {
-    'licensee_name': 'Licensee',
     'licence_status': 'Licence status',
     'energy_development_category': 'Energy development category',
 }
-MAP_FILTER_LABELS = {'licensee_name': 'Company (licensee)', 'licence_status': 'Licence status'}
+MAP_FILTER_LABELS = {'licence_status': 'Licence status'}
 
 
 def audited_outside_rows(snapshot_id: UUID) -> tuple[int, ...]:
@@ -306,14 +305,15 @@ def show_st37_inventory(engine):
         'Workbook row': row['source_row'],
         'Well_Licence_Number': row['raw_payload']['Well_Licence_Number'],
         **workbook_water_columns(proximity.get(row['source_row'])),
-        **{field: row['raw_payload'][field] for field in ST37_FIELDS if field != 'Well_Licence_Number'},
+        **{field: row['raw_payload'][field] for field in ST37_FIELDS
+           if field not in ('Well_Licence_Number', 'Licensee')},
         'Validation errors': ', '.join(row['validation_errors']),
         'Quality warnings': ', '.join(row['quality_warnings']),
         **({'Boundary review': 'Reported position outside Alberta' if row['source_row'] in outside else ''}
            if outside else {}),
     } for row in rows]
     records_table = pd.DataFrame(table).astype({'Observed water distance (m)': 'Float64'})
-    st.dataframe(records_table, hide_index=True, alt='Original ST37 workbook records and observed water proximity',
+    st.dataframe(records_table, hide_index=True, alt='ST37 workbook records and observed water proximity',
                  column_config={
                      'Well_Licence_Number': 'Well licence', 'Licence_Status': 'Licence status',
                      'Energy_Devlpmt_Category_Type': 'Energy development category',

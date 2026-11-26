@@ -39,7 +39,7 @@ TABLE_LABELS = {
 }
 BASELINE_M = 500
 FILTER_DEFAULTS = {
-    'classroom_companies': [], 'classroom_statuses': [], 'classroom_licence': '',
+    'classroom_statuses': [], 'classroom_licence': '',
     'classroom_categories': ['water'],
 }
 
@@ -111,8 +111,6 @@ def show_classroom():
         st.caption('Water source · Government of Alberta Lake/River (20K) and Stream (20K) inventories')
     st.sidebar.header('Filters')
     wells = dashboard['wells']
-    companies = st.sidebar.multiselect('Company (licensee)', sorted({
-        well['licensee_name'] or MISSING for well in wells}), key='classroom_companies')
     statuses = st.sidebar.multiselect('Licence status', sorted({
         well['status'] or MISSING for well in wells}), key='classroom_statuses')
     licence = st.sidebar.text_input('Well licence number', key='classroom_licence').strip().casefold()
@@ -129,7 +127,7 @@ def show_classroom():
         categories, threshold, matches_only = [], BASELINE_M, False
     st.sidebar.button('Clear filters', on_click=clear_filters, args=(real_water,))
 
-    population = [row for row in filtered_wells(dashboard, categories, threshold, companies, statuses)
+    population = [row for row in filtered_wells(dashboard, categories, threshold, statuses=statuses)
                   if licence in row['source_well_id'].casefold()]
     distance_basis = 'simulated'
     water_incomplete = any(source['coverage_status'] == 'incomplete' for source in manifest.get('water_sources', []))
@@ -148,7 +146,7 @@ def show_classroom():
     metrics[2].metric('Visible wells', len(visible))
     selection = {
         'package_id': package['package_id'], 'mode': manifest['mode'], 'regions': list(region_ids),
-        'companies': companies, 'licence_statuses': statuses, 'licence_query': licence,
+        'licence_statuses': statuses, 'licence_query': licence,
     }
     comparison = None
     map_bytes = None
@@ -160,7 +158,7 @@ def show_classroom():
                          distance_basis=distance_basis if categories else None)
         if real_water and 'water' in categories:
             selection['water_coverage_status'] = 'incomplete' if water_incomplete else 'complete'
-        baseline = [row for row in filtered_wells(dashboard, categories, BASELINE_M, companies, statuses)
+        baseline = [row for row in filtered_wells(dashboard, categories, BASELINE_M, statuses=statuses)
                     if licence in row['source_well_id'].casefold()]
         comparison = compare_selections(baseline, population)
         if matches_only and not visible:
